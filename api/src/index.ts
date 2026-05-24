@@ -3,6 +3,7 @@ import { serve } from "@hono/node-server";
 import { cors } from "hono/cors";
 import { auth, sign } from "./auth.js";
 import { withUser } from "./db.js";
+import { migrate } from "./migrate.js";
 import type { Env } from "./types.js";
 import libraries from "./routes/libraries.js";
 import workspaces from "./routes/workspaces.js";
@@ -52,5 +53,13 @@ app.route("/", audit);
 app.route("/", woocommerce);
 
 const port = Number(process.env.PORT || 8080);
+
+// Garante o schema antes de servir (idempotente). Não derruba a API se falhar.
+try {
+  await migrate();
+} catch (e) {
+  console.error("Falha ao migrar o banco no boot:", e);
+}
+
 serve({ fetch: app.fetch, port });
 console.log(`UniverCopy API rodando na porta ${port}`);
