@@ -1,0 +1,71 @@
+# =====================================================================
+# UniverCopy — stack 100% open-source, self-hosted no Coolify
+# Repo: https://github.com/univerbeauty777/univercopy
+# Serviços: PostgreSQL (banco) + Redis (cache/fila) + API + Web
+# O Coolify faz o proxy/HTTPS (Traefik) — as portas abaixo são internas.
+# =====================================================================
+services:
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: univercopy
+      POSTGRES_USER: univercopy
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - uc_pgdata:/var/lib/postgresql/data
+      # Aplica o schema na PRIMEIRA inicialização (volume vazio).
+      # Migrações posteriores: usar uma ferramenta de migration (ver guia).
+      - ./db:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U univercopy -d univercopy"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  cache:
+    image: redis:7-alpine
+    command: ["redis-server", "--save", "60", "1", "--appendonly", "yes"]
+    volumes:
+      - uc_redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+
+  api:
+    # API Node/TypeScript (Hono). Espera-se um Dockerfile em ./api
+    build:
+      context: ./api
+    environment:
+      DATABASE_URL: postgres://univercopy:${POSTGRES_PASSWORD}@db:5432/univercopy
+      REDIS_URL: redis://cache:6379
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}   # geração server-side (Claude)
+      JWT_SECRET: ${JWT_SECRET}                  # auth
+      APP_ORIGIN: ${APP_ORIGIN}                  # CORS (domínio do web)
+      PORT: 8080
+    depends_on:
+      db:    { condition: service_healthy }
+      cache: { condition: service_healthy }
+    expose:
+      - "8080"
+    restart: unless-stopped
+
+  web:
+    # Frontend (protótipo atual ou versão React/Next). Dockerfile em ./web
+    build:
+      context: ./web
+    environment:
+      VITE_API_URL: ${API_URL}                   # URL pública da API (via Coolify)
+    depends_on:
+      - api
+    expose:
+      - "80"
+    restart: unless-stopped
+
+volumes:
+  uc_pgdata:
+  uc_redis:
