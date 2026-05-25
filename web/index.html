@@ -132,6 +132,7 @@ tbody tr:hover{background:var(--bg-tertiary)}
     <div class="nav-item" data-v="dash" onclick="nav('dash')"><svg class="ni-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>Dashboard</span></div>
     <div class="nav-item" data-v="acervo" onclick="nav('acervo')"><svg class="ni-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h18M3 12h18M3 17h18"/></svg><span>Acervo</span><span class="badge" id="nav-acervo-count">0</span></div>
     <div class="nav-item" data-v="produtos" onclick="nav('produtos')"><svg class="ni-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><path d="M3.27 6.96L12 12.01l8.73-5.05M12 22.08V12"/></svg><span>Produtos</span></div>
+    <div class="nav-item" data-v="bau" onclick="abrirBau()"><svg class="ni-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h18l-1.5 13a2 2 0 01-2 1.8H6.5a2 2 0 01-2-1.8L3 7z"/><path d="M3 7l2-4h14l2 4M9 11v4M15 11v4"/></svg><span>Baú de Campanhas</span></div>
     <div class="nav-item" data-v="gerador" onclick="nav('gerador')"><svg class="ni-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3v4M3 5h4M6 17v4M4 19h4M13 3l2.5 6.5L22 12l-6.5 2.5L13 21l-2.5-6.5L4 12l6.5-2.5z"/></svg><span>Gerador de Copy</span></div>
     <div class="nav-item" data-v="nomes" onclick="nav('nomes')"><svg class="ni-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><circle cx="7" cy="7" r="1.2"/></svg><span>Gerador de Produtos</span></div>
     <div class="nav-item" data-v="catalogo" onclick="nav('catalogo')"><svg class="ni-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="7" rx="1"/><rect x="3" y="14" width="18" height="7" rx="1"/></svg><span>Catálogo de Peças</span></div>
@@ -454,7 +455,7 @@ const IC={doc:'<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
 function nav(v){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.v===v));
   window._view=v;
-  ({dash:renderDash,acervo:renderAcervo,gerador:renderGerador,catalogo:renderCatalogo,analise:renderAnalise,revisao:renderRevisao,dna:renderDNA,referencias:renderRefs,estilos:renderEstilos,nomes:renderNomes,produtos:renderProdutos}[v]||renderDash)();
+  ({dash:renderDash,acervo:renderAcervo,gerador:renderGerador,catalogo:renderCatalogo,analise:renderAnalise,revisao:renderRevisao,dna:renderDNA,referencias:renderRefs,estilos:renderEstilos,nomes:renderNomes,produtos:renderProdutos,bau:renderBau}[v]||renderDash)();
   window.scrollTo(0,0);
 }
 function updateBadges(){$('nav-acervo-count').textContent=ws().copies.length;$('nav-rev-count').textContent=ws().copies.filter(c=>c.status==='revisao').length;renderWsSwitcher();}
@@ -585,10 +586,11 @@ function openCopyRender(id){
      `<button class="btn btn-sm" onclick="openEditor('${c.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${IC.edit}</svg> Editar</button><button class="btn btn-sm btn-danger" onclick="delCopy('${c.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${IC.trash}</svg></button>`)
    +`<div style="display:grid;grid-template-columns:1.5fr 1fr;gap:16px" id="detail-grid">
      <div>
-       <div class="section-card"><div class="sc-title">📝 Conteúdo <span style="margin-left:auto;font-weight:600;color:var(--text-muted)">Framework: ${esc(c.fw)}</span></div>
-         <div class="var-out" style="margin:0">${esc(c.conteudo)}</div>
-         <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
-           <button class="btn btn-sm" onclick="openEditor('${c.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${IC.edit}</svg> Editar (nova versão)</button>
+       <div class="section-card"><div class="sc-title">📝 Conteúdo <span class="muted" style="text-transform:none;letter-spacing:0;font-weight:600">(editável)</span> <span style="margin-left:auto;font-weight:600;color:var(--text-muted)">Framework: ${esc(c.fw)}</span></div>
+         <textarea id="inlineCont" rows="9" style="width:100%;line-height:1.6;font-size:.86rem">${esc(c.conteudo)}</textarea>
+         <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+           <button class="btn btn-sm btn-primary" onclick="salvarInline('${c.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${IC.check}</svg> Salvar (nova versão)</button>
+           <button class="btn btn-sm" onclick="openEditor('${c.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${IC.edit}</svg> Editar campos</button>
            <button class="btn btn-sm" onclick="nav('gerador')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${IC.bolt}</svg> Regerar variações</button>
          </div>
        </div>
@@ -1253,6 +1255,38 @@ async function importarProdutos(){
   }catch(e){ toast('Falha ao importar: '+e.message); if(out)drawProdutos(); }
 }
 function gerarParaProduto(nome){ window._pendingGen={cat:'ecom',tipo:'desc-prod-longa',brief:nome}; nav('gerador'); }
+/* ---- editor inline da copy (salva como nova versão) ---- */
+async function salvarInline(id){
+  const c=ws().copies.find(x=>x.id===id); if(!c)return;
+  const el=$('inlineCont'); if(!el)return; const novo=el.value.trim();
+  if(novo===c.conteudo){toast('Nada mudou para salvar');return;}
+  try{
+    await ucReq('POST','/copies/'+id+'/versions',{content:novo,note:'Edição inline'});
+    c.conteudo=novo; c.upd='agora'; c.versoes=c.versoes||[]; c.versoes.forEach(v=>v.atual=false);
+    c.versoes.unshift({n:((c.versoes[0]&&c.versoes[0].n)||0)+1,autor:'Você',data:'agora',nota:'Edição inline',atual:true});
+    toast('Salvo — nova versão criada'); openCopy(id);
+  }catch(e){ toast('Erro ao salvar: '+e.message); }
+}
+/* ====== BAÚ DE CAMPANHAS (pastas por canal) ====== */
+function abrirBau(){ window._bauCat=null; nav('bau'); }
+function abrirPasta(id){ window._bauCat=id; nav('bau'); }
+function renderBau(){
+  const list=ws().copies||[]; const sel=window._bauCat||null;
+  if(!sel){
+    let html=head('🗄️','linear-gradient(135deg,#8b5cf6,#f59e0b)','Baú de Campanhas','Suas copies organizadas em pastas por canal · '+esc(ws().nome),'');
+    html+=`<div class="stats">${statCard(IC.doc,'139,92,246','Copies no baú',list.length)}${statCard(IC.layers,'245,158,11','Canais',CATS.length)}${statCard(IC.check,'16,185,129','Aprovadas',list.filter(c=>c.status==='aprovado').length)}</div>`;
+    html+=`<div class="cardgrid" style="grid-template-columns:repeat(auto-fill,minmax(250px,1fr))">`+CATS.map(ct=>{const n=list.filter(c=>c.cat===ct.id).length;return `<div class="gcard" onclick="abrirPasta('${ct.id}')" style="cursor:pointer">
+      <div style="display:flex;align-items:center;gap:12px"><div style="width:46px;height:46px;border-radius:13px;background:${ct.cor}22;display:flex;align-items:center;justify-content:center;font-size:1.5rem">${ct.ic}</div><div style="flex:1;min-width:0"><div style="font-weight:800;font-size:.92rem">${esc(ct.nome)}</div><div class="muted" style="font-size:.74rem">${n} ${n===1?'copy':'copies'}</div></div><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--text-muted)" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></div>
+    </div>`;}).join('')+`</div>`;
+    $('view').innerHTML=html; return;
+  }
+  const ct=cat(sel); const items=list.filter(c=>c.cat===sel);
+  let html=`<div class="back" onclick="abrirBau()">← Todas as pastas</div>`
+   +head(ct.ic,`linear-gradient(135deg,${ct.cor},${ct.cor})`,esc(ct.nome),items.length+' '+(items.length===1?'copy neste canal':'copies neste canal'),`<button class="btn btn-primary btn-sm" onclick="nav('gerador')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${IC.bolt}</svg> Gerar nova</button>`);
+  html+= items.length?`<div class="table-wrap"><table><thead><tr><th>Título</th><th>Status</th><th>Estilo</th><th>Score</th><th>Atualizado</th></tr></thead><tbody>${items.map(c=>`<tr onclick="openCopy('${c.id}')"><td style="font-weight:600">${esc(c.titulo)}</td><td><span class="pill ${stClass[c.status]}">${stLabel[c.status]}</span></td><td class="muted">${esc(est(c.estilo).nome)}</td><td>${c.score?'<b class="score">'+c.score+'</b>':'<span class="muted">—</span>'}</td><td class="muted" style="font-size:.76rem">${esc(c.upd)}</td></tr>`).join('')}</tbody></table></div>`
+   :`<div class="table-wrap"><div class="empty"><div class="empty-ic">${ct.ic}</div><p style="font-weight:600;color:var(--text-primary)">Pasta vazia</p><p style="margin-top:4px">Nenhuma copy de ${esc(ct.nome)} ainda — gere uma no Gerador.</p></div></div>`;
+  $('view').innerHTML=html;
+}
 boot();
 </script>
 </body>
