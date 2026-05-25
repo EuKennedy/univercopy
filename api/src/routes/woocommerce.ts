@@ -74,8 +74,76 @@ r.post("/workspaces/:id/products/sync", async (c) => {
 r.get("/workspaces/:id/products", async (c) => {
   const uid = c.get("userId"); const ws = c.req.param("id");
   const out = await withUser(uid, (cl) =>
-    cl.query("select id, external_id, sku, name, price, rating_avg, reviews_count, synced_at from product where workspace_id = $1 order by name", [ws]));
+    cl.query(
+      `select id, source, external_id, sku, name, short_description, description, price,
+              permalink, categories, rating_avg, reviews_count, synced_at
+       from product where workspace_id = $1 order by name`, [ws]));
   return c.json(out.rows);
+});
+
+// Importa o catálogo de produtos a partir do conteúdo real do site (scraping + Claude).
+r.post("/workspaces/:id/products/import-from-url", async (c) => {
+  const uid = c.get("userId"); const ws = c.req.param("id");
+  const body = await c.req.json<{ url?: string }>().catch(() => ({} as { url?: string }));
+  let url = body.url;
+  if (!url) {
+    url = await withUser(uid, async (cl) =>
+      (await cl.query("select site_url from workspace where id = $1", [ws])).rows[0]?.site_url) || "";
+  }
+  if (!url) return c.json({ error: "url obrigatória (ou defina o site da marca no DNA)" }, 400);
+
+  let pageText = "";
+  try {
+    const full = url.startsWith("http") ? url : "https://" + url;
+    const res = await fetch(full, { headers: { "user-agent": "UniverCopyBot/1.0" } });
+    const html = await res.text();
+    pageText = html
+      .replace(/<script[\s\S]*?<\/script>/gi, " ")
+      .replace(/<style[\s\S]*?<\/style>/gi, " ")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 9000);
+  } catch (e) {
+    return c.json({ error: "falha ao buscar a URL", detail: String(e) }, 502);
+  }
+
+  const prompt =
+    `Você é especialista em catálogo de e-commerce de beleza. A partir do conteúdo REAL do site abaixo, ` +
+    `liste os produtos identificáveis. Para cada um, escreva uma short_description curta (1-2 frases, factual, ` +
+    `sem inventar especificações que o site não traga) e uma description um pouco mais completa (2-4 frases) ` +
+    `coerente com o produto. Não invente preços.\n` +
+    `Responda APENAS em JSON válido: {"produtos":[{"name":"","short_description":"","description":"","category":""}]}\n\n` +
+    `URL: ${url}\nConteúdo extraído do site:\n${pageText}`;
+
+  let list: { name?: string; short_description?: string; description?: string; category?: string }[] = [];
+  try {
+    const out = await callClaude(prompt, 4000);
+    const json = out.text.slice(out.text.indexOf("{"), out.text.lastIndexOf("}") + 1);
+    const parsed = JSON.parse(json) as { produtos?: typeof list };
+    list = (parsed.produtos || []).filter((p) => p && p.name);
+  } catch (e) {
+    return c.json({ error: "falha ao extrair os produtos", detail: String(e) }, 502);
+  }
+
+  const slug = (s: string) => "site:" + s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 60);
+  const saved = await withUser(uid, async (cl) => {
+    let n = 0;
+    for (const p of list) {
+      await cl.query(
+        `insert into product(workspace_id, source, external_id, name, short_description, description, categories, synced_at)
+         values($1,'site',$2,$3,$4,$5,$6, now())
+         on conflict(workspace_id, source, external_id) do update set
+           name=excluded.name, short_description=excluded.short_description,
+           description=excluded.description, categories=excluded.categories, synced_at=now()`,
+        [ws, slug(p.name!), p.name, p.short_description ?? null, p.description ?? null,
+         JSON.stringify(p.category ? [p.category] : [])]
+      );
+      n++;
+    }
+    return n;
+  });
+  return c.json({ ok: true, imported: saved });
 });
 
 // Geração em lote de descrições para os produtos sem copy ainda (limite de segurança).

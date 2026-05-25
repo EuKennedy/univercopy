@@ -131,6 +131,7 @@ tbody tr:hover{background:var(--bg-tertiary)}
     <div class="nav-label">Trabalho</div>
     <div class="nav-item" data-v="dash" onclick="nav('dash')"><svg class="ni-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>Dashboard</span></div>
     <div class="nav-item" data-v="acervo" onclick="nav('acervo')"><svg class="ni-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h18M3 12h18M3 17h18"/></svg><span>Acervo</span><span class="badge" id="nav-acervo-count">0</span></div>
+    <div class="nav-item" data-v="produtos" onclick="nav('produtos')"><svg class="ni-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><path d="M3.27 6.96L12 12.01l8.73-5.05M12 22.08V12"/></svg><span>Produtos</span></div>
     <div class="nav-item" data-v="gerador" onclick="nav('gerador')"><svg class="ni-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3v4M3 5h4M6 17v4M4 19h4M13 3l2.5 6.5L22 12l-6.5 2.5L13 21l-2.5-6.5L4 12l6.5-2.5z"/></svg><span>Gerador de Copy</span></div>
     <div class="nav-item" data-v="nomes" onclick="nav('nomes')"><svg class="ni-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><circle cx="7" cy="7" r="1.2"/></svg><span>Gerador de Produtos</span></div>
     <div class="nav-item" data-v="catalogo" onclick="nav('catalogo')"><svg class="ni-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="7" rx="1"/><rect x="3" y="14" width="18" height="7" rx="1"/></svg><span>Catálogo de Peças</span></div>
@@ -453,7 +454,7 @@ const IC={doc:'<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
 function nav(v){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.v===v));
   window._view=v;
-  ({dash:renderDash,acervo:renderAcervo,gerador:renderGerador,catalogo:renderCatalogo,analise:renderAnalise,revisao:renderRevisao,dna:renderDNA,referencias:renderRefs,estilos:renderEstilos,nomes:renderNomes}[v]||renderDash)();
+  ({dash:renderDash,acervo:renderAcervo,gerador:renderGerador,catalogo:renderCatalogo,analise:renderAnalise,revisao:renderRevisao,dna:renderDNA,referencias:renderRefs,estilos:renderEstilos,nomes:renderNomes,produtos:renderProdutos}[v]||renderDash)();
   window.scrollTo(0,0);
 }
 function updateBadges(){$('nav-acervo-count').textContent=ws().copies.length;$('nav-rev-count').textContent=ws().copies.filter(c=>c.status==='revisao').length;renderWsSwitcher();}
@@ -1212,6 +1213,46 @@ async function salvarNome(i){
     w.copies.unshift(nc);updateBadges();toast('Nome salvo no acervo (Marca)');
   }catch(e){toast('Erro ao salvar: '+e.message);}
 }
+/* ====== PRODUTOS (catálogo da marca) ====== */
+async function loadProdutos(w){ try{ w.products=await ucReq('GET','/workspaces/'+w.id+'/products'); }catch(e){ w.products=[]; } w._prodLoaded=true; }
+function renderProdutos(){
+  const w=ws();
+  $('view').innerHTML=
+   head('📦','linear-gradient(135deg,#f59e0b,#6366f1)','Produtos','Catálogo da marca — importe do site e gere copy com 1 clique',
+     `<button class="btn btn-primary" onclick="importarProdutos()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> Importar do site</button>`)
+   +`<div id="prod-out"><div class="muted" style="padding:24px;text-align:center">Carregando…</div></div>`;
+  if(!w._prodLoaded){ loadProdutos(w).then(()=>{ if(window._view==='produtos')drawProdutos(); }); }
+  else drawProdutos();
+}
+function drawProdutos(){
+  const w=ws();const list=w.products||[];const out=$('prod-out');if(!out)return;
+  if(!list.length){ out.innerHTML=`<div class="table-wrap"><div class="empty"><div class="empty-ic">📦</div><p style="font-weight:600;color:var(--text-primary)">Nenhum produto ainda</p><p style="margin-top:4px">Importe o catálogo direto do site da marca.</p><button class="btn btn-primary" style="margin-top:14px" onclick="importarProdutos()">Importar do site</button></div></div>`; return; }
+  const cats=new Set(list.map(p=>(p.categories&&p.categories[0])||'—'));
+  let html=`<div class="stats">${statCard(IC.layers,'245,158,11','Produtos',list.length)}${statCard(IC.doc,'99,102,241','Categorias',cats.size)}${statCard(IC.bolt,'16,185,129','Fonte',(list[0]&&list[0].source==='site')?'Site':'WooCommerce')}</div>`;
+  html+=`<div class="cardgrid" style="grid-template-columns:repeat(auto-fill,minmax(320px,1fr))">`+list.map(p=>{
+    const catl=(p.categories&&p.categories.length)?p.categories[0]:'';
+    const desc=p.short_description||p.description||'';
+    return `<div class="gcard">
+      <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px"><div style="font-weight:800;font-size:.92rem;flex:1">${esc(p.name)}</div>${p.price?`<span class="minitag">R$ ${esc(String(p.price))}</span>`:''}</div>
+      ${catl?`<div class="taglist" style="margin-bottom:8px"><span class="minitag">🏷️ ${esc(catl)}</span></div>`:''}
+      <div style="font-size:.82rem;color:var(--text-secondary);margin-bottom:11px;line-height:1.5">${esc(desc)||'<span class="muted">Sem descrição</span>'}</div>
+      <button class="btn btn-sm btn-primary" style="width:100%;justify-content:center" onclick="gerarParaProduto(${JSON.stringify(p.name).replace(/"/g,'&quot;')})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${IC.bolt}</svg> Gerar copy deste produto</button>
+    </div>`;
+  }).join('')+`</div>`;
+  out.innerHTML=html;
+}
+async function importarProdutos(){
+  const w=ws();const def=w.site_url||(activeDna().marca?'':'')||'lizzon.com.br';
+  const url=prompt('Importar produtos do site (URL):',def);if(url===null)return;
+  const out=$('prod-out');if(out)out.innerHTML='<div class="muted" style="padding:24px;text-align:center">🔎 Lendo o site e extraindo os produtos com IA… <span class="muted">(alguns segundos)</span></div>';
+  try{
+    const r=await ucReq('POST','/workspaces/'+w.id+'/products/import-from-url',{url});
+    w._prodLoaded=false;await loadProdutos(w);
+    toast('Importados '+(r.imported||0)+' produtos de '+url);
+    if(window._view==='produtos')drawProdutos();
+  }catch(e){ toast('Falha ao importar: '+e.message); if(out)drawProdutos(); }
+}
+function gerarParaProduto(nome){ window._pendingGen={cat:'ecom',tipo:'desc-prod-longa',brief:nome}; nav('gerador'); }
 boot();
 </script>
 </body>
