@@ -1140,7 +1140,7 @@ function renderNomes(){
        <div class="field"><label>Tom <span class="muted">(clique)</span></label><div class="taglist" id="nTom">${NOMES_TOM.map(t=>`<span class="chip" style="font-size:.72rem;padding:4px 10px" onclick="this.classList.toggle('active')">${t}</span>`).join('')}</div></div>
        <div class="field"><label>Prioridades <span class="muted">(clique até 3)</span></label><div class="taglist" id="nPrior">${NOMES_PRIOR.map(t=>`<span class="chip" style="font-size:.72rem;padding:4px 10px" onclick="this.classList.toggle('active')">${t}</span>`).join('')}</div></div>
        <div class="grid2" style="gap:10px">
-         <div class="field" style="margin:0"><label>Quantidade</label><input id="nQtd" type="number" value="10" min="3" max="18"></div>
+         <div class="field" style="margin:0"><label>Quantidade</label><input id="nQtd" type="number" value="6" min="3" max="14"></div>
          <div class="field" style="margin:0"><label>Evitar <span class="muted">(vírgula)</span></label><input id="nEvitar" placeholder="ex.: glow, milagroso"></div>
        </div>
        <div id="nCondWrap"></div>

@@ -103,22 +103,21 @@ r.post("/workspaces/:id/products/import-from-url", async (c) => {
       .replace(/<[^>]+>/g, " ")
       .replace(/\s+/g, " ")
       .trim()
-      .slice(0, 9000);
+      .slice(0, 6000);
   } catch (e) {
     return c.json({ error: "falha ao buscar a URL", detail: String(e) }, 502);
   }
 
   const prompt =
     `Você é especialista em catálogo de e-commerce de beleza. A partir do conteúdo REAL do site abaixo, ` +
-    `liste os produtos identificáveis. Para cada um, escreva uma short_description curta (1-2 frases, factual, ` +
-    `sem inventar especificações que o site não traga) e uma description um pouco mais completa (2-4 frases) ` +
-    `coerente com o produto. Não invente preços.\n` +
+    `liste até 18 dos principais produtos identificáveis. Para cada um, escreva uma short_description curta ` +
+    `(1 frase factual, sem inventar especificações) e uma description breve (1-2 frases). Não invente preços. Seja conciso.\n` +
     `Responda APENAS em JSON válido: {"produtos":[{"name":"","short_description":"","description":"","category":""}]}\n\n` +
     `URL: ${url}\nConteúdo extraído do site:\n${pageText}`;
 
   let list: { name?: string; short_description?: string; description?: string; category?: string }[] = [];
   try {
-    const out = await callClaude(prompt, 4000);
+    const out = await callClaude(prompt, 2500);
     const json = out.text.slice(out.text.indexOf("{"), out.text.lastIndexOf("}") + 1);
     const parsed = JSON.parse(json) as { produtos?: typeof list };
     list = (parsed.produtos || []).filter((p) => p && p.name);
