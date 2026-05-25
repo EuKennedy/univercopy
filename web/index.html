@@ -132,6 +132,7 @@ tbody tr:hover{background:var(--bg-tertiary)}
     <div class="nav-item" data-v="dash" onclick="nav('dash')"><svg class="ni-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg><span>Dashboard</span></div>
     <div class="nav-item" data-v="acervo" onclick="nav('acervo')"><svg class="ni-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h18M3 12h18M3 17h18"/></svg><span>Acervo</span><span class="badge" id="nav-acervo-count">0</span></div>
     <div class="nav-item" data-v="gerador" onclick="nav('gerador')"><svg class="ni-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3v4M3 5h4M6 17v4M4 19h4M13 3l2.5 6.5L22 12l-6.5 2.5L13 21l-2.5-6.5L4 12l6.5-2.5z"/></svg><span>Gerador de Copy</span></div>
+    <div class="nav-item" data-v="nomes" onclick="nav('nomes')"><svg class="ni-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><circle cx="7" cy="7" r="1.2"/></svg><span>Gerador de Produtos</span></div>
     <div class="nav-item" data-v="catalogo" onclick="nav('catalogo')"><svg class="ni-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="7" rx="1"/><rect x="3" y="14" width="18" height="7" rx="1"/></svg><span>Catálogo de Peças</span></div>
     <div class="nav-item" data-v="revisao" onclick="nav('revisao')"><svg class="ni-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg><span>Revisão</span><span class="badge" id="nav-rev-count">0</span></div>
     <div class="nav-item" data-v="analise" onclick="nav('analise')"><svg class="ni-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg><span>Analisar Página</span></div>
@@ -452,7 +453,7 @@ const IC={doc:'<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
 function nav(v){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.v===v));
   window._view=v;
-  ({dash:renderDash,acervo:renderAcervo,gerador:renderGerador,catalogo:renderCatalogo,analise:renderAnalise,revisao:renderRevisao,dna:renderDNA,referencias:renderRefs,estilos:renderEstilos}[v]||renderDash)();
+  ({dash:renderDash,acervo:renderAcervo,gerador:renderGerador,catalogo:renderCatalogo,analise:renderAnalise,revisao:renderRevisao,dna:renderDNA,referencias:renderRefs,estilos:renderEstilos,nomes:renderNomes}[v]||renderDash)();
   window.scrollTo(0,0);
 }
 function updateBadges(){$('nav-acervo-count').textContent=ws().copies.length;$('nav-rev-count').textContent=ws().copies.filter(c=>c.status==='revisao').length;renderWsSwitcher();}
@@ -574,7 +575,7 @@ function saveEditor(){
 function delCopy(id){if(!confirm('Excluir esta copy do acervo?'))return;ws().copies=ws().copies.filter(x=>x.id!==id);saveDB();toast('Copy excluída');nav('acervo');}
 
 /* ====== DETALHE / REVISÃO ====== */
-function openCopy(id){
+function openCopyRender(id){
   const c=ws().copies.find(x=>x.id===id);if(!c)return;window._open=id;window._view='detail';
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.v==='acervo'));
   $('view').innerHTML=
@@ -612,7 +613,7 @@ function setStatus(id,s){const c=ws().copies.find(x=>x.id===id);c.status=s;c.upd
 
 /* ====== GERADOR ====== */
 function renderGerador(){
-  const live=!!(window.cowork&&window.cowork.askClaude);
+  const live=true;
   $('view').innerHTML=
    head('✦','linear-gradient(135deg,#6366f1,#ec4899)','Gerador de Copy','Tipo de peça + Framework + Estilo de especialista + DNA da marca','')
    +`<div class="banner"><div style="font-size:1.6rem">🧬</div><div style="flex:1"><b style="font-size:.86rem">DNA da Marca ativo: ${esc(activeDna().marca)}</b><div class="muted" style="font-size:.76rem">Toda geração usa este contexto. <a style="color:var(--primary-hover);cursor:pointer" onclick="nav('dna')">Ver / editar DNA →</a></div></div><span class="pill ${live?'st-aprovado':'st-rascunho'}">${live?'● geração ao vivo':'modo demo'}</span></div>
@@ -1040,8 +1041,9 @@ async function saveEditor(){
   }
 }
 async function delCopy(id){
-  if(!confirm('Remover esta copy da lista? (o histórico permanece no servidor)'))return;
-  ws().copies=ws().copies.filter(x=>x.id!==id);updateBadges();toast('Copy removida da lista');nav('acervo');
+  if(!confirm('Excluir esta copy do acervo? Esta ação é definitiva.'))return;
+  try{await ucReq('DELETE','/copies/'+id);}catch(e){toast('Erro ao excluir: '+e.message);return;}
+  ws().copies=ws().copies.filter(x=>x.id!==id);updateBadges();toast('Copy excluída');nav('acervo');
 }
 async function salvarGerado(i){
   const L=window._lastVars;if(!L)return;const p=L.p;const w=ws();
@@ -1081,6 +1083,134 @@ async function resetDemo(){
   if(!confirm('Recarregar os dados do servidor?'))return;
   DB.workspaces.forEach(w=>w.loaded=false);const w=ws();if(w)await loadWs(w);
   updateBadges();nav('dash');toast('Recarregado do servidor');
+}
+/* ---- DNA por URL e Melhorar (endpoints reais de IA) ---- */
+async function importarDNA(){
+  const url=($('dnaUrl').value||'').trim(); if(!url){toast('Informe a URL da marca');return;}
+  const w=ws(); toast('Lendo '+url+' e gerando o DNA com IA…');
+  try{
+    const row=await ucReq('POST','/workspaces/'+w.id+'/dna/from-url',{url});
+    w.dna.atual=adaptDnaRow(row); if(!w.dna.usar)w.dna.usar='atual'; if(w.dna.atual.marca)w.nome=w.dna.atual.marca; window._dnaTab='atual';
+    updateBadges(); renderDNA(); const bn=$('dna-draft'); if(bn)bn.style.display='flex';
+    toast('DNA Atual gerado de '+url+' — revise e gere o Proposto com IA');
+  }catch(e){ toast('Falha ao importar: '+e.message); }
+}
+async function melhorarDNA(){
+  const b=activeBrand(); b[window._dnaTab]=readDnaForm(); const w=ws();
+  const fw=$('dnaFw')?$('dnaFw').value:''; const dir=$('dnaDir')?$('dnaDir').value.trim():'';
+  toast('Gerando o DNA Proposto com IA…');
+  try{
+    const row=await ucReq('POST','/workspaces/'+w.id+'/dna/improve',{framework:fw,direction:dir});
+    b.proposto=adaptDnaRow(row); window._dnaTab='proposto'; updateBadges(); renderDNA(); const bn=$('dna-draft'); if(bn)bn.style.display='flex';
+    toast('DNA Proposto gerado pela IA — revise, salve e clique em "Usar no Gerador"');
+  }catch(e){ toast('Falha ao melhorar: '+e.message); }
+}
+/* ---- detalhe da copy: hidrata versões + comentários reais ---- */
+async function openCopy(id){
+  const c=ws().copies.find(x=>x.id===id); if(!c)return;
+  if(!c._hydrated){ c._hydrated=true;
+    try{const vs=await ucReq('GET','/copies/'+id+'/versions'); if(Array.isArray(vs)&&vs.length)c.versoes=vs.map(v=>({n:v.n,autor:'',data:fmtWhen(v.created_at),nota:v.note||'',atual:!!v.is_current}));}catch(e){}
+    try{const cm=await ucReq('GET','/copies/'+id+'/comments'); if(Array.isArray(cm))c.coment=cm.map(x=>({a:'Diego',t:x.text,d:fmtWhen(x.created_at)}));}catch(e){}
+  }
+  openCopyRender(id);
+}
+/* ====== GERADOR DE PRODUTOS (NOMES) ====== */
+const NOMES_TOM=['sensorial','cientifico','ludico','sofisticado','afetivo','ousado'];
+const NOMES_PRIOR=['registrabilidade','memorabilidade','exportabilidade','emocional','diferenciacao','clareza'];
+function renderNomes(){
+  const opt=(arr,sel)=>arr.map(o=>`<option value="${o[0]}" ${o[0]===sel?'selected':''}>${o[1]}</option>`).join('');
+  $('view').innerHTML=
+   head('🏷️','linear-gradient(135deg,#6366f1,#0ea5e9)','Gerador de Produtos','Nomes de marcas, linhas, produtos e tecnologias de beleza — diagnosticados (arquétipo, registrabilidade INPI, ANVISA, fonética)','')
+   +`<div class="banner"><div style="font-size:1.6rem">🧬</div><div style="flex:1"><b style="font-size:.86rem">Contexto da marca: ${esc(activeDna().marca||ws().nome)}</b><div class="muted" style="font-size:.76rem">O motor usa o DNA ativo como contexto e aplica anti-clichê + scoring ponderado (motor v2.0).</div></div><span class="pill st-aprovado">● motor v2.0</span></div>
+   <div style="display:grid;grid-template-columns:1fr 1.3fr;gap:16px" id="nomes-grid">
+     <div class="section-card"><div class="sc-title">⚙️ Brief</div>
+       <div class="grid2" style="gap:10px">
+         <div class="field" style="margin:0"><label>Modo</label><select id="nModo" onchange="nomesCond()">${opt([['produto','Produto'],['familia','Família / linha'],['mecanismo','Mecanismo / tecnologia'],['refinamento','Refinamento']],'produto')}</select></div>
+         <div class="field" style="margin:0"><label>Mercado</label><select id="nMercado">${opt([['nacional','Nacional (PT-BR)'],['internacional','Internacional']],'nacional')}</select></div>
+         <div class="field" style="margin:0"><label>Tipo</label><select id="nTipo">${opt([['produto','Produto'],['linha','Linha'],['marca','Marca'],['tecnologia','Tecnologia']],'produto')}</select></div>
+         <div class="field" style="margin:0"><label>Segmento</label><select id="nSeg">${opt([['B2C','B2C (consumidor)'],['B2B','B2B (profissional)'],['ambos','Ambos']],'B2C')}</select></div>
+         <div class="field" style="margin:0"><label>Posicionamento</label><select id="nPos">${opt([['popular','Popular'],['medio','Médio'],['premium','Premium'],['luxo','Luxo'],['profissional-tecnico','Profissional / Técnico']],'premium')}</select></div>
+         <div class="field" style="margin:0"><label>Idioma do nome</label><select id="nIdioma">${opt([['portugues','Português'],['ingles','Inglês'],['neutro-cunhado','Neutro cunhado'],['livre','Livre']],'neutro-cunhado')}</select></div>
+       </div>
+       <div class="field"><label>Categoria *</label><input id="nCat" placeholder="ex.: progressiva, sérum facial, shampoo"></div>
+       <div class="field"><label>Benefício central *</label><input id="nBen" placeholder="ex.: controla o volume e sela o liso por semanas"></div>
+       <div class="field"><label>Ativo / destaque</label><input id="nAtivo" placeholder="ex.: sem amônia, blindagem da fibra"></div>
+       <div class="field"><label>Público</label><input id="nPub" placeholder="ex.: cabeleireiros e salões"></div>
+       <div class="field"><label>Tom <span class="muted">(clique)</span></label><div class="taglist" id="nTom">${NOMES_TOM.map(t=>`<span class="chip" style="font-size:.72rem;padding:4px 10px" onclick="this.classList.toggle('active')">${t}</span>`).join('')}</div></div>
+       <div class="field"><label>Prioridades <span class="muted">(clique até 3)</span></label><div class="taglist" id="nPrior">${NOMES_PRIOR.map(t=>`<span class="chip" style="font-size:.72rem;padding:4px 10px" onclick="this.classList.toggle('active')">${t}</span>`).join('')}</div></div>
+       <div class="grid2" style="gap:10px">
+         <div class="field" style="margin:0"><label>Quantidade</label><input id="nQtd" type="number" value="10" min="3" max="18"></div>
+         <div class="field" style="margin:0"><label>Evitar <span class="muted">(vírgula)</span></label><input id="nEvitar" placeholder="ex.: glow, milagroso"></div>
+       </div>
+       <div id="nCondWrap"></div>
+       <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:6px" onclick="gerarNomes()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${IC.bolt}</svg> Gerar nomes</button>
+     </div>
+     <div class="section-card"><div class="sc-title">✨ Nomes diagnosticados</div>
+       <div id="nomes-out"><div class="empty" style="padding:40px 10px"><div class="empty-ic">🏷️</div><p style="font-weight:600;color:var(--text-primary)">Preencha o brief e gere</p><p style="margin-top:4px">Cada nome vem com arquétipo, registrabilidade INPI, ANVISA e história de origem.</p></div></div>
+     </div>
+   </div>`;
+  nomesCond();
+  if(window.innerWidth<860){const g=$('nomes-grid');if(g)g.style.gridTemplateColumns='1fr';}
+}
+function nomesCond(){
+  const m=$('nModo')?$('nModo').value:'produto';const w=$('nCondWrap');if(!w)return;
+  if(m==='refinamento')w.innerHTML=`<div class="field"><label>Nome base *</label><input id="nNomeBase" placeholder="o nome que você quer variar"></div><div class="field"><label>Direção do refino</label><input id="nDir" placeholder="ex.: mais curto, mais sofisticado, menos clínico"></div>`;
+  else if(m==='familia')w.innerHTML=`<div class="field"><label>Conceito da linha *</label><input id="nConceito" placeholder="ex.: linha de blindagem capilar em 3 passos"></div><div class="field"><label>Itens da linha <span class="muted">(vírgula) *</span></label><input id="nItens" placeholder="ex.: shampoo, máscara, leave-in"></div>`;
+  else w.innerHTML='';
+}
+function gerarNomes(){
+  const brief={
+    modo_geracao:$('nModo').value, mercado:$('nMercado').value, tipo:$('nTipo').value,
+    categoria:$('nCat').value.trim(), segmento:$('nSeg').value, posicionamento:$('nPos').value,
+    publico:$('nPub').value.trim(), beneficio_central:$('nBen').value.trim(), ativo_destaque:$('nAtivo').value.trim(),
+    idioma_nome:$('nIdioma').value, quantidade:Math.max(3,Math.min(18,parseInt($('nQtd').value||'10',10))),
+    tom:[...document.querySelectorAll('#nTom .chip.active')].map(c=>c.textContent.trim()),
+    prioridades:[...document.querySelectorAll('#nPrior .chip.active')].map(c=>c.textContent.trim()).slice(0,3),
+    evitar:($('nEvitar').value||'').split(',').map(s=>s.trim()).filter(Boolean),
+    mercados_alvo_idiomas:($('nMercado').value==='internacional'?['en','pt','es']:['pt','en'])
+  };
+  if($('nNomeBase'))brief.nome_base=$('nNomeBase').value.trim();
+  if($('nDir'))brief.direcao_refino=$('nDir').value.trim();
+  if($('nConceito'))brief.conceito_linha=$('nConceito').value.trim();
+  if($('nItens'))brief.itens_linha=($('nItens').value||'').split(',').map(s=>s.trim()).filter(Boolean);
+  if(!brief.categoria||!brief.beneficio_central){toast('Preencha categoria e benefício central');return;}
+  const out=$('nomes-out');out.innerHTML='<div class="muted" style="padding:24px;text-align:center">🏷️ Gerando e diagnosticando nomes… <span class="muted">(Claude no servidor — alguns segundos)</span></div>';
+  ucReq('POST','/workspaces/'+ws().id+'/name-generator',brief).then(drawNomes).catch(e=>{out.innerHTML='<div class="muted" style="padding:24px;text-align:center;color:var(--danger)">Falha: '+esc(e.message)+'</div>';});
+}
+function nomePill(label,val){const map={forte:'st-aprovado',media:'st-revisao',fraca:'st-rascunho',baixa:'st-aprovado',alta:'st-rascunho',sugestivo:'st-revisao',arbitrario:'st-aprovado',fantasia:'st-aprovado'};const cls=map[val]||'st-rascunho';return `<span class="pill ${cls}" style="font-size:.62rem">${esc(label)}: ${esc(val)}</span>`;}
+function drawNomes(res){
+  const out=$('nomes-out');const nomes=(res&&res.nomes)||[];
+  if(!nomes.length){out.innerHTML='<div class="muted" style="padding:24px;text-align:center">Nenhum nome retornado — ajuste o brief e tente de novo.</div>';return;}
+  window._lastNomes=res;let html='';
+  if(res.recomendacao)html+=`<div class="banner" style="margin:0 0 12px"><div style="font-size:1.2rem">🧭</div><div class="muted" style="font-size:.8rem;line-height:1.5">${esc(res.recomendacao)}</div></div>`;
+  if(res.familia&&res.familia.convencao)html+=`<div class="section-card" style="margin-bottom:12px"><div class="sc-title">🧩 Família · ${esc(res.familia.convencao)}</div><div class="muted" style="font-size:.8rem">${esc(res.familia.racional_arquitetura||'')}</div></div>`;
+  html+=nomes.map((n,i)=>{
+    const sm=n.smile||{};const smileStr=['suggestive','memorable','imagery','legs','emotional'].map(k=>(sm[k]??'-')).join('·');
+    const inpi=(n.classes_inpi_sugeridas||[]).map(x=>'Cl.'+x).join(' ');
+    const ling=n.check_linguistico?Object.entries(n.check_linguistico).map(([k,v])=>`${k}:${v==='ok'?'✓':'⚠'}`).join(' '):'';
+    return `<div class="gcard" style="margin-bottom:12px">
+      <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:4px"><div style="font-weight:800;font-size:1.15rem;letter-spacing:-.01em">${esc(n.nome)}</div><span class="muted" style="font-size:.74rem">${esc(n.leitura||'')}</span><span style="margin-left:auto;font-weight:800;color:${(n.pontuacao||0)>=24?'var(--success)':'var(--amber)'}">${n.pontuacao??''}</span></div>
+      <div style="font-size:.72rem;color:var(--text-muted);margin-bottom:8px">${esc(n.arquetipo||'')} · ${esc(n.abordagem||'')}/${esc(n.construcao||'')}</div>
+      <div style="font-size:.84rem;margin-bottom:8px">${esc(n.racional||'')}</div>
+      ${n.storytelling_semente?`<div class="var-out" style="margin:0 0 8px;font-size:.8rem">💬 ${esc(n.storytelling_semente)}</div>`:''}
+      ${n.frase_copy?`<div style="font-size:.8rem;margin-bottom:8px"><span class="muted">Em copy:</span> <i>${esc(n.frase_copy)}</i></div>`:''}
+      <div class="taglist" style="margin-bottom:8px">${nomePill('distinção',n.distintividade||'-')}${nomePill('INPI',n.registrability_flag||'-')}${nomePill('saturação',n.saturacao||'-')}<span class="pill ${n.anvisa_safe?'st-aprovado':'st-rascunho'}" style="font-size:.62rem">ANVISA: ${n.anvisa_safe?'ok':'risco'}</span></div>
+      <div class="muted" style="font-size:.7rem;margin-bottom:6px">SMILE ${smileStr}${inpi?' · '+esc(inpi):''}${ling?' · '+esc(ling):''}</div>
+      ${(n.avisos&&n.avisos.length)?`<div style="font-size:.72rem;color:var(--amber);margin-bottom:6px">⚠ ${n.avisos.map(a=>esc(a)).join(' · ')}</div>`:''}
+      ${(n.dominios_sugeridos&&n.dominios_sugeridos.length)?`<div class="taglist" style="margin-bottom:8px">${n.dominios_sugeridos.map(d=>`<span class="minitag">🌐 ${esc(d)}</span>`).join('')}</div>`:''}
+      <button class="btn btn-sm" onclick="salvarNome(${i})">＋ Salvar no acervo (Marca)</button>
+    </div>`;
+  }).join('');
+  out.innerHTML=html;
+}
+async function salvarNome(i){
+  const res=window._lastNomes;if(!res)return;const n=(res.nomes||[])[i];if(!n)return;const w=ws();
+  const content=(n.storytelling_semente?n.storytelling_semente+'\n\n':'')+'Racional: '+(n.racional||'')+(n.frase_copy?'\n\nEm copy: '+n.frase_copy:'');
+  try{
+    const created=await ucReq('POST','/workspaces/'+w.id+'/copies',{title:'Nome — '+n.nome,content,category_key:'marca'});
+    const nc=adaptCopyRow(created,w.nome);nc.conteudo=content;nc.cat='marca';nc.titulo='Nome — '+n.nome;
+    w.copies.unshift(nc);updateBadges();toast('Nome salvo no acervo (Marca)');
+  }catch(e){toast('Erro ao salvar: '+e.message);}
 }
 boot();
 </script>

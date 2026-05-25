@@ -86,4 +86,26 @@ r.post("/copies/:cid/comments", async (c) => {
   return c.json(out.rows[0], 201);
 });
 
+// Histórico de versões de uma copy.
+r.get("/copies/:cid/versions", async (c) => {
+  const uid = c.get("userId");
+  const out = await withUser(uid, (cl) =>
+    cl.query(
+      "select n, content, note, author_id, is_current, created_at from copy_version where copy_id = $1 order by n desc",
+      [c.req.param("cid")]
+    ));
+  return c.json(out.rows);
+});
+
+// Exclui definitivamente uma copy (com versões e comentários).
+r.delete("/copies/:cid", async (c) => {
+  const uid = c.get("userId"); const cid = c.req.param("cid");
+  await withUser(uid, async (cl) => {
+    await cl.query("delete from comment where copy_id = $1", [cid]);
+    await cl.query("delete from copy_version where copy_id = $1", [cid]);
+    await cl.query("delete from copy where id = $1", [cid]);
+  });
+  return c.json({ ok: true });
+});
+
 export default r;
