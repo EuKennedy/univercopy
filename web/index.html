@@ -417,8 +417,8 @@ function loadDB(){let db;try{const s=localStorage.getItem('uc_db_v2');if(s)db=JS
   if(!db.activeWs||!db.workspaces.some(w=>w.id===db.activeWs))db.activeWs=db.workspaces[0].id;
   if(!db.seq)db.seq=100;
   return db;}
-function saveDB(){try{localStorage.setItem('uc_db_v2',JSON.stringify(DB));}catch(e){}}
-let DB=loadDB();
+function saveDB(){/* dados persistem na API; localStorage só para tema. (override no bloco de integração) */}
+let DB={workspaces:[],activeWs:null,seq:100};
 function ws(){return DB.workspaces.find(w=>w.id===DB.activeWs)||DB.workspaces[0];}
 function activeBrand(){return ws().dna;}
 function activeDna(){const d=ws().dna;return d[d.usar]||d.atual;}
@@ -475,7 +475,7 @@ function renderDash(){
    +`<div class="stats">${statCard(IC.doc,'99,102,241','Copies no acervo',total)}${statCard(IC.check,'16,185,129','Aprovadas / publicadas',aprov)}${statCard('<path d="M9 11l3 3L22 4"/>','245,158,11','Em revisão',rev)}${statCard(IC.star,'236,72,153','Score médio',avg||'—')}</div>`
    +`<div style="display:grid;grid-template-columns:1.4fr 1fr;gap:16px" id="dash-grid">
       <div class="section-card"><div class="sc-title">📚 Acervo recente</div>
-        ${recent.map(c=>`<div onclick="openCopy(${c.id})" style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer">
+        ${recent.map(c=>`<div onclick="openCopy('${c.id}')" style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer">
           <div style="width:34px;height:34px;border-radius:9px;background:${cat(c.cat).cor}22;display:flex;align-items:center;justify-content:center;font-size:1rem">${cat(c.cat).ic}</div>
           <div style="flex:1;min-width:0"><div style="font-weight:600;font-size:.85rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(c.titulo)}</div><div class="muted" style="font-size:.72rem">${cat(c.cat).nome} · ${c.upd}</div></div>
           <span class="pill ${stClass[c.status]}">${stLabel[c.status]}</span></div>`).join('')}
@@ -522,14 +522,14 @@ function drawAcervo(){
   $('acervo-stats').innerHTML=statCard(IC.doc,'99,102,241','Resultados',f.length)+statCard(IC.check,'16,185,129','Aprovadas',aprov)+statCard('<path d="M9 11l3 3L22 4"/>','245,158,11','Em revisão',rev)+statCard(IC.star,'236,72,153','Score médio',avg||'—');
   $('aCount').textContent=f.length+' de '+ws().copies.length+' copies';
   if(!f.length){$('acervo-body').innerHTML=`<div class="table-wrap"><div class="empty"><div class="empty-ic">🔍</div><p style="font-weight:600;color:var(--text-primary)">Nada por aqui ainda</p><p style="margin:4px 0 16px">Ajuste os filtros ou crie a sua primeira copy.</p><button class="btn btn-primary" onclick="openEditor(null)">+ Nova copy</button></div></div>`;return;}
-  $('acervo-body').innerHTML=`<div class="table-wrap"><table><thead><tr><th>Título</th><th>Categoria</th><th>Status</th><th>Estilo</th><th>Score</th><th>Atualizado</th><th style="width:90px">Ações</th></tr></thead><tbody>${f.map(c=>`<tr onclick="openCopy(${c.id})">
+  $('acervo-body').innerHTML=`<div class="table-wrap"><table><thead><tr><th>Título</th><th>Categoria</th><th>Status</th><th>Estilo</th><th>Score</th><th>Atualizado</th><th style="width:90px">Ações</th></tr></thead><tbody>${f.map(c=>`<tr onclick="openCopy('${c.id}')">
     <td style="font-weight:600;max-width:280px">${esc(c.titulo)}<div class="muted" style="font-weight:400;font-size:.72rem">${esc(c.conteudo.slice(0,58))}…</div></td>
     <td><span class="tag" style="background:${cat(c.cat).cor}1f;color:${cat(c.cat).cor}">${cat(c.cat).ic} ${cat(c.cat).nome}</span></td>
     <td><span class="pill ${stClass[c.status]}">${stLabel[c.status]}</span></td>
     <td style="font-size:.78rem"><span style="color:${est(c.estilo).cor};font-weight:600">●</span> ${est(c.estilo).nome}</td>
     <td>${c.score?`<span class="score" style="color:${c.score>=85?'var(--success)':c.score>=75?'var(--amber)':'var(--text-secondary)'}">${c.score}</span>`:'<span class="muted">—</span>'}</td>
     <td class="muted" style="font-size:.76rem">${c.upd}</td>
-    <td onclick="event.stopPropagation()"><span title="Editar" style="cursor:pointer;margin-right:10px" onclick="openEditor(${c.id})">✏️</span><span title="Excluir" style="cursor:pointer" onclick="delCopy(${c.id})">🗑️</span></td>
+    <td onclick="event.stopPropagation()"><span title="Editar" style="cursor:pointer;margin-right:10px" onclick="openEditor('${c.id}')">✏️</span><span title="Excluir" style="cursor:pointer" onclick="delCopy('${c.id}')">🗑️</span></td>
   </tr>`).join('')}</tbody></table></div>`;
 }
 
@@ -552,7 +552,7 @@ function openEditor(id){
      <div class="field"><label>Conteúdo da copy</label><textarea id="eCont" rows="7" placeholder="Escreva ou cole a copy aqui...">${esc(c?c.conteudo:'')}</textarea></div>
      <div style="display:flex;gap:8px">
        <button class="btn btn-primary" onclick="saveEditor()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${IC.check}</svg> Salvar copy</button>
-       ${c?`<button class="btn btn-danger" onclick="delCopy(${c.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${IC.trash}</svg> Excluir</button>`:''}
+       ${c?`<button class="btn btn-danger" onclick="delCopy('${c.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${IC.trash}</svg> Excluir</button>`:''}
        <button class="btn" onclick="nav('acervo')">Cancelar</button>
      </div>
    </div>`;
@@ -580,24 +580,24 @@ function openCopy(id){
   $('view').innerHTML=
    `<div class="back" onclick="nav('acervo')">← Voltar ao acervo</div>`
    +head(cat(c.cat).ic,`linear-gradient(135deg,${cat(c.cat).cor},${cat(c.cat).cor})`,esc(c.titulo),`${cat(c.cat).nome} · ${esc(c.marca)} · estilo ${est(c.estilo).nome}`,
-     `<button class="btn btn-sm" onclick="openEditor(${c.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${IC.edit}</svg> Editar</button><button class="btn btn-sm btn-danger" onclick="delCopy(${c.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${IC.trash}</svg></button>`)
+     `<button class="btn btn-sm" onclick="openEditor('${c.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${IC.edit}</svg> Editar</button><button class="btn btn-sm btn-danger" onclick="delCopy('${c.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${IC.trash}</svg></button>`)
    +`<div style="display:grid;grid-template-columns:1.5fr 1fr;gap:16px" id="detail-grid">
      <div>
        <div class="section-card"><div class="sc-title">📝 Conteúdo <span style="margin-left:auto;font-weight:600;color:var(--text-muted)">Framework: ${esc(c.fw)}</span></div>
          <div class="var-out" style="margin:0">${esc(c.conteudo)}</div>
          <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
-           <button class="btn btn-sm" onclick="openEditor(${c.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${IC.edit}</svg> Editar (nova versão)</button>
+           <button class="btn btn-sm" onclick="openEditor('${c.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${IC.edit}</svg> Editar (nova versão)</button>
            <button class="btn btn-sm" onclick="nav('gerador')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${IC.bolt}</svg> Regerar variações</button>
          </div>
        </div>
        <div class="section-card"><div class="sc-title">💬 Comentários (<span id="cc">${c.coment.length}</span>)</div>
          <div id="comments">${c.coment.map(cm=>`<div class="comment"><div style="display:flex;align-items:center;gap:8px;margin-bottom:5px"><span class="avatar">${esc(cm.a[0])}</span><b style="font-size:.8rem">${esc(cm.a)}</b><span class="muted" style="font-size:.7rem;margin-left:auto">${cm.d}</span></div><div style="font-size:.83rem">${esc(cm.t)}</div></div>`).join('')||'<div class="muted" style="font-size:.82rem">Sem comentários ainda.</div>'}</div>
-         <div style="display:flex;gap:8px;margin-top:10px"><input id="newComment" placeholder="Escreva um comentário..." style="flex:1" onkeydown="if(event.key==='Enter')addComment(${c.id})"><button class="btn btn-primary btn-sm" onclick="addComment(${c.id})">Enviar</button></div>
+         <div style="display:flex;gap:8px;margin-top:10px"><input id="newComment" placeholder="Escreva um comentário..." style="flex:1" onkeydown="if(event.key==='Enter')addComment('${c.id}')"><button class="btn btn-primary btn-sm" onclick="addComment('${c.id}')">Enviar</button></div>
        </div>
      </div>
      <div>
        <div class="section-card"><div class="sc-title">🔁 Status</div>
-         <select id="stSel" onchange="setStatus(${c.id},this.value)" style="width:100%">${['rascunho','revisao','aprovado','publicado'].map(s=>`<option value="${s}" ${c.status===s?'selected':''}>${stLabel[s]}</option>`).join('')}</select>
+         <select id="stSel" onchange="setStatus('${c.id}',this.value)" style="width:100%">${['rascunho','revisao','aprovado','publicado'].map(s=>`<option value="${s}" ${c.status===s?'selected':''}>${stLabel[s]}</option>`).join('')}</select>
          <div style="margin-top:12px" class="kv"><b>Score</b><span>${c.score?`<b style="color:${c.score>=85?'var(--success)':'var(--amber)'}">${c.score}/100</b> <span class="muted">(estimado)</span>`:'<span class="muted">ainda não avaliado</span>'}</span></div>
        </div>
        <div class="section-card"><div class="sc-title">🕓 Histórico de versões</div>
@@ -930,7 +930,7 @@ function renderRevisao(){
   $('view').innerHTML=
    head('✅','linear-gradient(135deg,#f59e0b,#10b981)','Revisão','Copies em rascunho ou aguardando aprovação','')
    +`<div class="stats">${statCard('<path d="M9 11l3 3L22 4"/>','245,158,11','Em revisão',ws().copies.filter(c=>c.status==='revisao').length)}${statCard(IC.doc,'139,146,165','Rascunhos',ws().copies.filter(c=>c.status==='rascunho').length)}${statCard(IC.check,'16,185,129','Aprovadas',ws().copies.filter(c=>c.status==='aprovado').length)}</div>`
-   +(f.length?`<div class="table-wrap"><table><thead><tr><th>Título</th><th>Categoria</th><th>Status</th><th>Comentários</th><th>Atualizado</th></tr></thead><tbody>${f.map(c=>`<tr onclick="openCopy(${c.id})"><td style="font-weight:600">${esc(c.titulo)}</td><td><span class="tag" style="background:${cat(c.cat).cor}1f;color:${cat(c.cat).cor}">${cat(c.cat).ic} ${cat(c.cat).nome}</span></td><td><span class="pill ${stClass[c.status]}">${stLabel[c.status]}</span></td><td class="muted">${c.coment.length} 💬</td><td class="muted" style="font-size:.76rem">${c.upd}</td></tr>`).join('')}</tbody></table></div>`:`<div class="table-wrap"><div class="empty"><div class="empty-ic">✅</div><p style="font-weight:600;color:var(--text-primary)">Tudo revisado!</p><p style="margin-top:4px">Nenhuma copy aguardando revisão.</p></div></div>`);
+   +(f.length?`<div class="table-wrap"><table><thead><tr><th>Título</th><th>Categoria</th><th>Status</th><th>Comentários</th><th>Atualizado</th></tr></thead><tbody>${f.map(c=>`<tr onclick="openCopy('${c.id}')"><td style="font-weight:600">${esc(c.titulo)}</td><td><span class="tag" style="background:${cat(c.cat).cor}1f;color:${cat(c.cat).cor}">${cat(c.cat).ic} ${cat(c.cat).nome}</span></td><td><span class="pill ${stClass[c.status]}">${stLabel[c.status]}</span></td><td class="muted">${c.coment.length} 💬</td><td class="muted" style="font-size:.76rem">${c.upd}</td></tr>`).join('')}</tbody></table></div>`:`<div class="table-wrap"><div class="empty"><div class="empty-ic">✅</div><p style="font-weight:600;color:var(--text-primary)">Tudo revisado!</p><p style="margin-top:4px">Nenhuma copy aguardando revisão.</p></div></div>`);
 }
 
 /* ====== TEMA ====== */
@@ -942,8 +942,147 @@ function toggleTheme(){
 }
 try{const t=localStorage.getItem('uc_theme');if(t){document.documentElement.setAttribute('data-theme',t);$('theme-lbl').textContent=t==='dark'?'Tema claro':'Tema escuro';}}catch(e){}
 
-updateBadges();
-nav('dash');
+/* ========================================================================
+   INTEGRAÇÃO COM A API (backend real) — sobrescreve a camada localStorage.
+   Boot = login + hidratação; mutações = write-through assíncrono na API.
+   ======================================================================== */
+const API_BASE='https://univercopy-api.univerzap.cloud';
+const UC_EMAIL='diego@univerzap.cloud';
+let UC_TOKEN=''; try{UC_TOKEN=localStorage.getItem('uc_token')||'';}catch(_){}
+async function ucReq(method,path,body){
+  const r=await fetch(API_BASE+path,{method,headers:{'content-type':'application/json',...(UC_TOKEN?{authorization:'Bearer '+UC_TOKEN}:{})},body:body!==undefined?JSON.stringify(body):undefined});
+  const d=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error(d.error||(method+' '+path+' → '+r.status));
+  return d;
+}
+async function ucLogin(){const r=await ucReq('POST','/auth/login',{email:UC_EMAIL,name:'Diego'});UC_TOKEN=r.token;try{localStorage.setItem('uc_token',r.token)}catch(_){}return r.user;}
+const _asArr=v=>Array.isArray(v)?v:(typeof v==='string'?(()=>{try{const p=JSON.parse(v);return Array.isArray(p)?p:(v?[v]:[])}catch(_){return v?[v]:[]}})():(v||[]));
+function fmtWhen(ts){if(!ts)return 'agora';const d=new Date(ts),s=(Date.now()-d.getTime())/1000;if(s<60)return 'agora';if(s<3600)return 'há '+Math.floor(s/60)+' min';if(s<86400)return 'há '+Math.floor(s/3600)+'h';const dd=Math.floor(s/86400);return 'há '+dd+(dd===1?' dia':' dias');}
+function adaptDnaRow(row){row=row||{};return {marca:row.marca||'',missao:row.missao||'',posicionamento:row.posicionamento||'',tom:row.tom||'',publico:row.publico||'',consciencia:row.consciencia||'',valores:_asArr(row.valores),produtos:_asArr(row.produtos),ofertas:_asArr(row.ofertas),provas:_asArr(row.provas),objecoes:_asArr(row.objecoes),evitar:_asArr(row.evitar)};}
+function adaptWsRow(row){return {id:row.id,nome:row.name||row.nome||'Marca',icon:row.icon||'🧬',site_url:row.site_url||'',dna:{usar:'atual',atual:emptyDna(row.name||'Marca'),proposto:emptyDna(row.name||'Marca')},copies:[],refs:[],loaded:false};}
+function adaptCopyRow(row,marca){return {id:row.id,titulo:row.title||'(sem título)',cat:row.category_key||'ecom',tipo:row.piece_type_key||'',status:row.status||'rascunho',marca:marca||'',estilo:row.style_key||'',fw:row.framework_key||'',score:row.score||0,upd:fmtWhen(row.updated_at),conteudo:row.current_content||'',versoes:[{n:1,autor:'',data:fmtWhen(row.updated_at),nota:'versão atual',atual:true}],coment:[]};}
+async function loadWs(w){
+  if(!w||w.loaded)return;
+  try{const dres=await ucReq('GET','/workspaces/'+w.id+'/dna');const byKind={};(dres.dna||[]).forEach(r=>byKind[r.kind]=adaptDnaRow(r));w.dna={usar:(dres.in_use||'atual'),atual:byKind.atual||emptyDna(w.nome),proposto:byKind.proposto||emptyDna(w.nome)};}catch(e){}
+  try{const cps=await ucReq('GET','/workspaces/'+w.id+'/copies');w.copies=cps.map(c=>adaptCopyRow(c,w.nome));}catch(e){w.copies=[];}
+  w.loaded=true;
+}
+async function ensureSeed(){const sd=seed().workspaces[0];const created=await ucReq('POST','/workspaces',{name:sd.nome,icon:sd.icon});try{await ucReq('PUT','/workspaces/'+created.id+'/dna/atual',sd.dna.atual);}catch(_){}return created;}
+async function boot(){
+  try{await ucLogin();}catch(e){$('view').innerHTML='<div class="empty"><div class="empty-ic">⚠️</div><p style="font-weight:600;color:var(--text-primary)">Não consegui conectar à API</p><p>'+esc(e.message)+'</p></div>';return;}
+  let wss=[];try{wss=await ucReq('GET','/workspaces');}catch(e){}
+  if(!wss.length){try{await ensureSeed();wss=await ucReq('GET','/workspaces');}catch(e){}}
+  DB={workspaces:wss.map(adaptWsRow),activeWs:null,seq:100};
+  window._dnaTab='atual';
+  if(DB.workspaces.length){DB.activeWs=DB.workspaces[0].id;await loadWs(ws());updateBadges();nav('dash');}
+  else{$('view').innerHTML='<div class="empty"><div class="empty-ic">🧬</div><p style="font-weight:600;color:var(--text-primary)">Nenhuma marca ainda</p><p>Crie seu primeiro workspace para começar.</p><button class="btn btn-primary" style="margin-top:14px" onclick="novoWorkspace()">＋ Criar workspace</button></div>';}
+}
+async function novoWorkspace(){
+  const nome=prompt('Nome da nova marca / workspace:','Nova marca');if(nome===null)return;
+  try{const created=await ucReq('POST','/workspaces',{name:nome||'Nova marca',icon:'🧬'});const w=adaptWsRow(created);DB.workspaces.push(w);DB.activeWs=w.id;window._dnaTab='atual';await loadWs(w);updateBadges();nav('dna');toast('Workspace criado — preencha o DNA da marca');}
+  catch(e){toast('Erro ao criar: '+e.message);}
+}
+async function switchWs(id){
+  DB.activeWs=id;window._dnaTab='atual';window._aCat='all';window._aStatus='';
+  const w=ws();if(w&&!w.loaded){try{await loadWs(w);}catch(e){}}
+  updateBadges();nav('dash');
+}
+async function excluirWorkspace(){
+  if(DB.workspaces.length<=1){toast('Mantenha ao menos um workspace');return;}
+  if(!confirm('Excluir este workspace e todo o seu conteúdo?'))return;
+  const id=DB.activeWs;
+  try{await ucReq('DELETE','/workspaces/'+id);}catch(e){toast('Erro ao excluir: '+e.message);return;}
+  DB.workspaces=DB.workspaces.filter(w=>w.id!==id);DB.activeWs=DB.workspaces[0].id;window._dnaTab='atual';
+  const w=ws();if(w&&!w.loaded){try{await loadWs(w);}catch(e){}}
+  updateBadges();nav('dash');toast('Workspace excluído');
+}
+async function saveDNA(){
+  const w=ws();const kind=window._dnaTab;const data=readDnaForm();
+  w.dna[kind]=data;if(kind==='atual'&&data.marca)w.nome=data.marca;
+  try{await ucReq('PUT','/workspaces/'+w.id+'/dna/'+kind,data);if(kind==='atual'&&data.marca){try{await ucReq('PATCH','/workspaces/'+w.id,{name:data.marca});}catch(_){}}toast('DNA '+(kind==='atual'?'Atual':'Proposto')+' salvo');}
+  catch(e){toast('Erro ao salvar DNA: '+e.message);}
+  updateBadges();renderDNA();
+}
+async function usarDna(t){
+  const w=ws();w.dna.usar=t;
+  try{await ucReq('POST','/workspaces/'+w.id+'/dna/use',{kind:t});}catch(e){toast('Erro: '+e.message);}
+  updateBadges();renderDNA();toast('Gerador agora usa o DNA '+(t==='atual'?'Atual':'Proposto'));
+}
+async function setStatus(id,s){
+  const c=ws().copies.find(x=>x.id===id);if(!c)return;
+  try{await ucReq('PATCH','/copies/'+id+'/status',{status:s});c.status=s;c.upd='agora';updateBadges();toast('Status: '+stLabel[s]);}
+  catch(e){toast('Erro: '+e.message);}
+}
+async function addComment(id){
+  const c=ws().copies.find(x=>x.id===id);const el=$('newComment');const v=(el.value||'').trim();if(!v)return;
+  try{await ucReq('POST','/copies/'+id+'/comments',{text:v});c.coment.unshift({a:'Diego',t:v,d:'agora'});openCopy(id);toast('Comentário adicionado');}
+  catch(e){toast('Erro: '+e.message);}
+}
+async function saveEditor(){
+  const id=window._editId;const w=ws();
+  const data={titulo:$('eTit').value.trim()||'(sem título)',marca:$('eMarca').value.trim(),cat:$('eCat').value,status:$('eStatus').value,estilo:$('eEst').value,fw:$('eFw').value,conteudo:$('eCont').value.trim()};
+  if(id){
+    const c=w.copies.find(x=>x.id===id);const changed=c.conteudo!==data.conteudo;const stChanged=c.status!==data.status;
+    Object.assign(c,data);c.upd='agora';
+    try{
+      if(changed){await ucReq('POST','/copies/'+id+'/versions',{content:data.conteudo,note:'Edição manual'});c.versoes.unshift({n:(c.versoes[0]?.n||0)+1,autor:'Você',data:'agora',nota:'Edição manual',atual:true});}
+      if(stChanged){await ucReq('PATCH','/copies/'+id+'/status',{status:data.status});}
+      toast('Copy atualizada');
+    }catch(e){toast('Erro ao salvar: '+e.message);}
+    openCopy(id);
+  }else{
+    try{
+      const created=await ucReq('POST','/workspaces/'+w.id+'/copies',{title:data.titulo,content:data.conteudo,category_key:data.cat,style_key:data.estilo,framework_key:data.fw});
+      const nc=adaptCopyRow(created,w.nome);nc.conteudo=data.conteudo;nc.cat=data.cat;nc.estilo=data.estilo;nc.fw=data.fw;nc.titulo=data.titulo;nc.marca=data.marca;nc.status=data.status;
+      if(data.status!=='rascunho'){try{await ucReq('PATCH','/copies/'+nc.id+'/status',{status:data.status});}catch(_){}}
+      w.copies.unshift(nc);updateBadges();toast('Copy criada no acervo');openCopy(nc.id);
+    }catch(e){toast('Erro ao criar: '+e.message);}
+  }
+}
+async function delCopy(id){
+  if(!confirm('Remover esta copy da lista? (o histórico permanece no servidor)'))return;
+  ws().copies=ws().copies.filter(x=>x.id!==id);updateBadges();toast('Copy removida da lista');nav('acervo');
+}
+async function salvarGerado(i){
+  const L=window._lastVars;if(!L)return;const p=L.p;const w=ws();
+  const tnome=p.tipo?p.tipo.nome+' — ':'';const titulo=(tnome+($('gBrief').value||'Nova copy')).slice(0,56);
+  const catId=$('gCat').value,tipoId=$('gTipo')?$('gTipo').value:'';
+  try{
+    const created=await ucReq('POST','/workspaces/'+w.id+'/copies',{title:titulo,content:L.vars[i],category_key:catId,piece_type_key:(catId&&tipoId?catId+':'+tipoId:''),style_key:$('gEst').value,framework_key:$('gFw').value});
+    const nc=adaptCopyRow(created,w.nome);nc.conteudo=L.vars[i];nc.cat=catId;nc.estilo=$('gEst').value;nc.fw=$('gFw').value;nc.titulo=titulo;nc.versoes=[{n:1,autor:'IA UniverCopy',data:'agora',nota:'Geração inicial · estilo '+p.e.nome,atual:true}];
+    w.copies.unshift(nc);updateBadges();toast('Variação salva no acervo');nav('acervo');
+  }catch(e){toast('Erro ao salvar: '+e.message);}
+}
+async function gerar(){
+  const brief=$('gBrief').value||'seu produto';const catId=$('gCat').value,tipoId=$('gTipo')?$('gTipo').value:'';
+  const p=buildPrompt(brief,catId,$('gFw').value,$('gEst').value,$('gRef').value,tipoId);
+  const out=$('ger-out');out.innerHTML='<div class="muted" style="padding:24px;text-align:center">⏳ Gerando no estilo '+esc(p.e.nome)+'… <span class="muted">(Claude no servidor)</span></div>';
+  let vars=[];
+  try{
+    const res=await ucReq('POST','/workspaces/'+ws().id+'/generate',{brief,categoryKey:catId,pieceTypeKey:(catId&&tipoId?catId+':'+tipoId:undefined),styleKey:$('gEst').value,frameworkKey:$('gFw').value,referenceId:($('gRef').value||undefined)});
+    vars=(res.variations||[]).map(v=>typeof v==='string'?v:(v&&(v.text||v.content)||String(v))).filter(Boolean);
+  }catch(e){out.innerHTML='<div class="muted" style="padding:24px;text-align:center;color:var(--danger)">Falha na geração: '+esc(e.message)+'</div>';return;}
+  if(!vars.length){out.innerHTML='<div class="muted" style="padding:24px;text-align:center">A IA não retornou variações — tente novamente.</div>';return;}
+  window._lastVars={vars,p};
+  out.innerHTML=`<div style="font-size:.74rem;color:var(--text-muted);margin-bottom:10px">Estilo <b style="color:${p.e.cor}">${esc(p.e.nome)}</b> · ${esc(p.fw)} · <span style="color:var(--success);font-weight:700">gerado ao vivo (Claude)</span></div>`
+   +vars.map((v,i)=>`<div class="var-out">${esc(v)}</div><button class="btn btn-sm" style="margin:-4px 0 14px" onclick="salvarGerado(${i})">＋ Salvar variação ${i+1} no acervo</button>`).join('');
+}
+async function analisar(){
+  const url=($('anUrl').value||'').trim();if(!url){toast('Informe uma URL');return;}
+  const out=$('analise-out');out.innerHTML='<div class="muted" style="padding:24px;text-align:center">🔍 Analisando a copy de '+esc(url)+'… <span class="muted">(busca + IA no servidor — pode levar alguns segundos)</span></div>';
+  try{
+    const res=await ucReq('POST','/workspaces/'+ws().id+'/audit',{url});
+    const secs=_asArr(res.sections).map(s=>({nome:s.nome||'Seção',sev:s.sev||'médio',cat:'ecom',tipo:'',atual:s.atual||'',diag:_asArr(s.diag),brief:s.recomendacao||''}));
+    window._lastAudit={url,marca:ws().nome,score:res.score||0,demo:false,resumo:res.summary||'',stats:{secoes:secs.length,problemas:secs.filter(s=>s.sev==='alto').length,oportunidades:secs.length},secoes:secs,antesDepois:null};
+    drawAudit();
+  }catch(e){out.innerHTML='<div class="muted" style="padding:24px;text-align:center;color:var(--danger)">Falha ao analisar: '+esc(e.message)+'</div>';}
+}
+async function resetDemo(){
+  if(!confirm('Recarregar os dados do servidor?'))return;
+  DB.workspaces.forEach(w=>w.loaded=false);const w=ws();if(w)await loadWs(w);
+  updateBadges();nav('dash');toast('Recarregado do servidor');
+}
+boot();
 </script>
 </body>
 </html>
