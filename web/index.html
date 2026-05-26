@@ -1128,12 +1128,13 @@ function renderNomes(){
    <div style="display:grid;grid-template-columns:1fr 1.3fr;gap:16px" id="nomes-grid">
      <div class="section-card"><div class="sc-title">⚙️ Brief</div>
        <div class="grid2" style="gap:10px">
-         <div class="field" style="margin:0"><label>Modo</label><select id="nModo" onchange="nomesCond()">${opt([['produto','Produto'],['familia','Família / linha'],['mecanismo','Mecanismo / tecnologia'],['refinamento','Refinamento']],'produto')}</select></div>
+         <div class="field" style="margin:0"><label>Modo</label><select id="nModo" onchange="nomesCond()">${opt([['produto','Produto'],['familia','Família / linha'],['mecanismo','Mecanismo / tecnologia'],['refinamento','Refinamento'],['diagnostico','Diagnóstico de nome']],'produto')}</select></div>
          <div class="field" style="margin:0"><label>Mercado</label><select id="nMercado">${opt([['nacional','Nacional (PT-BR)'],['internacional','Internacional']],'nacional')}</select></div>
          <div class="field" style="margin:0"><label>Tipo</label><select id="nTipo">${opt([['produto','Produto'],['linha','Linha'],['marca','Marca'],['tecnologia','Tecnologia']],'produto')}</select></div>
          <div class="field" style="margin:0"><label>Segmento</label><select id="nSeg">${opt([['B2C','B2C (consumidor)'],['B2B','B2B (profissional)'],['ambos','Ambos']],'B2C')}</select></div>
          <div class="field" style="margin:0"><label>Posicionamento</label><select id="nPos">${opt([['popular','Popular'],['medio','Médio'],['premium','Premium'],['luxo','Luxo'],['profissional-tecnico','Profissional / Técnico']],'premium')}</select></div>
          <div class="field" style="margin:0"><label>Idioma do nome</label><select id="nIdioma">${opt([['portugues','Português'],['ingles','Inglês'],['neutro-cunhado','Neutro cunhado'],['livre','Livre']],'neutro-cunhado')}</select></div>
+         <div class="field" style="margin:0"><label>Nível de ousadia</label><select id="nOusadia">${opt([['conservador','Conservador'],['equilibrado','Equilibrado'],['ousado','Ousado']],'equilibrado')}</select></div>
        </div>
        <div class="field"><label>Categoria *</label><input id="nCat" placeholder="ex.: progressiva, sérum facial, shampoo"></div>
        <div class="field"><label>Benefício central *</label><input id="nBen" placeholder="ex.: controla o volume e sela o liso por semanas"></div>
@@ -1159,6 +1160,7 @@ function nomesCond(){
   const m=$('nModo')?$('nModo').value:'produto';const w=$('nCondWrap');if(!w)return;
   if(m==='refinamento')w.innerHTML=`<div class="field"><label>Nome base *</label><input id="nNomeBase" placeholder="o nome que você quer variar"></div><div class="field"><label>Direção do refino</label><input id="nDir" placeholder="ex.: mais curto, mais sofisticado, menos clínico"></div>`;
   else if(m==='familia')w.innerHTML=`<div class="field"><label>Conceito da linha *</label><input id="nConceito" placeholder="ex.: linha de blindagem capilar em 3 passos"></div><div class="field"><label>Itens da linha <span class="muted">(vírgula) *</span></label><input id="nItens" placeholder="ex.: shampoo, máscara, leave-in"></div>`;
+  else if(m==='diagnostico')w.innerHTML=`<div class="field"><label>Nome a diagnosticar *</label><input id="nNomeBase" placeholder="o nome existente que você quer auditar"></div>`;
   else w.innerHTML='';
 }
 function gerarNomes(){
@@ -1166,7 +1168,7 @@ function gerarNomes(){
     modo_geracao:$('nModo').value, mercado:$('nMercado').value, tipo:$('nTipo').value,
     categoria:$('nCat').value.trim(), segmento:$('nSeg').value, posicionamento:$('nPos').value,
     publico:$('nPub').value.trim(), beneficio_central:$('nBen').value.trim(), ativo_destaque:$('nAtivo').value.trim(),
-    idioma_nome:$('nIdioma').value, quantidade:Math.max(3,Math.min(18,parseInt($('nQtd').value||'10',10))),
+    idioma_nome:$('nIdioma').value, nivel_ousadia:($('nOusadia')?$('nOusadia').value:'equilibrado'), idioma_saida:'pt-BR', quantidade:Math.max(3,Math.min(14,parseInt($('nQtd').value||'6',10))),
     tom:[...document.querySelectorAll('#nTom .chip.active')].map(c=>c.textContent.trim()),
     prioridades:[...document.querySelectorAll('#nPrior .chip.active')].map(c=>c.textContent.trim()).slice(0,3),
     evitar:($('nEvitar').value||'').split(',').map(s=>s.trim()).filter(Boolean),
@@ -1176,13 +1178,17 @@ function gerarNomes(){
   if($('nDir'))brief.direcao_refino=$('nDir').value.trim();
   if($('nConceito'))brief.conceito_linha=$('nConceito').value.trim();
   if($('nItens'))brief.itens_linha=($('nItens').value||'').split(',').map(s=>s.trim()).filter(Boolean);
-  if(!brief.categoria||!brief.beneficio_central){toast('Preencha categoria e benefício central');return;}
+  if(brief.modo_geracao==='diagnostico'){ if(!brief.nome_base){toast('Informe o nome a diagnosticar');return;} }
+  else if(!brief.categoria||!brief.beneficio_central){toast('Preencha categoria e benefício central');return;}
   const out=$('nomes-out');out.innerHTML='<div class="muted" style="padding:24px;text-align:center">🏷️ Gerando e diagnosticando nomes… <span class="muted">(Claude no servidor — alguns segundos)</span></div>';
   ucReq('POST','/workspaces/'+ws().id+'/name-generator',brief).then(drawNomes).catch(e=>{out.innerHTML='<div class="muted" style="padding:24px;text-align:center;color:var(--danger)">Falha: '+esc(e.message)+'</div>';});
 }
 function nomePill(label,val){const map={forte:'st-aprovado',media:'st-revisao',fraca:'st-rascunho',baixa:'st-aprovado',alta:'st-rascunho',sugestivo:'st-revisao',arbitrario:'st-aprovado',fantasia:'st-aprovado'};const cls=map[val]||'st-rascunho';return `<span class="pill ${cls}" style="font-size:.62rem">${esc(label)}: ${esc(val)}</span>`;}
+function faixaCls(f){return (f==='excelente'||f==='forte')?'st-aprovado':(f==='aceitavel'?'st-revisao':'st-rascunho');}
 function drawNomes(res){
-  const out=$('nomes-out');const nomes=(res&&res.nomes)||[];
+  const out=$('nomes-out');
+  if(res&&(res.modo_geracao==='diagnostico'||res.nome_avaliado)){return drawDiagnostico(res);}
+  const nomes=(res&&res.nomes)||[];
   if(!nomes.length){out.innerHTML='<div class="muted" style="padding:24px;text-align:center">Nenhum nome retornado — ajuste o brief e tente de novo.</div>';return;}
   window._lastNomes=res;let html='';
   if(res.recomendacao)html+=`<div class="banner" style="margin:0 0 12px"><div style="font-size:1.2rem">🧭</div><div class="muted" style="font-size:.8rem;line-height:1.5">${esc(res.recomendacao)}</div></div>`;
@@ -1192,7 +1198,7 @@ function drawNomes(res){
     const inpi=(n.classes_inpi_sugeridas||[]).map(x=>'Cl.'+x).join(' ');
     const ling=n.check_linguistico?Object.entries(n.check_linguistico).map(([k,v])=>`${k}:${v==='ok'?'✓':'⚠'}`).join(' '):'';
     return `<div class="gcard" style="margin-bottom:12px">
-      <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:4px"><div style="font-weight:800;font-size:1.15rem;letter-spacing:-.01em">${esc(n.nome)}</div><span class="muted" style="font-size:.74rem">${esc(n.leitura||'')}</span><span style="margin-left:auto;font-weight:800;color:${(n.pontuacao||0)>=24?'var(--success)':'var(--amber)'}">${n.pontuacao??''}</span></div>
+      <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:4px"><div style="font-weight:800;font-size:1.15rem;letter-spacing:-.01em">${esc(n.nome)}</div><span class="muted" style="font-size:.74rem">${esc(n.leitura||'')}</span>${n.faixa?`<span class="pill ${faixaCls(n.faixa)}" style="font-size:.58rem;margin-left:auto">${esc(n.faixa)}</span>`:'<span style="margin-left:auto"></span>'}<span style="font-weight:800;color:${(n.pontuacao||0)>=24?'var(--success)':'var(--amber)'}">${n.pontuacao??''}</span></div>
       <div style="font-size:.72rem;color:var(--text-muted);margin-bottom:8px">${esc(n.arquetipo||'')} · ${esc(n.abordagem||'')}/${esc(n.construcao||'')}</div>
       <div style="font-size:.84rem;margin-bottom:8px">${esc(n.racional||'')}</div>
       ${n.storytelling_semente?`<div class="var-out" style="margin:0 0 8px;font-size:.8rem">💬 ${esc(n.storytelling_semente)}</div>`:''}
@@ -1286,6 +1292,20 @@ function renderBau(){
   html+= items.length?`<div class="table-wrap"><table><thead><tr><th>Título</th><th>Status</th><th>Estilo</th><th>Score</th><th>Atualizado</th></tr></thead><tbody>${items.map(c=>`<tr onclick="openCopy('${c.id}')"><td style="font-weight:600">${esc(c.titulo)}</td><td><span class="pill ${stClass[c.status]}">${stLabel[c.status]}</span></td><td class="muted">${esc(est(c.estilo).nome)}</td><td>${c.score?'<b class="score">'+c.score+'</b>':'<span class="muted">—</span>'}</td><td class="muted" style="font-size:.76rem">${esc(c.upd)}</td></tr>`).join('')}</tbody></table></div>`
    :`<div class="table-wrap"><div class="empty"><div class="empty-ic">${ct.ic}</div><p style="font-weight:600;color:var(--text-primary)">Pasta vazia</p><p style="margin-top:4px">Nenhuma copy de ${esc(ct.nome)} ainda — gere uma no Gerador.</p></div></div>`;
   $('view').innerHTML=html;
+}
+function drawDiagnostico(res){
+  const out=$('nomes-out');const d=res.diagnostico||{};
+  const vcls={forte:'st-aprovado',aceitavel:'st-revisao',fraco:'st-rascunho','de risco':'st-rascunho'};
+  let html='';
+  if(res.recomendacao)html+=`<div class="banner" style="margin:0 0 12px"><div style="font-size:1.2rem">🧭</div><div class="muted" style="font-size:.8rem;line-height:1.5">${esc(res.recomendacao)}</div></div>`;
+  html+=`<div class="gcard">
+    <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:6px"><div style="font-weight:800;font-size:1.25rem">${esc(res.nome_avaliado||'')}</div><span class="pill ${vcls[res.veredito]||'st-rascunho'}">${esc(res.veredito||'')}</span>${d.faixa?`<span class="pill ${faixaCls(d.faixa)}" style="font-size:.6rem">${esc(d.faixa)}</span>`:''}<span style="margin-left:auto;font-weight:800;color:${(d.pontuacao||0)>=24?'var(--success)':'var(--amber)'}">${d.pontuacao??''}</span></div>
+    <div style="font-size:.72rem;color:var(--text-muted);margin-bottom:8px">${esc(d.arquetipo||'')} · ${esc(d.abordagem||'')}/${esc(d.construcao||'')}</div>
+    <div class="taglist" style="margin-bottom:10px">${nomePill('distinção',d.distintividade||'-')}${nomePill('INPI',d.registrability_flag||'-')}${nomePill('saturação',d.saturacao||'-')}<span class="pill ${d.anvisa_safe?'st-aprovado':'st-rascunho'}" style="font-size:.62rem">ANVISA: ${d.anvisa_safe?'ok':'risco'}</span></div>`;
+  const bloco=(t,arr,cor)=>(arr&&arr.length)?`<div style="margin-bottom:8px"><div style="font-size:.68rem;font-weight:800;color:${cor};text-transform:uppercase;letter-spacing:.04em">${t}</div><ul style="margin:4px 0 0 18px;padding:0">${arr.map(x=>`<li style="font-size:.82rem;margin-bottom:2px">${esc(x)}</li>`).join('')}</ul></div>`:'';
+  html+=bloco('Pontos fortes',res.pontos_fortes,'var(--success)')+bloco('Pontos fracos',res.pontos_fracos,'var(--danger)')+bloco('Direções de melhoria',res.direcoes_melhoria,'var(--primary-hover)');
+  html+=`</div>`;
+  out.innerHTML=html;
 }
 boot();
 </script>
