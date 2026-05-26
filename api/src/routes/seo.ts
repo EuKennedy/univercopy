@@ -96,7 +96,7 @@ r.post("/workspaces/:id/describe-seo", async (c) => {
 
   let parsed: unknown;
   try {
-    const out = await callClaude(prompt, 3500);
+    const out = await callClaude(prompt, 2200);
     parsed = parseJsonBlock(out.text);
     await withUser(uid, (cl) => cl.query(
       `insert into generation(workspace_id, model, prompt, output, prompt_tokens, output_tokens, created_by) values($1,$2,$3,$4,$5,$6,$7)`,
@@ -127,7 +127,7 @@ r.post("/workspaces/:id/review-description", async (c) => {
 
   let parsed: unknown;
   try {
-    const out = await callClaude(prompt, 2500);
+    const out = await callClaude(prompt, 1800);
     parsed = parseJsonBlock(out.text);
     await withUser(uid, (cl) => cl.query(
       `insert into generation(workspace_id, model, prompt, output, prompt_tokens, output_tokens, created_by) values($1,$2,$3,$4,$5,$6,$7)`,
