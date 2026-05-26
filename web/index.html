@@ -1225,35 +1225,112 @@ async function salvarNome(i){
   }catch(e){toast('Erro ao salvar: '+e.message);}
 }
 /* ====== PRODUTOS (catálogo da marca) ====== */
-async function loadProdutos(w){ try{ w.products=await ucReq('GET','/workspaces/'+w.id+'/products'); }catch(e){ w.products=[]; } w._prodLoaded=true; }
+const ECOM_TIPOS=[{k:'ecom:desc-prod-longa',n:'Descrição detalhada'},{k:'ecom:desc-prod-curta',n:'Descrição curta'},{k:'ecom:bullets',n:'Bullets de benefícios'},{k:'ecom:faq-prod',n:'FAQ do produto'}];
+const ECOM_LABEL={'ecom:desc-prod-longa':'Descrição detalhada','ecom:desc-prod-curta':'Descrição curta','ecom:bullets':'Bullets','ecom:faq-prod':'FAQ'};
+window._prodSel=window._prodSel||new Set();
+async function loadProdutos(w){
+  try{ w.products=await ucReq('GET','/workspaces/'+w.id+'/products'); }catch(e){ w.products=[]; }
+  try{ const cc=await ucReq('GET','/workspaces/'+w.id+'/product-copy-counts'); w._prodCounts={}; (cc||[]).forEach(r=>{w._prodCounts[r.product_id]=r.n;}); }catch(e){ w._prodCounts=w._prodCounts||{}; }
+  w._prodLoaded=true;
+}
 function renderProdutos(){
+  if(window._prodId){ renderProdutoDetalhe(window._prodId); return; }
   const w=ws();
   $('view').innerHTML=
-   head('📦','linear-gradient(135deg,#f59e0b,#6366f1)','Produtos','Catálogo da marca — importe do site e gere copy com 1 clique',
+   head('📦','linear-gradient(135deg,#f59e0b,#6366f1)','Produtos','Catálogo da marca — filtre, gere em massa e consulte o histórico de cada produto',
      `<button class="btn btn-primary" onclick="importarProdutos()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg> Importar do site</button>`)
    +`<div id="prod-out"><div class="muted" style="padding:24px;text-align:center">Carregando…</div></div>`;
-  if(!w._prodLoaded){ loadProdutos(w).then(()=>{ if(window._view==='produtos')drawProdutos(); }); }
+  if(!w._prodLoaded){ loadProdutos(w).then(()=>{ if(window._view==='produtos'&&!window._prodId)drawProdutos(); }); }
   else drawProdutos();
 }
+function prodCats(list){ const s=new Set(); list.forEach(p=>(p.categories||[]).forEach(c=>c&&s.add(c))); return [...s].sort(); }
 function drawProdutos(){
   const w=ws();const list=w.products||[];const out=$('prod-out');if(!out)return;
   if(!list.length){ out.innerHTML=`<div class="table-wrap"><div class="empty"><div class="empty-ic">📦</div><p style="font-weight:600;color:var(--text-primary)">Nenhum produto ainda</p><p style="margin-top:4px">Importe o catálogo direto do site da marca.</p><button class="btn btn-primary" style="margin-top:14px" onclick="importarProdutos()">Importar do site</button></div></div>`; return; }
-  const cats=new Set(list.map(p=>(p.categories&&p.categories[0])||'—'));
-  let html=`<div class="stats">${statCard(IC.layers,'245,158,11','Produtos',list.length)}${statCard(IC.doc,'99,102,241','Categorias',cats.size)}${statCard(IC.bolt,'16,185,129','Fonte',(list[0]&&list[0].source==='site')?'Site':'WooCommerce')}</div>`;
-  html+=`<div class="cardgrid" style="grid-template-columns:repeat(auto-fill,minmax(320px,1fr))">`+list.map(p=>{
+  const cats=prodCats(list);
+  const totalDesc=Object.values(w._prodCounts||{}).reduce((a,b)=>a+b,0);
+  let html=`<div class="stats">${statCard(IC.layers,'245,158,11','Produtos',list.length)}${statCard(IC.doc,'99,102,241','Categorias',cats.length)}${statCard(IC.bolt,'16,185,129','Descrições salvas',totalDesc)}</div>`;
+  html+=`<div class="section-card" style="padding:14px">
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+      <input id="prodBusca" placeholder="🔎 Buscar produto…" style="flex:1;min-width:180px" oninput="pintarGrade()">
+      <select id="prodCat" onchange="pintarGrade()" style="height:38px;min-width:170px"><option value="">Todas as categorias</option>${cats.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('')}</select>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px">
+      <label class="muted" style="display:flex;align-items:center;gap:6px;font-size:.8rem;cursor:pointer"><input type="checkbox" id="prodAll" onchange="selecionarTodosProd(this.checked)"> Selecionar todos (visíveis)</label>
+      <span style="flex:1"></span>
+      <select id="prodBulkTipo" style="height:38px;min-width:180px">${ECOM_TIPOS.map(t=>`<option value="${t.k}">${t.n}</option>`).join('')}</select>
+      <button class="btn btn-primary" id="prodBulkBtn" onclick="gerarEmMassa()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${IC.bolt}</svg> Gerar em massa (0)</button>
+    </div>
+    <div id="prodBulkStatus" class="muted" style="font-size:.78rem;margin-top:8px"></div>
+  </div><div id="prod-grid"></div>`;
+  out.innerHTML=html; pintarGrade();
+}
+function produtosFiltrados(){
+  const w=ws();const list=w.products||[];
+  const q=(($('prodBusca')||{}).value||'').trim().toLowerCase();
+  const cat=(($('prodCat')||{}).value||'');
+  return list.filter(p=>{
+    const okC=!cat||(p.categories||[]).includes(cat);
+    const hay=((p.name||'')+' '+(p.short_description||'')+' '+(p.description||'')).toLowerCase();
+    return okC&&(!q||hay.includes(q));
+  });
+}
+function atualizarBulkBtn(){ const b=$('prodBulkBtn'); if(b)b.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'+IC.bolt+'</svg> Gerar em massa ('+window._prodSel.size+')'; }
+function toggleProdSel(pid,ck){ if(ck)window._prodSel.add(pid); else window._prodSel.delete(pid); atualizarBulkBtn(); }
+function selecionarTodosProd(ck){ const fl=produtosFiltrados(); if(ck)fl.forEach(p=>window._prodSel.add(p.id)); else fl.forEach(p=>window._prodSel.delete(p.id)); pintarGrade(); }
+function pintarGrade(){
+  const w=ws();const grid=$('prod-grid');if(!grid)return;
+  const fl=produtosFiltrados();
+  if(!fl.length){ grid.innerHTML='<div class="table-wrap" style="margin-top:14px"><div class="empty"><div class="empty-ic">🔍</div><p style="font-weight:600;color:var(--text-primary)">Nenhum produto no filtro</p></div></div>'; atualizarBulkBtn(); return; }
+  grid.innerHTML=`<div class="cardgrid" style="grid-template-columns:repeat(auto-fill,minmax(320px,1fr));margin-top:14px">`+fl.map(p=>{
     const catl=(p.categories&&p.categories.length)?p.categories[0]:'';
     const desc=p.short_description||p.description||'';
+    const n=(w._prodCounts||{})[p.id]||0;
+    const sel=window._prodSel.has(p.id);
     return `<div class="gcard">
-      <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px"><div style="font-weight:800;font-size:.92rem;flex:1">${esc(p.name)}</div>${p.price?`<span class="minitag">R$ ${esc(String(p.price))}</span>`:''}</div>
+      <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px">
+        <input type="checkbox" ${sel?'checked':''} onchange="toggleProdSel('${p.id}',this.checked)" style="margin-top:3px;cursor:pointer">
+        <div style="font-weight:800;font-size:.92rem;flex:1">${esc(p.name)}</div>${p.price?`<span class="minitag">R$ ${esc(String(p.price))}</span>`:''}</div>
       ${catl?`<div class="taglist" style="margin-bottom:8px"><span class="minitag">🏷️ ${esc(catl)}</span></div>`:''}
       <div style="font-size:.82rem;color:var(--text-secondary);margin-bottom:11px;line-height:1.5">${esc(desc)||'<span class="muted">Sem descrição</span>'}</div>
-      <button class="btn btn-sm btn-primary" style="width:100%;justify-content:center" onclick="gerarParaProduto(${JSON.stringify(p.name).replace(/"/g,'&quot;')})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${IC.bolt}</svg> Gerar copy deste produto</button>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-sm btn-primary" style="flex:1;justify-content:center" onclick="gerarSalvarProduto('${p.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${IC.bolt}</svg> Gerar copy</button>
+        <button class="btn btn-sm" onclick="abrirProduto('${p.id}')">📄 Descrições (${n})</button>
+      </div>
     </div>`;
   }).join('')+`</div>`;
-  out.innerHTML=html;
+  atualizarBulkBtn();
+}
+async function gerarUmaDescricao(w,pid,pieceKey){
+  const p=(w.products||[]).find(x=>x.id===pid)||{};
+  const res=await ucReq('POST','/workspaces/'+w.id+'/generate',{brief:p.name||'produto',productId:pid,categoryKey:'ecom',pieceTypeKey:pieceKey});
+  const v=(res.variations||[])[0]; if(!v)throw new Error('sem variação');
+  const titulo=((ECOM_LABEL[pieceKey]||'Descrição')+' — '+(p.name||'')).slice(0,80);
+  await ucReq('POST','/workspaces/'+w.id+'/copies',{title:titulo,content:v,category_key:'ecom',piece_type_key:pieceKey,product_id:pid,style_key:(res.used||{}).style||null,framework_key:(res.used||{}).framework||null});
+  w._prodCounts=w._prodCounts||{}; w._prodCounts[pid]=(w._prodCounts[pid]||0)+1;
+}
+async function gerarSalvarProduto(pid){
+  const w=ws(); const pieceKey=(($('prodBulkTipo')||{}).value)||'ecom:desc-prod-longa';
+  const st=$('prodBulkStatus'); if(st)st.innerHTML='⏳ Gerando descrição…';
+  try{ await gerarUmaDescricao(w,pid,pieceKey); toast('Descrição gerada e salva'); abrirProduto(pid); }
+  catch(e){ toast('Falha: '+e.message); if(st)st.innerHTML='<span style="color:var(--danger)">Falha: '+esc(e.message)+'</span>'; }
+}
+async function gerarEmMassa(){
+  const w=ws(); const ids=[...window._prodSel]; if(!ids.length){toast('Selecione ao menos um produto');return;}
+  const pieceKey=(($('prodBulkTipo')||{}).value)||'ecom:desc-prod-longa';
+  const st=$('prodBulkStatus'); let ok=0;
+  for(let i=0;i<ids.length;i++){
+    const nome=(((w.products||[]).find(x=>x.id===ids[i])||{}).name)||'';
+    if(st)st.innerHTML='⏳ Gerando '+(i+1)+'/'+ids.length+' — '+esc(nome);
+    try{ await gerarUmaDescricao(w,ids[i],pieceKey); ok++; }
+    catch(e){ if(st)st.innerHTML+='<div style="color:var(--danger)">Falha em '+esc(nome)+': '+esc(e.message)+'</div>'; }
+  }
+  if(st)st.innerHTML='✅ '+ok+'/'+ids.length+' descrição(ões) gerada(s) e salva(s). Clique em “Descrições” num produto para ver o histórico.';
+  toast(ok+' descrições geradas em massa');
+  window._prodSel.clear(); const all=$('prodAll'); if(all)all.checked=false; pintarGrade();
 }
 async function importarProdutos(){
-  const w=ws();const def=w.site_url||(activeDna().marca?'':'')||'lizzon.com.br';
+  const w=ws();const def=w.site_url||'lizzon.com.br';
   const url=prompt('Importar produtos do site (URL):',def);if(url===null)return;
   const out=$('prod-out');if(out)out.innerHTML='<div class="muted" style="padding:24px;text-align:center">🔎 Lendo o site e extraindo os produtos com IA… <span class="muted">(alguns segundos)</span></div>';
   try{
@@ -1262,6 +1339,76 @@ async function importarProdutos(){
     toast('Importados '+(r.imported||0)+' produtos de '+url);
     if(window._view==='produtos')drawProdutos();
   }catch(e){ toast('Falha ao importar: '+e.message); if(out)drawProdutos(); }
+}
+function abrirProdutos(){ window._prodId=null; nav('produtos'); }
+function abrirProduto(pid){ window._prodId=pid; nav('produtos'); }
+async function renderProdutoDetalhe(pid){
+  const w=ws(); const p=(w.products||[]).find(x=>x.id===pid)||{name:'Produto'};
+  $('view').innerHTML=`<div class="back" onclick="abrirProdutos()">← Todos os produtos</div>`
+   +head('📦','linear-gradient(135deg,#f59e0b,#6366f1)',esc(p.name||'Produto'),(p.categories&&p.categories[0]?esc(p.categories[0])+' · ':'')+'Ficha completa + histórico de descrições',
+     `<button class="btn btn-primary" onclick="gerarSalvarProdutoDetalhe('${pid}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${IC.bolt}</svg> Gerar nova descrição</button>`)
+   +`<div class="section-card">
+       <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><div class="sc-title" style="margin:0;flex:1">🧬 Ficha do produto</div>
+         <button class="btn btn-sm" id="fichaBtn" onclick="gerarFicha('${pid}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${IC.bolt}</svg> ${p.profile&&Object.keys(p.profile).length?'Regerar ficha':'Gerar ficha'}</button></div>
+       <div id="ficha-box">${fichaHtml(p.profile)}</div>
+     </div>`
+   +`<div class="section-card" style="padding:12px"><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+       <div class="sc-title" style="margin:0">📝 Descrições</div><span style="flex:1"></span>
+       <label class="muted" style="font-size:.8rem">Tipo:</label>
+       <select id="prodDetTipo" style="height:36px;min-width:190px">${ECOM_TIPOS.map(t=>`<option value="${t.k}">${t.n}</option>`).join('')}</select>
+       <span id="prodDetStatus" class="muted" style="font-size:.78rem"></span>
+     </div></div>`
+   +`<div id="prod-hist"><div class="muted" style="padding:24px;text-align:center">Carregando histórico…</div></div>`;
+  try{
+    const copies=await ucReq('GET','/products/'+pid+'/copies');
+    w._prodCounts=w._prodCounts||{}; w._prodCounts[pid]=copies.length;
+    w.copies=w.copies||[];
+    copies.forEach(cp=>{ const o=adaptCopyRow(cp,w.nome); o.conteudo=cp.current_content||o.conteudo; if(!w.copies.find(x=>x.id===o.id))w.copies.unshift(o); });
+    const hist=$('prod-hist'); if(!hist)return;
+    if(!copies.length){ hist.innerHTML='<div class="table-wrap"><div class="empty"><div class="empty-ic">📝</div><p style="font-weight:600;color:var(--text-primary)">Nenhuma descrição salva</p><p style="margin-top:4px">Gere a primeira descrição deste produto no botão acima.</p></div></div>'; return; }
+    hist.innerHTML=`<div class="cardgrid" style="grid-template-columns:repeat(auto-fill,minmax(330px,1fr))">`+copies.map(c=>{
+      const txt=c.current_content||'';
+      return `<div class="gcard" onclick="openCopy('${c.id}')" style="cursor:pointer">
+        <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:5px"><div style="font-weight:700;font-size:.86rem;flex:1">${esc(c.title||'(sem título)')}</div><span class="pill ${stClass[c.status]||'st-rascunho'}" style="font-size:.6rem">${stLabel[c.status]||esc(c.status||'')}</span></div>
+        <div style="font-size:.8rem;color:var(--text-secondary);max-height:74px;overflow:hidden;line-height:1.5">${esc(txt.slice(0,200))}</div>
+        <div class="muted" style="font-size:.7rem;margin-top:8px">${c.piece_type_key?esc(String(c.piece_type_key).split(':').pop())+' · ':''}v${c.versions||1} · ${c.updated_at?esc(String(c.updated_at).slice(0,10)):''}</div>
+      </div>`;
+    }).join('')+`</div>`;
+  }catch(e){ const hist=$('prod-hist'); if(hist)hist.innerHTML='<div class="muted" style="padding:24px;color:var(--danger)">Erro ao carregar: '+esc(e.message)+'</div>'; }
+}
+async function gerarSalvarProdutoDetalhe(pid){
+  const w=ws(); const pieceKey=(($('prodDetTipo')||{}).value)||'ecom:desc-prod-longa';
+  const st=$('prodDetStatus'); if(st)st.innerHTML='⏳ Gerando…';
+  try{ await gerarUmaDescricao(w,pid,pieceKey); toast('Descrição gerada'); renderProdutoDetalhe(pid); }
+  catch(e){ if(st)st.innerHTML='<span style="color:var(--danger)">Falha: '+esc(e.message)+'</span>'; toast('Falha: '+e.message); }
+}
+function fichaHtml(pf){
+  if(!pf||typeof pf!=='object'||!Object.keys(pf).length) return '<div class="muted" style="padding:8px 0;line-height:1.55">Ainda sem ficha. Clique em “Gerar ficha” para criar — com a voz da marca — benefícios-chave, público-alvo, efeito esperado, modo de uso e diferenciais deste produto.</div>';
+  const li=a=>(Array.isArray(a)&&a.length)?'<ul style="margin:4px 0 0;padding-left:18px;line-height:1.6">'+a.map(x=>'<li>'+esc(String(x))+'</li>').join('')+'</ul>':'<span class="muted">—</span>';
+  const txt=v=>v?esc(String(v)):'<span class="muted">—</span>';
+  const block=(t,inner)=>`<div style="margin-bottom:14px"><div style="font-size:.7rem;text-transform:uppercase;letter-spacing:.5px;color:var(--accent,#a78bfa);font-weight:700;margin-bottom:3px">${t}</div><div style="font-size:.86rem;color:var(--text-secondary);line-height:1.55">${inner}</div></div>`;
+  let h='';
+  if(pf.resumo) h+=block('Resumo', txt(pf.resumo));
+  h+='<div class="grid2" style="gap:0 18px">';
+  h+=block('✅ Benefícios-chave', li(pf.beneficios_chave));
+  h+=block('🎯 Público-alvo', txt(pf.publico_alvo));
+  h+=block('✨ Efeito esperado', txt(pf.efeito_esperado));
+  h+=block('🧴 Modo de uso', txt(pf.modo_uso));
+  h+=block('🏆 Diferenciais', li(pf.diferenciais));
+  if(pf.ingredientes_destaque&&(pf.ingredientes_destaque||[]).length) h+=block('🧪 Ingredientes em destaque', li(pf.ingredientes_destaque));
+  if(pf.cuidados&&(pf.cuidados||[]).length) h+=block('⚠️ Cuidados', li(pf.cuidados));
+  h+='</div>';
+  return h;
+}
+async function gerarFicha(pid){
+  const w=ws(); const btn=$('fichaBtn'); const box=$('ficha-box');
+  if(btn)btn.disabled=true; if(box)box.innerHTML='<div class="muted" style="padding:8px 0">⏳ Gerando ficha com IA… (alguns segundos)</div>';
+  try{
+    const r=await ucReq('POST','/workspaces/'+w.id+'/products/'+pid+'/profile/generate',{});
+    const p=(w.products||[]).find(x=>x.id===pid); if(p)p.profile=r.profile;
+    if(box)box.innerHTML=fichaHtml(r.profile); toast('Ficha gerada');
+  }catch(e){ if(box)box.innerHTML='<div class="muted" style="padding:8px 0;color:var(--danger)">Falha: '+esc(e.message)+'</div>'; toast('Falha ao gerar ficha: '+e.message); }
+  finally{ if(btn){ btn.disabled=false; btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'+IC.bolt+'</svg> Regerar ficha'; } }
 }
 function gerarParaProduto(nome){ window._pendingGen={cat:'ecom',tipo:'desc-prod-longa',brief:nome}; nav('gerador'); }
 /* ---- editor inline da copy (salva como nova versão) ---- */

@@ -59,6 +59,7 @@ end $$;
 alter table campaign add column if not exists context text;
 alter table copy add column if not exists campaign_id uuid references campaign(id) on delete set null;
 create index if not exists idx_copy_campaign on copy(campaign_id);
+alter table product add column if not exists profile jsonb;
 `;
 
 async function runAdditive(client: PoolClient): Promise<void> {

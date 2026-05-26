@@ -3,6 +3,7 @@ import { withUser } from "../db.js";
 import { auth } from "../auth.js";
 import { buildPrompt } from "../prompt.js";
 import { generate as callClaude } from "../claude.js";
+import { parseJsonBlock } from "../json.js";
 import { wooListProducts, wooUpdateProduct, type WooCfg, type WooProduct } from "../lib/woo.js";
 import type { Env } from "../types.js";
 
@@ -76,9 +77,51 @@ r.get("/workspaces/:id/products", async (c) => {
   const out = await withUser(uid, (cl) =>
     cl.query(
       `select id, source, external_id, sku, name, short_description, description, price,
-              permalink, categories, rating_avg, reviews_count, synced_at
+              permalink, categories, rating_avg, reviews_count, profile, synced_at
        from product where workspace_id = $1 order by name`, [ws]));
   return c.json(out.rows);
+});
+
+// Gera a FICHA estruturada do produto (benefícios-chave, público-alvo, efeito
+// esperado, modo de uso, diferenciais...) com a voz da marca e salva em product.profile.
+r.post("/workspaces/:id/products/:pid/profile/generate", async (c) => {
+  const uid = c.get("userId"); const ws = c.req.param("id"); const pid = c.req.param("pid");
+  const ctx = await withUser(uid, async (cl) => {
+    const wsRow = (await cl.query("select settings from workspace where id=$1", [ws])).rows[0];
+    const inUse = (wsRow?.settings?.dna_in_use) || "atual";
+    const dna = (await cl.query("select marca, posicionamento, tom, publico, provas, objecoes, evitar from brand_dna where workspace_id=$1 and kind=$2", [ws, inUse])).rows[0] || {};
+    const product = (await cl.query("select name, description, short_description, categories from product where id=$1 and workspace_id=$2", [pid, ws])).rows[0];
+    return { dna, product };
+  });
+  if (!ctx.product) return c.json({ error: "produto não encontrado" }, 404);
+
+  const prompt =
+    `Você é especialista em produtos de beleza/cosmética profissional. Monte uma FICHA TÉCNICA-COMERCIAL do produto, ` +
+    `em PT-BR, com a voz da marca, factual e sem inventar especificações que não existam (use placeholders claros como "[a confirmar]" se faltar dado).\n\n` +
+    `DNA DA MARCA: ${JSON.stringify(ctx.dna)}\n` +
+    `PRODUTO: ${JSON.stringify({ name: ctx.product.name, categorias: ctx.product.categories, desc: ctx.product.description || ctx.product.short_description })}\n\n` +
+    `Seja objetivo (listas com no máximo 6 itens). Responda APENAS com JSON válido e completo:\n` +
+    `{"resumo":"1-2 frases do que é o produto","beneficios_chave":["benefícios concretos"],"publico_alvo":"para quem é (perfil/uso profissional ou caseiro)","efeito_esperado":"o resultado percebido e em quanto tempo","modo_uso":"passo a passo curto","diferenciais":["o que o destaca"],"ingredientes_destaque":["ativos/ingredientes relevantes, se houver"],"cuidados":["avisos/limitações, se houver"]}`;
+
+  let parsed: Record<string, unknown>;
+  try {
+    const out = await callClaude(prompt, 2200);
+    parsed = parseJsonBlock<Record<string, unknown>>(out.text);
+  } catch (e) {
+    return c.json({ error: "falha ao gerar a ficha", detail: String(e) }, 502);
+  }
+  const saved = await withUser(uid, (cl) =>
+    cl.query("update product set profile=$3 where id=$1 and workspace_id=$2 returning id, name, profile", [pid, ws, JSON.stringify(parsed)]));
+  return saved.rows[0] ? c.json(saved.rows[0]) : c.json({ error: "produto não encontrado" }, 404);
+});
+
+// Salva edições manuais da ficha do produto.
+r.patch("/workspaces/:id/products/:pid/profile", async (c) => {
+  const uid = c.get("userId"); const ws = c.req.param("id"); const pid = c.req.param("pid");
+  const b = await c.req.json<{ profile?: unknown }>();
+  const out = await withUser(uid, (cl) =>
+    cl.query("update product set profile=$3 where id=$1 and workspace_id=$2 returning id, profile", [pid, ws, JSON.stringify(b.profile ?? {})]));
+  return out.rows[0] ? c.json(out.rows[0]) : c.json({ error: "produto não encontrado" }, 404);
 });
 
 // Importa o catálogo de produtos a partir do conteúdo real do site (scraping + Claude).

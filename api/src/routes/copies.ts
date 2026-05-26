@@ -86,6 +86,35 @@ r.post("/copies/:cid/comments", async (c) => {
   return c.json(out.rows[0], 201);
 });
 
+// Histórico de descrições/copies geradas para um produto (com conteúdo atual).
+r.get("/products/:pid/copies", async (c) => {
+  const uid = c.get("userId"); const pid = c.req.param("pid");
+  const out = await withUser(uid, (cl) =>
+    cl.query(
+      `select c.*, v.content as current_content,
+              (select count(*)::int from copy_version where copy_id = c.id) as versions
+       from copy c
+       left join copy_version v on v.copy_id = c.id and v.is_current
+       where c.product_id = $1
+       order by c.updated_at desc`,
+      [pid]
+    ));
+  return c.json(out.rows);
+});
+
+// Contagem de copies por produto no workspace (para badges do catálogo).
+r.get("/workspaces/:id/product-copy-counts", async (c) => {
+  const uid = c.get("userId"); const ws = c.req.param("id");
+  const out = await withUser(uid, (cl) =>
+    cl.query(
+      `select product_id, count(*)::int as n
+       from copy where workspace_id = $1 and product_id is not null
+       group by product_id`,
+      [ws]
+    ));
+  return c.json(out.rows);
+});
+
 // Histórico de versões de uma copy.
 r.get("/copies/:cid/versions", async (c) => {
   const uid = c.get("userId");
