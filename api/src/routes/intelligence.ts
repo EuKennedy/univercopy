@@ -2,14 +2,11 @@ import { Hono } from "hono";
 import { withUser } from "../db.js";
 import { auth } from "../auth.js";
 import { generate as callClaude } from "../claude.js";
+import { parseJsonBlock } from "../json.js";
 import type { Env } from "../types.js";
 
 const r = new Hono<Env>();
 r.use("*", auth);
-
-function parseJsonBlock(text: string): Record<string, unknown> {
-  return JSON.parse(text.slice(text.indexOf("{"), text.lastIndexOf("}") + 1));
-}
 
 async function fetchText(url: string): Promise<string> {
   const full = url.startsWith("http") ? url : "https://" + url;
@@ -41,8 +38,8 @@ r.post("/workspaces/:id/intelligence/ingest", async (c) => {
   for (const url of urls) {
     try {
       const text = await fetchText(url);
-      const out = await callClaude(`${EXTRACT}\n\nURL: ${url}\nConteúdo extraído:\n${text}`, 1800);
-      const rec = parseJsonBlock(out.text);
+      const out = await callClaude(`${EXTRACT}\n\nURL: ${url}\nConteúdo extraído:\n${text}`, 3000);
+      const rec = parseJsonBlock<Record<string, unknown>>(out.text);
       const saved = await withUser(uid, (cl) => cl.query(
         `insert into intelligence_record(workspace_id, marca, produto, categoria, preco, url, estrutura_pdp, copy, ativos, seo, geo, score_competitivo, faixa, observacoes, created_by)
          values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) returning id, marca, produto, categoria, url, estrutura_pdp, copy, ativos, seo, geo, score_competitivo, faixa, observacoes, collected_at`,

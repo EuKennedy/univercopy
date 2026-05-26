@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { withUser } from "../db.js";
 import { auth } from "../auth.js";
 import { generate as callClaude } from "../claude.js";
+import { parseJsonBlock } from "../json.js";
 import type { Env } from "../types.js";
 
 const r = new Hono<Env>();
@@ -54,12 +55,6 @@ Modos produto/familia/mecanismo/refinamento:
 Ordene "nomes" por pontuacao decrescente, ≥3 arquétipos. "familia" só no modo familia; "frase_copy" só no modo mecanismo.
 Modo diagnostico:
 {"modo_geracao":"diagnostico","nome_avaliado","diagnostico":{"arquetipo","abordagem","construcao","smile":{},"scratch_alertas":[],"cliche_alerta":false,"saturacao","distintividade","registrability_flag","classes_inpi_sugeridas":[],"check_linguistico":{},"anvisa_safe":true,"pontuacao","faixa"},"veredito":"forte|aceitavel|fraco|de risco","pontos_fortes":[],"pontos_fracos":[],"direcoes_melhoria":[],"recomendacao"}`;
-
-// Extrai o primeiro objeto JSON de um texto.
-function parseJsonBlock(text: string): unknown {
-  const json = text.slice(text.indexOf("{"), text.lastIndexOf("}") + 1);
-  return JSON.parse(json);
-}
 
 // Gera/diagnostica nomes de produtos/marcas/tecnologias a partir de um brief.
 r.post("/workspaces/:id/name-generator", async (c) => {

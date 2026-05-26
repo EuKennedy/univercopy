@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { withUser } from "../db.js";
 import { auth } from "../auth.js";
 import { generate as callClaude } from "../claude.js";
+import { parseJsonBlock } from "../json.js";
 import type { Env } from "../types.js";
 
 const r = new Hono<Env>();
@@ -57,10 +58,6 @@ const CATS_VALIDAS = Object.keys(PLAYBOOK).join(", ");
 const GEO_PRINCIPIOS = `PRINCÍPIOS GEO: 1) responder a pergunta direto e cedo (a IA extrai a 1ª frase que responde); 2) densidade factual (specs, números, pH, rendimento, duração — adjetivo solto não é citável); 3) clareza de entidade (nomear produto/marca/categoria/mecanismo igual em toda a página); 4) formato pergunta-resposta autônoma (o que a IA mais cita); 5) estrutura escaneável (definições curtas, tabelas, listas); 6) schema estruturado (Product, FAQPage, HowTo); 7) linguagem conversacional long-tail; 8) corroboração (dados idênticos em todos os canais); 9) frescor; 10) B2B reforça respaldo técnico e rendimento.
 MODELO EM 3 CAMADAS: (1) venda — descrição curta e longa persuasivas/sensoriais (humano+SEO); (2) factual — dados citáveis estruturados (extração da IA); (3) FAQ — perguntas reais com respostas autônomas.`;
 
-function parseJsonBlock(text: string): unknown {
-  return JSON.parse(text.slice(text.indexOf("{"), text.lastIndexOf("}") + 1));
-}
-
 async function getCtx(uid: string, ws: string, productId?: string) {
   return withUser(uid, async (cl) => {
     const w = (await cl.query("select settings from workspace where id=$1", [ws])).rows[0];
@@ -93,12 +90,13 @@ r.post("/workspaces/:id/describe-seo", async (c) => {
     `DNA DA MARCA: ${JSON.stringify(ctx.dna)}\n` +
     (ctx.product ? `PRODUTO: ${JSON.stringify({ name: ctx.product.name, desc: ctx.product.description || ctx.product.short_description })}\n` : "") +
     `BRIEF/PRODUTO A DESCREVER: ${alvo}\nSegmento: ${b.segmento || "B2C"}\n\n` +
-    `Responda APENAS em JSON válido:\n` +
+    `Seja objetivo para caber inteiro na resposta: no máximo 5 itens em cada lista (headings, dados_citaveis, faq_geo, queries_alvo, checklist_ok, avisos). ` +
+    `Responda APENAS com JSON válido e completo (sem markdown, sem texto antes ou depois):\n` +
     `{"descricao_curta":"","descricao_longa":"(abre com definicao/resposta direta, depois venda sensorial, depois reason-why factual)","seo":{"focus_keyword":"","meta_title":"(~55-60c)","meta_description":"(~150-160c)","slug":"","headings":["H1","H2..."],"alt_text":""},"geo":{"definicao":"1-2 frases extraíveis","resposta_direta":"resposta factual ao concern principal, autônoma","dados_citaveis":["fatos concretos: rendimento, pH, duração, composição"],"faq_geo":[{"pergunta":"como o público pergunta à IA","resposta":"autônoma e factual"}],"queries_alvo":["perguntas long-tail"]},"schema_sugerido":["Product","FAQPage"],"checklist_ok":["itens do checklist atendidos"],"avisos":["specs faltantes/placeholders a preencher"]}`;
 
   let parsed: unknown;
   try {
-    const out = await callClaude(prompt, 2200);
+    const out = await callClaude(prompt, 4500);
     parsed = parseJsonBlock(out.text);
     await withUser(uid, (cl) => cl.query(
       `insert into generation(workspace_id, model, prompt, output, prompt_tokens, output_tokens, created_by) values($1,$2,$3,$4,$5,$6,$7)`,
@@ -126,12 +124,13 @@ r.post("/workspaces/:id/review-description", async (c) => {
     GEO_PRINCIPIOS +
     (pb ? `\n\nPLAYBOOK DA CATEGORIA (${cat}): keywords [${pb.kw}] · perguntas IA [${pb.geoq}] · blocos que vencem [${pb.blocos}] · FAQ [${pb.faq}]` : "") +
     `\n\nDNA DA MARCA: ${JSON.stringify(ctx.dna)}\n\nDESCRIÇÃO A REVISAR:\n${(b.content || "").slice(0, 6000)}\n\n` +
-    `Responda APENAS em JSON válido:\n` +
+    `Seja objetivo para caber inteiro na resposta: checklist com no máximo 8 itens; lacunas e correcoes com no máximo 6 itens cada; observações curtas. ` +
+    `Responda APENAS com JSON válido e completo (sem markdown, sem texto antes ou depois):\n` +
     `{"score":<0-100>,"faixa":"competitivo|bom|fraco|critico","camadas":{"venda":"presente|parcial|ausente","factual":"presente|parcial|ausente","faq":"presente|parcial|ausente"},"checklist":[{"item":"","ok":true,"obs":"como corrigir se faltar"}],"lacunas":["o que falta para SEO/GEO"],"correcoes":["acoes concretas, priorizadas"],"resumo":"leitura geral"}`;
 
   let parsed: unknown;
   try {
-    const out = await callClaude(prompt, 1800);
+    const out = await callClaude(prompt, 4000);
     parsed = parseJsonBlock(out.text);
     await withUser(uid, (cl) => cl.query(
       `insert into generation(workspace_id, model, prompt, output, prompt_tokens, output_tokens, created_by) values($1,$2,$3,$4,$5,$6,$7)`,
