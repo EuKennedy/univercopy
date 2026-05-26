@@ -9,13 +9,13 @@ r.use("*", auth);
 // Cria uma campanha.
 r.post("/workspaces/:id/campaigns", async (c) => {
   const uid = c.get("userId"); const ws = c.req.param("id");
-  const b = await c.req.json<{ name?: string; objective?: string; audience?: string; status?: string; starts_at?: string; ends_at?: string }>();
+  const b = await c.req.json<{ name?: string; objective?: string; audience?: string; status?: string; starts_at?: string; ends_at?: string; context?: string }>();
   if (!b?.name) return c.json({ error: "name obrigatório" }, 400);
   const out = await withUser(uid, (cl) =>
     cl.query(
-      `insert into campaign(workspace_id, name, objective, audience, status, starts_at, ends_at, created_by)
-       values($1,$2,$3,$4,coalesce($5,'planejada'),$6,$7,$8) returning *`,
-      [ws, b.name, b.objective ?? null, b.audience ?? null, b.status ?? null, b.starts_at || null, b.ends_at || null, uid]
+      `insert into campaign(workspace_id, name, objective, audience, status, starts_at, ends_at, context, created_by)
+       values($1,$2,$3,$4,coalesce($5,'planejada'),$6,$7,$8,$9) returning *`,
+      [ws, b.name, b.objective ?? null, b.audience ?? null, b.status ?? null, b.starts_at || null, b.ends_at || null, b.context ?? null, uid]
     ));
   return c.json(out.rows[0], 201);
 });
@@ -48,15 +48,16 @@ r.get("/campaigns/:cid", async (c) => {
 // Atualiza a campanha.
 r.patch("/campaigns/:cid", async (c) => {
   const uid = c.get("userId"); const cid = c.req.param("cid");
-  const b = await c.req.json<{ name?: string; objective?: string; audience?: string; status?: string; starts_at?: string; ends_at?: string }>();
+  const b = await c.req.json<{ name?: string; objective?: string; audience?: string; status?: string; starts_at?: string; ends_at?: string; context?: string }>();
   const out = await withUser(uid, (cl) =>
     cl.query(
       `update campaign set
          name = coalesce($2, name), objective = coalesce($3, objective), audience = coalesce($4, audience),
          status = coalesce($5, status), starts_at = coalesce($6, starts_at), ends_at = coalesce($7, ends_at),
+         context = coalesce($8, context),
          updated_at = now()
        where id = $1 returning *`,
-      [cid, b.name ?? null, b.objective ?? null, b.audience ?? null, b.status ?? null, b.starts_at || null, b.ends_at || null]
+      [cid, b.name ?? null, b.objective ?? null, b.audience ?? null, b.status ?? null, b.starts_at || null, b.ends_at || null, b.context ?? null]
     ));
   return out.rows[0] ? c.json(out.rows[0]) : c.json({ error: "not found" }, 404);
 });

@@ -56,6 +56,7 @@ do $$ begin
     create policy campaign_all on campaign for all using (is_member(workspace_id)) with check (is_member(workspace_id));
   end if;
 end $$;
+alter table campaign add column if not exists context text;
 alter table copy add column if not exists campaign_id uuid references campaign(id) on delete set null;
 create index if not exists idx_copy_campaign on copy(campaign_id);
 `;

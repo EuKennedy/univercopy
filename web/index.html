@@ -1469,7 +1469,16 @@ async function renderCampanhaDetalhe(id){
   let html=`<div class="back" onclick="abrirCampanhas()">← Todas as campanhas</div>`
    +head('🎯','linear-gradient(135deg,#ec4899,#6366f1)',esc(c.name),(c.objective?esc(c.objective)+' · ':'')+copies.length+' peça(s)'+((c.starts_at||c.ends_at)?' · '+esc(c.starts_at||'?')+' → '+esc(c.ends_at||'?'):''),`<select onchange="mudarStatusCampanha('${c.id}',this.value)" style="height:34px">${['planejada','ativa','pausada','concluida'].map(s=>`<option value="${s}" ${c.status===s?'selected':''}>${s}</option>`).join('')}</select>`);
   html+=`<div class="section-card"><div class="sc-title">⚡ Gerar campanha completa</div>
-    <div class="field"><label>Brief da campanha</label><input id="campBrief" placeholder="ex.: Black Friday — até 40% OFF na linha Liso Blindado, frete grátis"></div>
+    <div class="field"><label>Brief / oferta principal</label><input id="campBrief" placeholder="ex.: Black Friday — até 40% OFF na linha Liso Blindado, frete grátis"></div>
+    <div class="field"><label>Contexto da campanha <span class="muted">(persona, produto, oferta, tom, regras — quanto mais detalhe, melhor a copy)</span></label>
+      <textarea id="campContext" rows="10" style="width:100%;min-height:170px;resize:vertical;font-family:inherit;line-height:1.55" placeholder="Cole aqui o briefing completo (persona, dores, diferenciais, oferta, provas, tom de voz, regras) — ou anexe um arquivo .txt/.md/.csv abaixo.">${esc(c.context||'')}</textarea>
+      <div style="display:flex;gap:8px;align-items:center;margin-top:6px;flex-wrap:wrap">
+        <input type="file" id="campFile" accept=".txt,.md,.markdown,.csv,.text,text/plain" multiple style="display:none" onchange="carregarContextoArquivo(event)">
+        <button class="btn btn-sm" type="button" onclick="document.getElementById('campFile').click()">📎 Anexar arquivo (.txt/.md/.csv)</button>
+        <button class="btn btn-sm" type="button" onclick="salvarContextoCampanha('${c.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${IC.check}</svg> Salvar contexto</button>
+        <span id="campCtxInfo" class="muted" style="font-size:.72rem"></span>
+      </div>
+    </div>
     <div class="field"><label>Canais <span class="muted">(clique)</span></label><div class="taglist">${chOpts}</div></div>
     <button class="btn btn-primary" onclick="gerarCampanha('${c.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${IC.bolt}</svg> Gerar peças dos canais</button>
     <div id="camp-gen" class="muted" style="font-size:.78rem;margin-top:10px"></div>
@@ -1484,19 +1493,46 @@ function pecasPorCanal(copies){
   return CATS.filter(ct=>byCat[ct.id]).map(ct=>`<div class="sc-title" style="margin:16px 0 8px;color:${ct.cor}"><span style="width:9px;height:9px;border-radius:50%;background:${ct.cor};display:inline-block"></span> ${ct.ic} ${ct.nome} · ${byCat[ct.id].length}</div><div class="cardgrid" style="grid-template-columns:repeat(auto-fill,minmax(300px,1fr))">${byCat[ct.id].map(o=>`<div class="gcard" onclick="openCopy('${o.id}')" style="cursor:pointer"><div style="font-weight:700;font-size:.86rem;margin-bottom:5px">${esc(o.titulo)}</div><div style="font-size:.8rem;color:var(--text-secondary);max-height:62px;overflow:hidden;line-height:1.5">${esc((o.conteudo||'').slice(0,170))}</div><div style="margin-top:8px"><span class="pill ${stClass[o.status]}" style="font-size:.6rem">${stLabel[o.status]}</span></div></div>`).join('')}</div>`).join('');
 }
 async function mudarStatusCampanha(id,s){ try{ await ucReq('PATCH','/campaigns/'+id,{status:s}); const w=ws(); w._campLoaded=false; toast('Status: '+s); }catch(e){ toast('Erro: '+e.message); } }
+// Carrega arquivos de texto (.txt/.md/.csv) para dentro do campo de contexto.
+function carregarContextoArquivo(ev){
+  const files=[...(ev.target.files||[])]; if(!files.length)return;
+  const info=$('campCtxInfo'); const ta=$('campContext'); if(!ta)return;
+  let pend=files.length, lidos=0;
+  files.forEach(f=>{
+    if(f.size>800000){ if(info)info.textContent='“'+f.name+'” é grande demais (máx ~800KB).'; pend--; return; }
+    const rd=new FileReader();
+    rd.onload=()=>{ const txt=(rd.result||'').toString();
+      ta.value=(ta.value.trim()?ta.value.trim()+'\n\n':'')+'--- '+f.name+' ---\n'+txt;
+      lidos++; pend--; if(pend<=0&&info)info.textContent=lidos+' arquivo(s) carregado(s) no contexto. Lembre de salvar.'; };
+    rd.onerror=()=>{ pend--; if(info)info.textContent='Falha ao ler “'+f.name+'”.'; };
+    rd.readAsText(f);
+  });
+  ev.target.value='';
+}
+// Salva o contexto digitado/anexado na campanha.
+async function salvarContextoCampanha(id){
+  const ctx=($('campContext')?$('campContext').value:''); const info=$('campCtxInfo');
+  try{ await ucReq('PATCH','/campaigns/'+id,{context:ctx}); const w=ws(); w._campLoaded=false; if(info)info.textContent='Contexto salvo na campanha ✓'; toast('Contexto salvo'); }
+  catch(e){ toast('Erro ao salvar contexto: '+e.message); }
+}
 async function gerarCampanha(id){
-  const brief=$('campBrief').value.trim();if(!brief){toast('Escreva o brief da campanha');return;}
+  const brief=$('campBrief').value.trim();
+  const ctx=($('campContext')?$('campContext').value.trim():'');
+  if(!brief&&!ctx){toast('Escreva o brief ou o contexto da campanha');return;}
   const chans=[...document.querySelectorAll('.campCh.active')].map(c=>c.dataset.ch);
   if(!chans.length){toast('Selecione ao menos um canal');return;}
   const w=ws();const out=$('camp-gen');let feito=0;
+  const briefFull=brief+(ctx?(brief?'\n\n':'')+'CONTEXTO DA CAMPANHA:\n'+ctx:'');
+  const titBase=brief||(ctx.split('\n')[0]||'Peça').slice(0,40);
+  try{ await ucReq('PATCH','/campaigns/'+id,{context:ctx}); }catch(e){}
   for(const ch of chans){
     const tipoId=CAMP_PIECE[ch]||(((TIPOS[ch]||[])[0]||{}).id||'');
     const t=(TIPOS[ch]||[]).find(x=>x.id===tipoId)||{};
     if(out)out.innerHTML='⏳ Gerando '+esc(cat(ch).nome)+'… ('+(feito+1)+'/'+chans.length+')';
     try{
-      const res=await ucReq('POST','/workspaces/'+w.id+'/generate',{brief,categoryKey:ch,pieceTypeKey:(ch&&tipoId?ch+':'+tipoId:undefined),styleKey:t.estilo||'ogilvy',frameworkKey:t.fw||'AIDA'});
+      const res=await ucReq('POST','/workspaces/'+w.id+'/generate',{brief:briefFull,categoryKey:ch,pieceTypeKey:(ch&&tipoId?ch+':'+tipoId:undefined),styleKey:t.estilo||'ogilvy',frameworkKey:t.fw||'AIDA'});
       const v=(res.variations||[])[0];if(!v)throw new Error('sem variação');
-      const titulo=((t.nome?t.nome+' — ':'')+brief).slice(0,56);
+      const titulo=((t.nome?t.nome+' — ':'')+titBase).slice(0,56);
       await ucReq('POST','/workspaces/'+w.id+'/copies',{title:titulo,content:v,category_key:ch,piece_type_key:(ch&&tipoId?ch+':'+tipoId:''),style_key:t.estilo||'ogilvy',framework_key:t.fw||'AIDA',campaign_id:id});
       feito++;
     }catch(e){ if(out)out.innerHTML+='<div style="color:var(--danger)">Falha em '+esc(cat(ch).nome)+': '+esc(e.message)+'</div>'; }
