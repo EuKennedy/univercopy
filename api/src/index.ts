@@ -15,6 +15,7 @@ import woocommerce from "./routes/woocommerce.js";
 import names from "./routes/names.js";
 import seo from "./routes/seo.js";
 import intelligence from "./routes/intelligence.js";
+import campaigns from "./routes/campaigns.js";
 
 const app = new Hono<Env>();
 app.use("*", cors({ origin: (process.env.APP_ORIGIN || "*").split(",") }));
@@ -57,6 +58,7 @@ app.route("/", woocommerce);
 app.route("/", names);
 app.route("/", seo);
 app.route("/", intelligence);
+app.route("/", campaigns);
 
 const port = Number(process.env.PORT || 8080);
 

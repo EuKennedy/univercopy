@@ -35,6 +35,29 @@ do $$ begin
     create policy intel_all on intelligence_record for all using (is_member(workspace_id)) with check (is_member(workspace_id));
   end if;
 end $$;
+
+create table if not exists campaign (
+  id            uuid primary key default gen_random_uuid(),
+  workspace_id  uuid not null references workspace(id) on delete cascade,
+  name          text not null,
+  objective     text,
+  audience      text,
+  status        text not null default 'planejada',
+  starts_at     date,
+  ends_at       date,
+  created_by    uuid,
+  created_at    timestamptz not null default now(),
+  updated_at    timestamptz not null default now()
+);
+create index if not exists idx_campaign_ws on campaign(workspace_id);
+alter table campaign enable row level security;
+do $$ begin
+  if not exists (select 1 from pg_policies where tablename = 'campaign' and policyname = 'campaign_all') then
+    create policy campaign_all on campaign for all using (is_member(workspace_id)) with check (is_member(workspace_id));
+  end if;
+end $$;
+alter table copy add column if not exists campaign_id uuid references campaign(id) on delete set null;
+create index if not exists idx_copy_campaign on copy(campaign_id);
 `;
 
 async function runAdditive(client: PoolClient): Promise<void> {

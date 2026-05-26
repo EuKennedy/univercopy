@@ -133,6 +133,7 @@ tbody tr:hover{background:var(--bg-tertiary)}
     <div class="nav-item" data-v="acervo" onclick="nav('acervo')"><svg class="ni-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h18M3 12h18M3 17h18"/></svg><span>Acervo</span><span class="badge" id="nav-acervo-count">0</span></div>
     <div class="nav-item" data-v="produtos" onclick="nav('produtos')"><svg class="ni-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><path d="M3.27 6.96L12 12.01l8.73-5.05M12 22.08V12"/></svg><span>Produtos</span></div>
     <div class="nav-item" data-v="bau" onclick="abrirBau()"><svg class="ni-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h18l-1.5 13a2 2 0 01-2 1.8H6.5a2 2 0 01-2-1.8L3 7z"/><path d="M3 7l2-4h14l2 4M9 11v4M15 11v4"/></svg><span>Baú de Campanhas</span></div>
+    <div class="nav-item" data-v="campanhas" onclick="abrirCampanhas()"><svg class="ni-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 11-5.8-1.6"/></svg><span>Campanhas</span></div>
     <div class="nav-item" data-v="gerador" onclick="nav('gerador')"><svg class="ni-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3v4M3 5h4M6 17v4M4 19h4M13 3l2.5 6.5L22 12l-6.5 2.5L13 21l-2.5-6.5L4 12l6.5-2.5z"/></svg><span>Gerador de Copy</span></div>
     <div class="nav-item" data-v="nomes" onclick="nav('nomes')"><svg class="ni-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><circle cx="7" cy="7" r="1.2"/></svg><span>Gerador de Produtos</span></div>
     <div class="nav-item" data-v="seo" onclick="nav('seo')"><svg class="ni-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg><span>SEO + GEO</span></div>
@@ -457,7 +458,7 @@ const IC={doc:'<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
 function nav(v){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.v===v));
   window._view=v;
-  ({dash:renderDash,acervo:renderAcervo,gerador:renderGerador,catalogo:renderCatalogo,analise:renderAnalise,revisao:renderRevisao,dna:renderDNA,referencias:renderRefs,estilos:renderEstilos,nomes:renderNomes,produtos:renderProdutos,bau:renderBau,seo:renderSeo,intel:renderIntel}[v]||renderDash)();
+  ({dash:renderDash,acervo:renderAcervo,gerador:renderGerador,catalogo:renderCatalogo,analise:renderAnalise,revisao:renderRevisao,dna:renderDNA,referencias:renderRefs,estilos:renderEstilos,nomes:renderNomes,produtos:renderProdutos,bau:renderBau,seo:renderSeo,intel:renderIntel,campanhas:renderCampanhas}[v]||renderDash)();
   window.scrollTo(0,0);
 }
 function updateBadges(){$('nav-acervo-count').textContent=ws().copies.length;$('nav-rev-count').textContent=ws().copies.filter(c=>c.status==='revisao').length;renderWsSwitcher();}
@@ -1427,6 +1428,82 @@ function drawIntel(){
       ${r.observacoes?`<div style="font-size:.78rem;color:var(--text-secondary)">${esc(r.observacoes)}</div>`:''}
     </div>`;}).join('')+`</div>`;
   out.innerHTML=html;
+}
+/* ====== CAMPANHAS (estrutura + gerar multicanal + organizar) ====== */
+const CAMP_PIECE={ecom:'desc-prod-longa',pv:'headline',ads:'meta-primary',email:'oferta-email',social:'legenda',marca:'tagline',seo:'titulo-blog'};
+const CAMP_STATUS={planejada:'st-rascunho',ativa:'st-aprovado',pausada:'st-revisao',concluida:'st-publicado'};
+async function loadCampanhas(w){ try{ w.campaigns=await ucReq('GET','/workspaces/'+w.id+'/campaigns'); }catch(e){ w.campaigns=[]; } w._campLoaded=true; }
+function abrirCampanhas(){ window._campId=null; nav('campanhas'); }
+function abrirCampanha(id){ window._campId=id; nav('campanhas'); }
+function renderCampanhas(){
+  if(window._campId){ renderCampanhaDetalhe(window._campId); return; }
+  const w=ws();
+  $('view').innerHTML=
+   head('🎯','linear-gradient(135deg,#ec4899,#6366f1)','Campanhas','Campanhas completas — objetivo, período e todas as peças por canal','')
+   +`<div class="section-card"><div class="sc-title">＋ Nova campanha</div>
+     <div class="grid2" style="gap:10px"><div class="field" style="margin:0"><label>Nome *</label><input id="cpNome" placeholder="ex.: Black Friday 2026"></div><div class="field" style="margin:0"><label>Objetivo</label><input id="cpObj" placeholder="ex.: liquidar estoque / lançar linha"></div></div>
+     <div class="grid2" style="gap:10px"><div class="field" style="margin:0"><label>Público</label><input id="cpPub" placeholder="ex.: cabeleireiros e salões"></div><div class="field" style="margin:0"><label>Período</label><div style="display:flex;gap:6px"><input id="cpIni" type="date" style="flex:1"><input id="cpFim" type="date" style="flex:1"></div></div></div>
+     <button class="btn btn-primary" style="margin-top:6px" onclick="novaCampanha()">＋ Criar campanha</button>
+   </div>
+   <div id="camp-out"><div class="muted" style="padding:24px;text-align:center">Carregando…</div></div>`;
+  if(!w._campLoaded){ loadCampanhas(w).then(()=>{ if(window._view==='campanhas'&&!window._campId)drawCampanhas(); }); } else drawCampanhas();
+}
+function drawCampanhas(){
+  const w=ws();const list=w.campaigns||[];const out=$('camp-out');if(!out)return;
+  if(!list.length){ out.innerHTML='<div class="table-wrap"><div class="empty"><div class="empty-ic">🎯</div><p style="font-weight:600;color:var(--text-primary)">Nenhuma campanha ainda</p><p style="margin-top:4px">Crie uma campanha acima e gere as peças de todos os canais de uma vez.</p></div></div>'; return; }
+  out.innerHTML=`<div class="cardgrid" style="grid-template-columns:repeat(auto-fill,minmax(300px,1fr))">`+list.map(c=>`<div class="gcard" onclick="abrirCampanha('${c.id}')" style="cursor:pointer">
+    <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px"><div style="font-weight:800;font-size:.95rem;flex:1">${esc(c.name)}</div><span class="pill ${CAMP_STATUS[c.status]||'st-rascunho'}" style="font-size:.6rem">${esc(c.status||'')}</span></div>
+    ${c.objective?`<div style="font-size:.8rem;color:var(--text-secondary);margin-bottom:6px">${esc(c.objective)}</div>`:''}
+    <div class="muted" style="font-size:.72rem">${c.pieces||0} peça(s)${(c.starts_at||c.ends_at)?' · '+esc(c.starts_at||'?')+' → '+esc(c.ends_at||'?'):''}</div>
+  </div>`).join('')+`</div>`;
+}
+async function novaCampanha(){
+  const w=ws();const nome=$('cpNome').value.trim();if(!nome){toast('Dê um nome à campanha');return;}
+  try{const c=await ucReq('POST','/workspaces/'+w.id+'/campaigns',{name:nome,objective:$('cpObj').value.trim()||undefined,audience:$('cpPub').value.trim()||undefined,starts_at:$('cpIni').value||undefined,ends_at:$('cpFim').value||undefined});w._campLoaded=false;await loadCampanhas(w);toast('Campanha criada');window._campId=c.id;nav('campanhas');}catch(e){toast('Erro ao criar: '+e.message);}
+}
+async function renderCampanhaDetalhe(id){
+  $('view').innerHTML='<div class="muted" style="padding:24px;text-align:center">Carregando campanha…</div>';
+  let data; try{ data=await ucReq('GET','/campaigns/'+id); }catch(e){ $('view').innerHTML='<div class="back" onclick="abrirCampanhas()">← Campanhas</div><div class="muted" style="padding:24px;color:var(--danger)">Erro: '+esc(e.message)+'</div>'; return; }
+  const c=data.campaign;const copies=data.copies||[];
+  const chOpts=CATS.map(x=>`<span class="chip campCh ${['ecom','ads','email','social'].includes(x.id)?'active':''}" data-ch="${x.id}" onclick="this.classList.toggle('active')">${x.ic} ${x.nome}</span>`).join('');
+  let html=`<div class="back" onclick="abrirCampanhas()">← Todas as campanhas</div>`
+   +head('🎯','linear-gradient(135deg,#ec4899,#6366f1)',esc(c.name),(c.objective?esc(c.objective)+' · ':'')+copies.length+' peça(s)'+((c.starts_at||c.ends_at)?' · '+esc(c.starts_at||'?')+' → '+esc(c.ends_at||'?'):''),`<select onchange="mudarStatusCampanha('${c.id}',this.value)" style="height:34px">${['planejada','ativa','pausada','concluida'].map(s=>`<option value="${s}" ${c.status===s?'selected':''}>${s}</option>`).join('')}</select>`);
+  html+=`<div class="section-card"><div class="sc-title">⚡ Gerar campanha completa</div>
+    <div class="field"><label>Brief da campanha</label><input id="campBrief" placeholder="ex.: Black Friday — até 40% OFF na linha Liso Blindado, frete grátis"></div>
+    <div class="field"><label>Canais <span class="muted">(clique)</span></label><div class="taglist">${chOpts}</div></div>
+    <button class="btn btn-primary" onclick="gerarCampanha('${c.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${IC.bolt}</svg> Gerar peças dos canais</button>
+    <div id="camp-gen" class="muted" style="font-size:.78rem;margin-top:10px"></div>
+  </div>`;
+  html+=pecasPorCanal(copies);
+  $('view').innerHTML=html;
+}
+function pecasPorCanal(copies){
+  if(!copies.length)return `<div class="table-wrap"><div class="empty"><div class="empty-ic">📭</div><p style="font-weight:600;color:var(--text-primary)">Sem peças ainda</p><p style="margin-top:4px">Use "Gerar campanha completa" acima para criar as peças de cada canal.</p></div></div>`;
+  const w=ws();const byCat={};
+  copies.forEach(cp=>{const o=adaptCopyRow(cp,w.nome);(byCat[o.cat]=byCat[o.cat]||[]).push(o);w.copies=w.copies||[];if(!w.copies.find(x=>x.id===o.id))w.copies.unshift(o);});
+  return CATS.filter(ct=>byCat[ct.id]).map(ct=>`<div class="sc-title" style="margin:16px 0 8px;color:${ct.cor}"><span style="width:9px;height:9px;border-radius:50%;background:${ct.cor};display:inline-block"></span> ${ct.ic} ${ct.nome} · ${byCat[ct.id].length}</div><div class="cardgrid" style="grid-template-columns:repeat(auto-fill,minmax(300px,1fr))">${byCat[ct.id].map(o=>`<div class="gcard" onclick="openCopy('${o.id}')" style="cursor:pointer"><div style="font-weight:700;font-size:.86rem;margin-bottom:5px">${esc(o.titulo)}</div><div style="font-size:.8rem;color:var(--text-secondary);max-height:62px;overflow:hidden;line-height:1.5">${esc((o.conteudo||'').slice(0,170))}</div><div style="margin-top:8px"><span class="pill ${stClass[o.status]}" style="font-size:.6rem">${stLabel[o.status]}</span></div></div>`).join('')}</div>`).join('');
+}
+async function mudarStatusCampanha(id,s){ try{ await ucReq('PATCH','/campaigns/'+id,{status:s}); const w=ws(); w._campLoaded=false; toast('Status: '+s); }catch(e){ toast('Erro: '+e.message); } }
+async function gerarCampanha(id){
+  const brief=$('campBrief').value.trim();if(!brief){toast('Escreva o brief da campanha');return;}
+  const chans=[...document.querySelectorAll('.campCh.active')].map(c=>c.dataset.ch);
+  if(!chans.length){toast('Selecione ao menos um canal');return;}
+  const w=ws();const out=$('camp-gen');let feito=0;
+  for(const ch of chans){
+    const tipoId=CAMP_PIECE[ch]||(((TIPOS[ch]||[])[0]||{}).id||'');
+    const t=(TIPOS[ch]||[]).find(x=>x.id===tipoId)||{};
+    if(out)out.innerHTML='⏳ Gerando '+esc(cat(ch).nome)+'… ('+(feito+1)+'/'+chans.length+')';
+    try{
+      const res=await ucReq('POST','/workspaces/'+w.id+'/generate',{brief,categoryKey:ch,pieceTypeKey:(ch&&tipoId?ch+':'+tipoId:undefined),styleKey:t.estilo||'ogilvy',frameworkKey:t.fw||'AIDA'});
+      const v=(res.variations||[])[0];if(!v)throw new Error('sem variação');
+      const titulo=((t.nome?t.nome+' — ':'')+brief).slice(0,56);
+      await ucReq('POST','/workspaces/'+w.id+'/copies',{title:titulo,content:v,category_key:ch,piece_type_key:(ch&&tipoId?ch+':'+tipoId:''),style_key:t.estilo||'ogilvy',framework_key:t.fw||'AIDA',campaign_id:id});
+      feito++;
+    }catch(e){ if(out)out.innerHTML+='<div style="color:var(--danger)">Falha em '+esc(cat(ch).nome)+': '+esc(e.message)+'</div>'; }
+  }
+  if(out)out.innerHTML='✅ '+feito+' peça(s) gerada(s) e salva(s) na campanha.';
+  toast(feito+' peças geradas na campanha');
+  window._campLoaded=false; abrirCampanha(id);
 }
 boot();
 </script>

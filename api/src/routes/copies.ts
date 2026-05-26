@@ -25,14 +25,14 @@ r.post("/workspaces/:id/copies", async (c) => {
   const uid = c.get("userId"); const ws = c.req.param("id");
   const b = await c.req.json<{
     title: string; content: string; category_key?: string; piece_type_key?: string;
-    style_key?: string; framework_key?: string; product_id?: string; tags?: string[];
+    style_key?: string; framework_key?: string; product_id?: string; tags?: string[]; campaign_id?: string;
   }>();
   const out = await withUser(uid, async (cl) => {
     const copy = (await cl.query(
-      `insert into copy(workspace_id, product_id, category_key, piece_type_key, title, style_key, framework_key, tags, created_by)
-       values($1,$2,$3,$4,$5,$6,$7,$8,$9) returning *`,
+      `insert into copy(workspace_id, product_id, category_key, piece_type_key, title, style_key, framework_key, tags, created_by, campaign_id)
+       values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) returning *`,
       [ws, b.product_id ?? null, b.category_key ?? null, b.piece_type_key ?? null,
-       b.title, b.style_key ?? null, b.framework_key ?? null, JSON.stringify(b.tags ?? []), uid]
+       b.title, b.style_key ?? null, b.framework_key ?? null, JSON.stringify(b.tags ?? []), uid, b.campaign_id ?? null]
     )).rows[0];
     await cl.query(
       `insert into copy_version(copy_id, n, content, author_id, note, is_current)
