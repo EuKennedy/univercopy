@@ -79,7 +79,9 @@ r.post("/workspaces/:id/describe-seo", async (c) => {
   const pb = PLAYBOOK[cat];
   if (!pb) return c.json({ error: `productCategory inválida. Use uma de: ${CATS_VALIDAS}` }, 400);
 
-  const ctx = await getCtx(uid, ws, b.productId);
+  let ctx: Awaited<ReturnType<typeof getCtx>>;
+  try { ctx = await getCtx(uid, ws, b.productId); }
+  catch (e) { return c.json({ error: "falha ao carregar contexto", detail: String(e) }, 500); }
   const alvo = b.brief || ctx.product?.name || "o produto";
 
   const prompt =
@@ -116,7 +118,9 @@ r.post("/workspaces/:id/review-description", async (c) => {
   const cat = (b.productCategory || "").toLowerCase();
   const pb = PLAYBOOK[cat];
 
-  const ctx = await getCtx(uid, ws);
+  let ctx: Awaited<ReturnType<typeof getCtx>>;
+  try { ctx = await getCtx(uid, ws); }
+  catch (e) { return c.json({ error: "falha ao carregar contexto", detail: String(e) }, 500); }
   const prompt =
     `Você é auditor sênior de SEO + GEO para e-commerce de beleza. Avalie a DESCRIÇÃO abaixo e produza uma revisão acionável em PT-BR.\n\n` +
     GEO_PRINCIPIOS +
