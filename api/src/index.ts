@@ -13,6 +13,8 @@ import generate from "./routes/generate.js";
 import audit from "./routes/audit.js";
 import woocommerce from "./routes/woocommerce.js";
 import names from "./routes/names.js";
+import seo from "./routes/seo.js";
+import intelligence from "./routes/intelligence.js";
 
 const app = new Hono<Env>();
 app.use("*", cors({ origin: (process.env.APP_ORIGIN || "*").split(",") }));
@@ -53,6 +55,8 @@ app.route("/", generate);
 app.route("/", audit);
 app.route("/", woocommerce);
 app.route("/", names);
+app.route("/", seo);
+app.route("/", intelligence);
 
 const port = Number(process.env.PORT || 8080);
 

@@ -135,9 +135,11 @@ tbody tr:hover{background:var(--bg-tertiary)}
     <div class="nav-item" data-v="bau" onclick="abrirBau()"><svg class="ni-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h18l-1.5 13a2 2 0 01-2 1.8H6.5a2 2 0 01-2-1.8L3 7z"/><path d="M3 7l2-4h14l2 4M9 11v4M15 11v4"/></svg><span>Baú de Campanhas</span></div>
     <div class="nav-item" data-v="gerador" onclick="nav('gerador')"><svg class="ni-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3v4M3 5h4M6 17v4M4 19h4M13 3l2.5 6.5L22 12l-6.5 2.5L13 21l-2.5-6.5L4 12l6.5-2.5z"/></svg><span>Gerador de Copy</span></div>
     <div class="nav-item" data-v="nomes" onclick="nav('nomes')"><svg class="ni-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><circle cx="7" cy="7" r="1.2"/></svg><span>Gerador de Produtos</span></div>
+    <div class="nav-item" data-v="seo" onclick="nav('seo')"><svg class="ni-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg><span>SEO + GEO</span></div>
     <div class="nav-item" data-v="catalogo" onclick="nav('catalogo')"><svg class="ni-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="7" rx="1"/><rect x="3" y="14" width="18" height="7" rx="1"/></svg><span>Catálogo de Peças</span></div>
     <div class="nav-item" data-v="revisao" onclick="nav('revisao')"><svg class="ni-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg><span>Revisão</span><span class="badge" id="nav-rev-count">0</span></div>
     <div class="nav-item" data-v="analise" onclick="nav('analise')"><svg class="ni-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg><span>Analisar Página</span></div>
+    <div class="nav-item" data-v="intel" onclick="nav('intel')"><svg class="ni-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg><span>Inteligência</span></div>
     <div class="nav-label">Inteligência de marca</div>
     <div class="nav-item" data-v="dna" onclick="nav('dna')"><svg class="ni-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a4 4 0 014 4c0 2-2 3-2 6M12 2a4 4 0 00-4 4c0 2 2 3 2 6M8 12c0 3 2 4 2 6a2 2 0 104 0c0-2 2-3 2-6"/></svg><span>DNA da Marca</span></div>
     <div class="nav-item" data-v="referencias" onclick="nav('referencias')"><svg class="ni-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 016.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/></svg><span>Referências</span></div>
@@ -455,7 +457,7 @@ const IC={doc:'<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
 function nav(v){
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.v===v));
   window._view=v;
-  ({dash:renderDash,acervo:renderAcervo,gerador:renderGerador,catalogo:renderCatalogo,analise:renderAnalise,revisao:renderRevisao,dna:renderDNA,referencias:renderRefs,estilos:renderEstilos,nomes:renderNomes,produtos:renderProdutos,bau:renderBau}[v]||renderDash)();
+  ({dash:renderDash,acervo:renderAcervo,gerador:renderGerador,catalogo:renderCatalogo,analise:renderAnalise,revisao:renderRevisao,dna:renderDNA,referencias:renderRefs,estilos:renderEstilos,nomes:renderNomes,produtos:renderProdutos,bau:renderBau,seo:renderSeo,intel:renderIntel}[v]||renderDash)();
   window.scrollTo(0,0);
 }
 function updateBadges(){$('nav-acervo-count').textContent=ws().copies.length;$('nav-rev-count').textContent=ws().copies.filter(c=>c.status==='revisao').length;renderWsSwitcher();}
@@ -1305,6 +1307,125 @@ function drawDiagnostico(res){
   const bloco=(t,arr,cor)=>(arr&&arr.length)?`<div style="margin-bottom:8px"><div style="font-size:.68rem;font-weight:800;color:${cor};text-transform:uppercase;letter-spacing:.04em">${t}</div><ul style="margin:4px 0 0 18px;padding:0">${arr.map(x=>`<li style="font-size:.82rem;margin-bottom:2px">${esc(x)}</li>`).join('')}</ul></div>`:'';
   html+=bloco('Pontos fortes',res.pontos_fortes,'var(--success)')+bloco('Pontos fracos',res.pontos_fracos,'var(--danger)')+bloco('Direções de melhoria',res.direcoes_melhoria,'var(--primary-hover)');
   html+=`</div>`;
+  out.innerHTML=html;
+}
+/* ====== SEO + GEO (descrever em camadas + revisar descrição) ====== */
+const PROD_CATS=[['progressiva','Progressiva / Alisante'],['shampoo','Shampoo'],['mascara','Máscara / Tratamento'],['finalizador','Finalizador'],['coloracao','Coloração'],['kit','Kit / Combo']];
+function prodCatOpts(){return PROD_CATS.map(c=>`<option value="${c[0]}">${c[1]}</option>`).join('');}
+function renderSeo(){
+  const w=ws();
+  $('view').innerHTML=
+   head('🎯','linear-gradient(135deg,#0ea5e9,#10b981)','SEO + GEO','Fichas em camadas (venda · factual · FAQ) p/ Google e motores de IA — e revisão de descrições','')
+   +`<div style="display:grid;grid-template-columns:1fr 1.25fr;gap:16px" id="seo-grid">
+     <div>
+       <div class="section-card"><div class="sc-title">🧱 Gerar ficha SEO+GEO</div>
+         <div class="field"><label>Categoria de produto</label><select id="seoCat">${prodCatOpts()}</select></div>
+         <div class="field"><label>Produto do catálogo <span class="muted">(opcional)</span></label><select id="seoProd"><option value="">— usar o brief abaixo —</option>${(w.products||[]).map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('')}</select></div>
+         <div class="field"><label>Brief <span class="muted">(se não escolher produto)</span></label><input id="seoBrief" placeholder="ex.: Liso Blindado Volume Control, sem amônia"></div>
+         <div class="field" style="margin:0"><label>Segmento</label><select id="seoSeg"><option value="B2C">B2C (consumidor)</option><option value="B2B">B2B (profissional)</option></select></div>
+         <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:12px" onclick="gerarFichaSeo()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${IC.bolt}</svg> Gerar ficha</button>
+       </div>
+       <div class="section-card"><div class="sc-title">🔍 Revisar descrição existente</div>
+         <div class="field"><label>Categoria</label><select id="revCat">${prodCatOpts()}</select></div>
+         <div class="field"><label>Cole a descrição atual</label><textarea id="revCont" rows="5" placeholder="cole aqui a descrição do produto para revisar"></textarea></div>
+         <button class="btn" style="width:100%;justify-content:center" onclick="revisarDescricao()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg> Revisar SEO+GEO</button>
+       </div>
+     </div>
+     <div class="section-card"><div class="sc-title">✨ Resultado</div><div id="seo-out"><div class="empty" style="padding:40px 10px"><div class="empty-ic">🎯</div><p style="font-weight:600;color:var(--text-primary)">Gere uma ficha ou revise uma descrição</p><p style="margin-top:4px">Saída em camadas: venda, dados citáveis e FAQ — pronta para Google e IA.</p></div></div></div>
+   </div>`;
+  if(!w._prodLoaded){ loadProdutos(w).then(()=>{ if(window._view==='seo'){const s=$('seoProd'); if(s)s.innerHTML='<option value="">— usar o brief abaixo —</option>'+(w.products||[]).map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('');} }); }
+  if(window.innerWidth<860){const g=$('seo-grid');if(g)g.style.gridTemplateColumns='1fr';}
+}
+function gerarFichaSeo(){
+  const w=ws();const cat=$('seoCat').value;const pid=$('seoProd').value;const brief=$('seoBrief').value.trim();
+  if(!pid&&!brief){toast('Escolha um produto ou escreva um brief');return;}
+  const out=$('seo-out');out.innerHTML='<div class="muted" style="padding:24px;text-align:center">🎯 Gerando a ficha em camadas (Claude)… <span class="muted">(alguns segundos)</span></div>';
+  ucReq('POST','/workspaces/'+w.id+'/describe-seo',{productId:pid||undefined,brief:brief||undefined,productCategory:cat,segmento:$('seoSeg').value}).then(drawFicha).catch(e=>{out.innerHTML='<div class="muted" style="padding:24px;text-align:center;color:var(--danger)">Falha: '+esc(e.message)+'</div>';});
+}
+function drawFicha(res){
+  const out=$('seo-out');window._lastFicha=res;const seo=res.seo||{};const geo=res.geo||{};
+  let html=`<div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap"><button class="btn btn-sm btn-primary" onclick="salvarFicha()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${IC.check}</svg> Salvar no acervo</button></div>`;
+  if(res.descricao_curta)html+=`<div style="margin-bottom:10px"><div class="sc-title">Descrição curta</div><div class="var-out" style="margin:0">${esc(res.descricao_curta)}</div></div>`;
+  if(res.descricao_longa)html+=`<div style="margin-bottom:10px"><div class="sc-title">Descrição longa · 3 camadas</div><div class="var-out" style="margin:0">${esc(res.descricao_longa)}</div></div>`;
+  html+=`<div class="section-card" style="margin-bottom:10px"><div class="sc-title">🔎 SEO</div>
+    <div class="kv"><b>Keyword</b><span>${esc(seo.focus_keyword||'—')}</span></div>
+    <div class="kv"><b>Meta title</b><span>${esc(seo.meta_title||'—')}</span></div>
+    <div class="kv"><b>Meta description</b><span>${esc(seo.meta_description||'—')}</span></div>
+    <div class="kv"><b>Slug</b><span>${esc(seo.slug||'—')}</span></div>
+    ${(seo.headings&&seo.headings.length)?`<div class="kv"><b>Headings</b><span>${seo.headings.map(h=>esc(h)).join(' · ')}</span></div>`:''}</div>`;
+  html+=`<div class="section-card" style="margin-bottom:10px"><div class="sc-title">🤖 GEO · motores de IA</div>
+    ${geo.definicao?`<div class="kv"><b>Definição</b><span>${esc(geo.definicao)}</span></div>`:''}
+    ${geo.resposta_direta?`<div class="kv"><b>Resposta direta</b><span>${esc(geo.resposta_direta)}</span></div>`:''}
+    ${(geo.dados_citaveis&&geo.dados_citaveis.length)?`<div style="margin:8px 0"><div class="muted" style="font-size:.72rem;margin-bottom:4px">DADOS CITÁVEIS</div><div class="taglist">${geo.dados_citaveis.map(d=>`<span class="minitag">${esc(d)}</span>`).join('')}</div></div>`:''}
+    ${(geo.faq_geo&&geo.faq_geo.length)?`<div style="margin-top:8px"><div class="muted" style="font-size:.72rem;margin-bottom:4px">FAQ (GEO)</div>${geo.faq_geo.map(f=>`<div style="margin-bottom:6px"><b style="font-size:.82rem">${esc(f.pergunta)}</b><div style="font-size:.82rem">${esc(f.resposta)}</div></div>`).join('')}</div>`:''}
+    ${(geo.queries_alvo&&geo.queries_alvo.length)?`<div style="margin-top:8px"><div class="muted" style="font-size:.72rem;margin-bottom:4px">QUERIES-ALVO</div><div class="taglist">${geo.queries_alvo.map(q=>`<span class="minitag">${esc(q)}</span>`).join('')}</div></div>`:''}</div>`;
+  if(res.avisos&&res.avisos.length)html+=`<div style="font-size:.74rem;color:var(--amber)">⚠ ${res.avisos.map(a=>esc(a)).join(' · ')}</div>`;
+  out.innerHTML=html;
+}
+async function salvarFicha(){
+  const res=window._lastFicha;if(!res)return;const w=ws();
+  const sel=$('seoProd');const nome=$('seoBrief').value.trim()||(sel&&sel.selectedOptions[0]?sel.selectedOptions[0].textContent:'')||'Produto';
+  const titulo=('Ficha SEO+GEO — '+nome).slice(0,56);const content=(res.descricao_longa||res.descricao_curta||'');
+  try{const created=await ucReq('POST','/workspaces/'+w.id+'/copies',{title:titulo,content,category_key:'ecom',piece_type_key:'ecom:desc-prod-longa'});const nc=adaptCopyRow(created,w.nome);nc.conteudo=content;nc.cat='ecom';nc.titulo=titulo;w.copies.unshift(nc);updateBadges();toast('Ficha salva no acervo');}catch(e){toast('Erro ao salvar: '+e.message);}
+}
+function revisarDescricao(){
+  const w=ws();const cont=$('revCont').value.trim();if(!cont){toast('Cole a descrição para revisar');return;}
+  const out=$('seo-out');out.innerHTML='<div class="muted" style="padding:24px;text-align:center">🔍 Revisando SEO+GEO (Claude)…</div>';
+  ucReq('POST','/workspaces/'+w.id+'/review-description',{content:cont,productCategory:$('revCat').value}).then(drawReview).catch(e=>{out.innerHTML='<div class="muted" style="padding:24px;text-align:center;color:var(--danger)">Falha: '+esc(e.message)+'</div>';});
+}
+function drawReview(res){
+  const out=$('seo-out');const fcls={competitivo:'st-aprovado',bom:'st-revisao',fraco:'st-rascunho',critico:'st-rascunho'};const cm=res.camadas||{};
+  const camPill=(l,v)=>`<span class="pill ${v==='presente'?'st-aprovado':(v==='parcial'?'st-revisao':'st-rascunho')}" style="font-size:.62rem">${l}: ${esc(v||'—')}</span>`;
+  let html=`<div class="banner" style="margin:0 0 12px"><div style="font-size:1.8rem;font-weight:800;color:${(res.score||0)>=70?'var(--success)':'var(--amber)'}">${res.score??'—'}</div><div style="flex:1"><b>Revisão SEO+GEO</b> <span class="pill ${fcls[res.faixa]||'st-rascunho'}" style="font-size:.62rem">${esc(res.faixa||'')}</span><div class="muted" style="font-size:.78rem;margin-top:3px;line-height:1.5">${esc(res.resumo||'')}</div></div></div>`;
+  html+=`<div class="taglist" style="margin-bottom:10px">${camPill('Venda',cm.venda)}${camPill('Factual',cm.factual)}${camPill('FAQ',cm.faq)}</div>`;
+  if(res.checklist&&res.checklist.length)html+=`<div class="section-card" style="margin-bottom:10px"><div class="sc-title">✅ Checklist</div>${res.checklist.map(i=>`<div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:5px"><span style="color:${i.ok?'var(--success)':'var(--danger)'};font-weight:800">${i.ok?'✓':'✗'}</span><div style="font-size:.82rem"><b>${esc(i.item)}</b>${(!i.ok&&i.obs)?` <span class="muted">— ${esc(i.obs)}</span>`:''}</div></div>`).join('')}</div>`;
+  const bloco=(t,arr,cor)=>(arr&&arr.length)?`<div style="margin-bottom:8px"><div style="font-size:.68rem;font-weight:800;color:${cor};text-transform:uppercase;letter-spacing:.04em">${t}</div><ul style="margin:4px 0 0 18px;padding:0">${arr.map(x=>`<li style="font-size:.82rem;margin-bottom:2px">${esc(x)}</li>`).join('')}</ul></div>`:'';
+  html+=bloco('Lacunas',res.lacunas,'var(--amber)')+bloco('Correções priorizadas',res.correcoes,'var(--primary-hover)');
+  out.innerHTML=html;
+}
+/* ====== INTELIGÊNCIA COMPETITIVA ====== */
+const BLOCO_LBL={descricao_longa:'Descrição longa',ativos:'Bloco de ativos',antes_depois:'Antes/depois',video:'Vídeo',faq:'FAQ',avaliacoes:'Avaliações',tabela_tecnica:'Tabela técnica',modo_uso:'Modo de uso',cross_sell:'Cross-sell'};
+async function loadIntel(w){ try{ w.intel=await ucReq('GET','/workspaces/'+w.id+'/intelligence'); }catch(e){ w.intel=[]; } w._intelLoaded=true; }
+function renderIntel(){
+  const w=ws();
+  $('view').innerHTML=
+   head('🛰️','linear-gradient(135deg,#0ea5e9,#8b5cf6)','Inteligência Competitiva','Leia PDPs de concorrentes e transforme em padrão e lacunas — estrutura, nunca cópia','')
+   +`<div class="section-card"><div class="sc-title">📡 Ingerir PDPs de concorrentes</div>
+     <div class="grid2" style="gap:10px"><div class="field" style="margin:0"><label>Marca concorrente <span class="muted">(opcional)</span></label><input id="intMarca" placeholder="ex.: Marca X"></div><div class="field" style="margin:0"><label>Categoria</label><select id="intCat">${prodCatOpts()}</select></div></div>
+     <div class="field"><label>URLs de PDP <span class="muted">(uma por linha · até 3 por vez)</span></label><textarea id="intUrls" rows="3" placeholder="https://concorrente.com/produto/..."></textarea></div>
+     <button class="btn btn-primary" onclick="ingerirIntel()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${IC.bolt}</svg> Ingerir inteligência</button>
+     <div class="muted" style="font-size:.7rem;margin-top:8px">Extrai padrão/estrutura/estratégia (blocos, ângulos, SEO/GEO, score) — nunca o texto do concorrente.</div>
+   </div>
+   <div id="intel-out"><div class="muted" style="padding:24px;text-align:center">Carregando inteligência…</div></div>`;
+  if(!w._intelLoaded){ loadIntel(w).then(()=>{ if(window._view==='intel')drawIntel(); }); } else drawIntel();
+}
+function ingerirIntel(){
+  const w=ws();const urls=($('intUrls').value||'').split('\n').map(s=>s.trim()).filter(Boolean).slice(0,3);
+  if(!urls.length){toast('Informe ao menos uma URL');return;}
+  const out=$('intel-out');out.innerHTML='<div class="muted" style="padding:24px;text-align:center">🛰️ Lendo as PDPs e extraindo inteligência (Claude)… <span class="muted">(pode levar até ~1 min)</span></div>';
+  ucReq('POST','/workspaces/'+w.id+'/intelligence/ingest',{urls,marca:$('intMarca').value.trim()||undefined,categoria:$('intCat').value}).then(r=>{ w._intelLoaded=false; loadIntel(w).then(()=>{ toast('Ingeridos '+(r.ingeridos||0)+' registros'); if(window._view==='intel')drawIntel(); }); }).catch(e=>{ out.innerHTML='<div class="muted" style="padding:24px;text-align:center;color:var(--danger)">Falha: '+esc(e.message)+'</div>'; });
+}
+function intelPattern(recs){
+  const blocos=Object.keys(BLOCO_LBL);const n=recs.length||1;const pres={};blocos.forEach(b=>pres[b]=0);
+  const ativos={};let soma=0,cnt=0;
+  recs.forEach(r=>{const e=r.estrutura_pdp||{};blocos.forEach(b=>{if(e[b]==='presente')pres[b]++;});(r.ativos||[]).forEach(a=>{if(a&&a.nome)ativos[a.nome]=(ativos[a.nome]||0)+1;});if(typeof r.score_competitivo==='number'){soma+=r.score_competitivo;cnt++;}});
+  return {padrao:blocos.filter(b=>pres[b]/n>=0.5),lacunas:blocos.filter(b=>pres[b]/n<0.3),topAtivos:Object.entries(ativos).sort((a,b)=>b[1]-a[1]).slice(0,6).map(x=>x[0]),scoreMedio:cnt?Math.round(soma/cnt):null};
+}
+function drawIntel(){
+  const w=ws();const recs=w.intel||[];const out=$('intel-out');if(!out)return;
+  if(!recs.length){out.innerHTML=`<div class="table-wrap"><div class="empty"><div class="empty-ic">🛰️</div><p style="font-weight:600;color:var(--text-primary)">Nenhuma inteligência ainda</p><p style="margin-top:4px">Cole URLs de PDPs de concorrentes acima e ingira.</p></div></div>`;return;}
+  const p=intelPattern(recs);const fcls={competitivo:'st-aprovado',bom:'st-revisao',fraco:'st-rascunho',critico:'st-rascunho'};
+  let html=`<div class="stats">${statCard(IC.layers,'14,165,233','Registros',recs.length)}${statCard(IC.bolt,'245,158,11','Score médio do mercado',p.scoreMedio??'—')}${statCard(IC.doc,'139,92,246','Marcas',new Set(recs.map(r=>r.marca||'?')).size)}</div>`;
+  html+=`<div class="grid2" style="margin-bottom:14px"><div class="section-card"><div class="sc-title">🏆 Padrão da categoria</div><div class="taglist">${p.padrao.map(b=>`<span class="minitag" style="border-color:var(--success);color:var(--success)">${esc(BLOCO_LBL[b])}</span>`).join('')||'<span class="muted">—</span>'}</div>${p.topAtivos.length?`<div style="margin-top:10px"><div class="muted" style="font-size:.72rem;margin-bottom:4px">ATIVOS MAIS CITADOS</div><div class="taglist">${p.topAtivos.map(a=>`<span class="minitag">${esc(a)}</span>`).join('')}</div></div>`:''}</div>
+    <div class="section-card"><div class="sc-title">🎯 Mapa de lacunas</div><div class="taglist">${p.lacunas.map(b=>`<span class="minitag" style="border-color:var(--amber);color:var(--amber)">${esc(BLOCO_LBL[b])}</span>`).join('')||'<span class="muted">mercado cobre os blocos principais</span>'}</div><div class="muted" style="font-size:.72rem;margin-top:8px">Blocos que poucos concorrentes têm — onde a Lizzon pode superar.</div></div></div>`;
+  html+=`<div class="cardgrid" style="grid-template-columns:repeat(auto-fill,minmax(320px,1fr))">`+recs.map(r=>{const e=r.estrutura_pdp||{};const cp=r.copy||{};
+    return `<div class="gcard">
+      <div style="display:flex;align-items:baseline;gap:8px;margin-bottom:4px"><div style="font-weight:800;font-size:.9rem;flex:1">${esc(r.produto||r.marca||'PDP')}</div><span class="pill ${fcls[r.faixa]||'st-rascunho'}" style="font-size:.6rem">${esc(r.faixa||'')}</span><span style="font-weight:800;color:${(r.score_competitivo||0)>=70?'var(--success)':'var(--amber)'}">${r.score_competitivo??''}</span></div>
+      <div class="muted" style="font-size:.72rem;margin-bottom:8px">${esc(r.marca||'')}${r.categoria?' · '+esc(r.categoria):''}</div>
+      ${cp.angulo?`<div style="font-size:.8rem;margin-bottom:6px"><span class="muted">Ângulo:</span> ${esc(cp.angulo)}${cp.framework_aparente?' · '+esc(cp.framework_aparente):''}</div>`:''}
+      <div class="taglist" style="margin-bottom:8px">${Object.keys(BLOCO_LBL).filter(b=>e[b]==='presente').map(b=>`<span class="minitag">${esc(BLOCO_LBL[b])}</span>`).join('')}</div>
+      ${r.observacoes?`<div style="font-size:.78rem;color:var(--text-secondary)">${esc(r.observacoes)}</div>`:''}
+    </div>`;}).join('')+`</div>`;
   out.innerHTML=html;
 }
 boot();
