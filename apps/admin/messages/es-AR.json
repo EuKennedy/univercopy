@@ -1,0 +1,61 @@
+{
+  "common": {
+    "appName": "UniverCopy",
+    "loading": "Cargando…",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "continue": "Continuar",
+    "back": "Volver",
+    "next": "Siguiente",
+    "done": "Listo",
+    "error_generic": "Algo salió mal. Probá de nuevo.",
+    "language": "Idioma"
+  },
+  "auth": {
+    "login_title": "Ingresar a UniverCopy",
+    "login_subtitle": "Usá tu e-mail para acceder al panel.",
+    "email_label": "E-mail",
+    "password_label": "Contraseña",
+    "submit": "Ingresar",
+    "magic_link": "Enviar enlace mágico",
+    "no_account": "¿Aún no tenés cuenta?",
+    "create_account": "Crear cuenta",
+    "logout": "Salir"
+  },
+  "onboarding": {
+    "welcome_title": "Bienvenido a UniverCopy",
+    "welcome_subtitle": "Tres pasos rápidos para que la IA escriba como escribiría tu marca.",
+    "step_url_title": "¿Cuál es el sitio de tu tienda o marca?",
+    "step_url_subtitle": "La IA va a leer todo lo público y armar la primera versión de tu DNA.",
+    "step_url_placeholder": "https://mimarca.com",
+    "step_url_continue": "Analizar mi marca",
+    "step_dna_title": "Leímos tu marca. Confirmá lo que entendimos:",
+    "step_dna_subtitle": "Podés ajustar cualquier campo antes de seguir.",
+    "step_qa_title": "Contanos más sobre tu público",
+    "step_qa_subtitle": "Estas respuestas alimentan toda la copy generada de aquí en más.",
+    "step_done_title": "Todo listo para empezar a crear",
+    "step_done_subtitle": "Tu identidad está guardada y disponible como contexto en cada generación.",
+    "step_done_cta": "Ir al panel",
+    "qa_publico_alvo_label": "¿Quién es tu cliente ideal?",
+    "qa_publico_alvo_placeholder": "Ej: profesionales que valoran el autocuidado…",
+    "qa_faixa_etaria_label": "Rango etario predominante",
+    "qa_faixa_renda_label": "Rango de ingresos predominante",
+    "qa_genero_label": "Género predominante",
+    "qa_geografia_label": "¿Dónde vive tu público?",
+    "qa_interesses_label": "3 intereses que conectan tu marca con tu público"
+  },
+  "dna": {
+    "marca": "Nombre de la marca",
+    "missao": "Misión",
+    "posicionamento": "Posicionamiento",
+    "tom": "Tono de voz",
+    "publico": "Público",
+    "consciencia": "Estado de consciencia",
+    "valores": "Valores",
+    "produtos": "Productos / servicios",
+    "ofertas": "Ofertas",
+    "provas": "Pruebas",
+    "objecoes": "Objeciones",
+    "evitar": "Palabras a evitar"
+  }
+}

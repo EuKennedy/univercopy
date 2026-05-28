@@ -1,0 +1,61 @@
+{
+  "common": {
+    "appName": "UniverCopy",
+    "loading": "Carregando…",
+    "save": "Salvar",
+    "cancel": "Cancelar",
+    "continue": "Continuar",
+    "back": "Voltar",
+    "next": "Próximo",
+    "done": "Concluído",
+    "error_generic": "Algo deu errado. Tente novamente.",
+    "language": "Idioma"
+  },
+  "auth": {
+    "login_title": "Entrar no UniverCopy",
+    "login_subtitle": "Use seu e-mail para acessar o painel.",
+    "email_label": "E-mail",
+    "password_label": "Senha",
+    "submit": "Entrar",
+    "magic_link": "Enviar link mágico",
+    "no_account": "Ainda não tem conta?",
+    "create_account": "Criar conta",
+    "logout": "Sair"
+  },
+  "onboarding": {
+    "welcome_title": "Bem-vindo ao UniverCopy",
+    "welcome_subtitle": "Vamos te conhecer em 3 passos rápidos para que a IA escreva como a sua marca escreveria.",
+    "step_url_title": "Qual o site da sua loja ou marca?",
+    "step_url_subtitle": "A IA vai ler tudo que estiver público e montar a primeira versão do seu DNA.",
+    "step_url_placeholder": "https://minhamarca.com.br",
+    "step_url_continue": "Analisar minha marca",
+    "step_dna_title": "Lemos sua marca. Confere o que entendemos:",
+    "step_dna_subtitle": "Você pode ajustar qualquer campo antes de seguir.",
+    "step_qa_title": "Conta um pouco mais sobre seu público",
+    "step_qa_subtitle": "Essas respostas alimentam toda copy gerada daqui pra frente.",
+    "step_done_title": "Tudo pronto para começar a criar",
+    "step_done_subtitle": "Sua identidade está salva e disponível como contexto em toda geração.",
+    "step_done_cta": "Ir para o painel",
+    "qa_publico_alvo_label": "Quem é seu cliente ideal?",
+    "qa_publico_alvo_placeholder": "Ex: mulheres profissionais que valorizam autocuidado…",
+    "qa_faixa_etaria_label": "Faixa etária predominante",
+    "qa_faixa_renda_label": "Faixa de renda predominante",
+    "qa_genero_label": "Gênero predominante",
+    "qa_geografia_label": "Onde seu público vive?",
+    "qa_interesses_label": "3 interesses que conectam sua marca ao seu público"
+  },
+  "dna": {
+    "marca": "Nome da marca",
+    "missao": "Missão",
+    "posicionamento": "Posicionamento",
+    "tom": "Tom de voz",
+    "publico": "Público",
+    "consciencia": "Estágio de consciência",
+    "valores": "Valores",
+    "produtos": "Produtos / serviços",
+    "ofertas": "Ofertas",
+    "provas": "Provas",
+    "objecoes": "Objeções",
+    "evitar": "Palavras a evitar"
+  }
+}

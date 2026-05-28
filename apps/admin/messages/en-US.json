@@ -1,0 +1,61 @@
+{
+  "common": {
+    "appName": "UniverCopy",
+    "loading": "Loading…",
+    "save": "Save",
+    "cancel": "Cancel",
+    "continue": "Continue",
+    "back": "Back",
+    "next": "Next",
+    "done": "Done",
+    "error_generic": "Something went wrong. Please try again.",
+    "language": "Language"
+  },
+  "auth": {
+    "login_title": "Sign in to UniverCopy",
+    "login_subtitle": "Use your email to access the workspace.",
+    "email_label": "Email",
+    "password_label": "Password",
+    "submit": "Sign in",
+    "magic_link": "Send magic link",
+    "no_account": "Don't have an account?",
+    "create_account": "Create account",
+    "logout": "Sign out"
+  },
+  "onboarding": {
+    "welcome_title": "Welcome to UniverCopy",
+    "welcome_subtitle": "Three quick steps so the AI can write like your brand would.",
+    "step_url_title": "What's your store or brand website?",
+    "step_url_subtitle": "The AI will read everything public and draft your first brand DNA.",
+    "step_url_placeholder": "https://mybrand.com",
+    "step_url_continue": "Analyze my brand",
+    "step_dna_title": "We read your brand. Here's what we learned:",
+    "step_dna_subtitle": "Edit anything before moving on.",
+    "step_qa_title": "Tell us more about your audience",
+    "step_qa_subtitle": "These answers feed every piece of copy from here on.",
+    "step_done_title": "All set to start creating",
+    "step_done_subtitle": "Your identity is saved and available as context in every generation.",
+    "step_done_cta": "Go to dashboard",
+    "qa_publico_alvo_label": "Who's your ideal customer?",
+    "qa_publico_alvo_placeholder": "E.g. busy professionals who value self-care…",
+    "qa_faixa_etaria_label": "Predominant age range",
+    "qa_faixa_renda_label": "Predominant income range",
+    "qa_genero_label": "Predominant gender",
+    "qa_geografia_label": "Where does your audience live?",
+    "qa_interesses_label": "3 interests that connect your brand to your audience"
+  },
+  "dna": {
+    "marca": "Brand name",
+    "missao": "Mission",
+    "posicionamento": "Positioning",
+    "tom": "Tone of voice",
+    "publico": "Audience",
+    "consciencia": "Awareness stage",
+    "valores": "Values",
+    "produtos": "Products / services",
+    "ofertas": "Offers",
+    "provas": "Proof",
+    "objecoes": "Objections",
+    "evitar": "Words to avoid"
+  }
+}
