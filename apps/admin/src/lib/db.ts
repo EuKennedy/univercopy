@@ -1,26 +1,37 @@
-import { drizzle } from 'drizzle-orm/postgres-js'
+import { drizzle, type PostgresJsDatabase } from 'drizzle-orm/postgres-js'
 import postgres from 'postgres'
 
 import * as schema from './db/schema'
 
-// Cliente Postgres compartilhado. Pool por process: 5 conexões — Next admin
-// é low-write/low-read (auth + queries de UI). API Rails é onde mora o
-// throughput de domínio.
+// Cliente Postgres compartilhado. Pool: 5 conexões (admin é low-throughput,
+// auth + queries de UI; API Rails é onde mora o domain throughput).
+// `prepare: false` permite usar atrás de PgBouncer em transaction mode.
 //
-// IMPORTANTE: `prepare: false` em modo Transaction-Mode pooler (PgBouncer/
-// Coolify). Em conexão direta dá pra ligar — Better Auth não usa prepared
-// statements internamente, então o impacto é nulo.
+// Init LAZY: o cliente é construído na primeira chamada real, não no
+// module evaluation. Sem isso, `next build` em CI (sem DATABASE_URL no
+// ambiente) estourava na collection de page data.
 
-const connectionString = process.env.DATABASE_URL
+type Schema = typeof schema
+type DBInstance = PostgresJsDatabase<Schema>
 
-if (!connectionString) {
-  throw new Error('DATABASE_URL env required for admin app — drizzle/Better Auth need it.')
+let cached: DBInstance | null = null
+
+function getDb(): DBInstance {
+  if (cached) return cached
+  const url = process.env.DATABASE_URL
+  if (!url) {
+    throw new Error('DATABASE_URL env required for admin app — drizzle/Better Auth need it.')
+  }
+  cached = drizzle(postgres(url, { max: 5, prepare: false }), { schema })
+  return cached
 }
 
-const queryClient = postgres(connectionString, {
-  max: 5,
-  prepare: false,
+export const db: DBInstance = new Proxy({} as DBInstance, {
+  get(_t, prop) {
+    const real = getDb() as unknown as Record<string | symbol, unknown>
+    const value = real[prop as string | symbol]
+    return typeof value === 'function' ? (value as (...a: unknown[]) => unknown).bind(real) : value
+  },
 })
 
-export const db = drizzle(queryClient, { schema })
-export type DB = typeof db
+export type DB = DBInstance
