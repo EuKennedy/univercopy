@@ -1,101 +1,147 @@
 @import "tailwindcss";
 
 /* =====================================================================
- * UniverCopy design tokens — Dark-first com light cuidado.
- * Linguagem visual: Liquid Glass (Apple/Linear/Stripe). Translucência
- * com profundidade, gradientes iridescentes, transições fluidas 400-600ms.
+ * UniverCopy design tokens
+ * Linguagem visual: Liquid Glass Apple HIG + Prisma monocromático.
+ *
+ * Marca: gradiente Creative Purple → Professional Blue (#8B5CF6 → #3B82F6)
+ * Aplicado em texto-marca, accents interativos, glows e bordas iridescentes.
+ * Texto institucional "univer" usa dark gray #2C2C2C; "Copy" pega o gradient.
+ *
+ * Motion: easing-tokens (motion-design skill):
+ *   --ease-apple: cubic-bezier(.32,.72,0,1)
+ *   --ease-out-quart, --ease-in-out-cubic
+ *   --dur-1..6: 120,180,240,320,480,700ms
  * ===================================================================== */
 
 :root {
   color-scheme: dark light;
 
-  /* Surfaces — light */
-  --uc-bg: #fafaf9;
-  --uc-bg-soft: #f5f5f4;
+  /* ===== Marca ===== */
+  --uc-brand-purple: #8b5cf6;
+  --uc-brand-purple-soft: rgba(139, 92, 246, 0.18);
+  --uc-brand-purple-glow: rgba(139, 92, 246, 0.42);
+  --uc-brand-blue: #3b82f6;
+  --uc-brand-blue-soft: rgba(59, 130, 246, 0.18);
+  --uc-brand-blue-glow: rgba(59, 130, 246, 0.42);
+  --uc-brand-mid: #5d6ff7;
+
+  --uc-prisma: linear-gradient(120deg, var(--uc-brand-purple) 0%, var(--uc-brand-mid) 50%, var(--uc-brand-blue) 100%);
+  --uc-prisma-soft: linear-gradient(120deg, var(--uc-brand-purple-soft) 0%, var(--uc-brand-blue-soft) 100%);
+
+  /* ===== Light ===== */
+  --uc-bg: #f6f7fb;
+  --uc-bg-soft: #eef0f7;
+  --uc-bg-mute: #ffffff;
   --uc-surface: rgba(255, 255, 255, 0.78);
   --uc-surface-soft: rgba(255, 255, 255, 0.55);
-  --uc-surface-2: #f5f5f4;
+  --uc-surface-2: #ffffff;
   --uc-surface-overlay: rgba(255, 255, 255, 0.92);
 
-  --uc-border: rgba(28, 25, 23, 0.10);
-  --uc-border-soft: rgba(28, 25, 23, 0.06);
-  --uc-border-strong: rgba(28, 25, 23, 0.18);
+  --uc-border: rgba(44, 44, 44, 0.10);
+  --uc-border-soft: rgba(44, 44, 44, 0.06);
+  --uc-border-strong: rgba(44, 44, 44, 0.18);
 
-  --uc-text: #0c0a09;
-  --uc-text-secondary: #1c1917;
-  --uc-text-soft: #44403c;
-  --uc-text-muted: #57534e;
-  --uc-text-faint: #78716c;
+  /* Texto: dark gray principal #2C2C2C */
+  --uc-text: #2c2c2c;
+  --uc-text-secondary: #3d3d3d;
+  --uc-text-soft: #5a5a5a;
+  --uc-text-muted: #777777;
+  --uc-text-faint: #9a9a9a;
   --uc-text-on-accent: #ffffff;
 
-  /* Gold accent — premium SaaS signature. */
-  --uc-accent: #ca8a04;
-  --uc-accent-strong: #a16207;
-  --uc-accent-dim: #854d0e;
-  --uc-accent-soft: rgba(202, 138, 4, 0.10);
-  --uc-accent-soft-2: rgba(202, 138, 4, 0.18);
-  --uc-accent-soft-3: rgba(202, 138, 4, 0.26);
-  --uc-accent-glow: rgba(202, 138, 4, 0.34);
-  --uc-accent-ring: rgba(202, 138, 4, 0.50);
+  --uc-accent: var(--uc-brand-purple);
+  --uc-accent-strong: #7c3aed;
+  --uc-accent-dim: var(--uc-brand-blue);
+  --uc-accent-soft: var(--uc-brand-purple-soft);
+  --uc-accent-soft-2: rgba(139, 92, 246, 0.26);
+  --uc-accent-soft-3: rgba(59, 130, 246, 0.22);
+  --uc-accent-glow: var(--uc-brand-purple-glow);
+  --uc-accent-ring: rgba(139, 92, 246, 0.50);
 
-  /* Iridescent — para bordas vivas e glows do liquid glass. */
-  --uc-irid-1: rgba(202, 138, 4, 0.55);
-  --uc-irid-2: rgba(168, 85, 247, 0.45);
-  --uc-irid-3: rgba(99, 102, 241, 0.40);
+  /* Iridescent bordas — Gemini-like prisma 360deg */
+  --uc-irid-1: rgba(139, 92, 246, 0.65);
+  --uc-irid-2: rgba(93, 111, 247, 0.55);
+  --uc-irid-3: rgba(59, 130, 246, 0.65);
 
   --uc-success: #10b981;
   --uc-success-bg: rgba(16, 185, 129, 0.12);
   --uc-warn: #f59e0b;
   --uc-danger: #ef4444;
   --uc-danger-bg: rgba(239, 68, 68, 0.10);
-  --uc-info: #0ea5e9;
-  --uc-info-bg: rgba(14, 165, 233, 0.10);
+  --uc-info: var(--uc-brand-blue);
+  --uc-info-bg: var(--uc-brand-blue-soft);
 
-  --uc-skeleton-1: rgba(28, 25, 23, 0.06);
-  --uc-skeleton-2: rgba(28, 25, 23, 0.12);
+  --uc-skeleton-1: rgba(44, 44, 44, 0.06);
+  --uc-skeleton-2: rgba(44, 44, 44, 0.12);
 
-  --uc-shadow-md: 0 10px 30px -12px rgba(28, 25, 23, 0.14);
-  --uc-shadow-lg: 0 24px 48px -24px rgba(28, 25, 23, 0.22);
-  --uc-shadow-glow: 0 30px 60px -24px rgba(202, 138, 4, 0.30);
+  --uc-shadow-sm: 0 1px 2px rgba(44, 44, 44, 0.08);
+  --uc-shadow-md: 0 12px 32px -16px rgba(44, 44, 44, 0.18);
+  --uc-shadow-lg: 0 28px 56px -28px rgba(44, 44, 44, 0.30);
+  --uc-shadow-glow: 0 30px 60px -24px rgba(99, 111, 247, 0.36);
+  --uc-shadow-prisma: 0 22px 52px -22px rgba(139, 92, 246, 0.30),
+                      0 12px 32px -16px rgba(59, 130, 246, 0.28);
+
+  /* ===== Motion tokens (motion-design skill) ===== */
+  --ease-apple:        cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-out-quart:    cubic-bezier(0.165, 0.84, 0.44, 1);
+  --ease-out-quint:    cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out-cubic: cubic-bezier(0.645, 0.045, 0.355, 1);
+
+  --dur-0: 80ms;
+  --dur-1: 120ms;
+  --dur-2: 180ms;
+  --dur-3: 240ms;
+  --dur-4: 320ms;
+  --dur-5: 480ms;
+  --dur-6: 700ms;
+
+  /* Sidebar widths */
+  --uc-sidebar-w:           248px;
+  --uc-sidebar-w-collapsed: 76px;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --uc-bg: #0a0907;
-    --uc-bg-soft: #100e0b;
-    --uc-surface: rgba(28, 25, 23, 0.62);
-    --uc-surface-soft: rgba(28, 25, 23, 0.42);
-    --uc-surface-2: #1c1917;
-    --uc-surface-overlay: rgba(20, 18, 16, 0.88);
+    --uc-bg: #0a0b10;
+    --uc-bg-soft: #11131c;
+    --uc-bg-mute: #14161f;
+    --uc-surface: rgba(20, 22, 31, 0.62);
+    --uc-surface-soft: rgba(20, 22, 31, 0.42);
+    --uc-surface-2: #14161f;
+    --uc-surface-overlay: rgba(15, 17, 25, 0.88);
 
-    --uc-border: rgba(250, 250, 249, 0.10);
-    --uc-border-soft: rgba(250, 250, 249, 0.04);
-    --uc-border-strong: rgba(250, 250, 249, 0.18);
+    --uc-border: rgba(255, 255, 255, 0.08);
+    --uc-border-soft: rgba(255, 255, 255, 0.04);
+    --uc-border-strong: rgba(255, 255, 255, 0.16);
 
-    --uc-text: #fafaf9;
-    --uc-text-secondary: #e7e5e4;
-    --uc-text-soft: #d6d3d1;
-    --uc-text-muted: #a8a29e;
-    --uc-text-faint: #78716c;
+    --uc-text: #f7f7f9;
+    --uc-text-secondary: #e3e3e7;
+    --uc-text-soft: #c1c1c8;
+    --uc-text-muted: #93939c;
+    --uc-text-faint: #696973;
 
-    --uc-accent: #facc15;
-    --uc-accent-strong: #fde047;
-    --uc-accent-dim: #eab308;
-    --uc-accent-soft: rgba(250, 204, 21, 0.14);
-    --uc-accent-soft-2: rgba(250, 204, 21, 0.22);
-    --uc-accent-soft-3: rgba(250, 204, 21, 0.30);
-    --uc-accent-glow: rgba(250, 204, 21, 0.42);
+    --uc-accent: #a78bfa;
+    --uc-accent-strong: #c4b5fd;
+    --uc-accent-dim: #60a5fa;
+    --uc-accent-soft: rgba(167, 139, 250, 0.16);
+    --uc-accent-soft-2: rgba(167, 139, 250, 0.24);
+    --uc-accent-soft-3: rgba(96, 165, 250, 0.22);
+    --uc-accent-glow: rgba(167, 139, 250, 0.42);
+    --uc-accent-ring: rgba(167, 139, 250, 0.55);
 
-    --uc-irid-1: rgba(250, 204, 21, 0.50);
-    --uc-irid-2: rgba(168, 85, 247, 0.40);
-    --uc-irid-3: rgba(99, 102, 241, 0.36);
+    --uc-irid-1: rgba(167, 139, 250, 0.55);
+    --uc-irid-2: rgba(125, 138, 252, 0.45);
+    --uc-irid-3: rgba(96, 165, 250, 0.55);
 
-    --uc-skeleton-1: rgba(250, 250, 249, 0.06);
-    --uc-skeleton-2: rgba(250, 250, 249, 0.12);
+    --uc-skeleton-1: rgba(255, 255, 255, 0.06);
+    --uc-skeleton-2: rgba(255, 255, 255, 0.12);
 
-    --uc-shadow-md: 0 16px 40px -12px rgba(0, 0, 0, 0.55);
-    --uc-shadow-lg: 0 28px 60px -24px rgba(0, 0, 0, 0.70);
-    --uc-shadow-glow: 0 32px 80px -32px rgba(250, 204, 21, 0.20);
+    --uc-shadow-md: 0 16px 40px -16px rgba(0, 0, 0, 0.60);
+    --uc-shadow-lg: 0 28px 60px -28px rgba(0, 0, 0, 0.70);
+    --uc-shadow-glow: 0 36px 80px -32px rgba(125, 138, 252, 0.28);
+    --uc-shadow-prisma: 0 22px 52px -22px rgba(167, 139, 250, 0.34),
+                        0 12px 32px -16px rgba(96, 165, 250, 0.30);
   }
 }
 
@@ -120,6 +166,8 @@
   --color-uc-accent-soft-2: var(--uc-accent-soft-2);
   --color-uc-success: var(--uc-success);
   --color-uc-danger: var(--uc-danger);
+  --color-uc-brand-purple: var(--uc-brand-purple);
+  --color-uc-brand-blue: var(--uc-brand-blue);
   --font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI",
     Roboto, "Helvetica Neue", Arial, sans-serif;
 }
@@ -143,11 +191,11 @@ html, body {
 :focus-visible {
   outline: 2px solid var(--uc-accent-ring);
   outline-offset: 2px;
+  border-radius: 8px;
 }
 
 /* ============================================================
- * Liquid glass — utilities. Aplica em superfícies "flutuantes".
- * Backdrop-filter exige fallback opaco para Firefox antigo.
+ * Liquid glass — superfícies flutuantes Apple HIG.
  * ============================================================ */
 .uc-glass {
   background: var(--uc-surface);
@@ -165,11 +213,20 @@ html, body {
   box-shadow: var(--uc-shadow-lg);
 }
 
-@supports not (backdrop-filter: blur(1px)) {
-  .uc-glass, .uc-glass-strong { background: var(--uc-surface-overlay); }
+.uc-glass-rail {
+  background: var(--uc-surface);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border-right: 1px solid var(--uc-border);
 }
 
-/* Borda iridescente sutil — usa mask + conic-gradient para "linha viva". */
+@supports not (backdrop-filter: blur(1px)) {
+  .uc-glass, .uc-glass-strong, .uc-glass-rail { background: var(--uc-surface-overlay); }
+}
+
+/* ============================================================
+ * Borda iridescente — conic-gradient prisma purple→blue rotativa.
+ * ============================================================ */
 .uc-irid-border {
   position: relative;
   isolation: isolate;
@@ -182,7 +239,7 @@ html, body {
   border-radius: inherit;
   padding: 1px;
   background: conic-gradient(
-    from 220deg at 50% 50%,
+    from var(--uc-irid-angle, 220deg) at 50% 50%,
     var(--uc-irid-1),
     var(--uc-irid-2),
     var(--uc-irid-3),
@@ -192,15 +249,29 @@ html, body {
   mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
-  opacity: 0.55;
+  opacity: 0.65;
+  animation: uc-irid-rotate 12s linear infinite;
 }
 
-/* Glow ambiente — usado em cards de hero/step ativo. */
+@property --uc-irid-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 220deg;
+}
+
+@keyframes uc-irid-rotate {
+  to { --uc-irid-angle: 580deg; }
+}
+
+/* Glow ambiente — prisma mix purple+blue */
 .uc-glow {
-  box-shadow: var(--uc-shadow-md), 0 0 0 1px var(--uc-border), 0 30px 80px -30px var(--uc-accent-glow);
+  box-shadow: var(--uc-shadow-md), 0 0 0 1px var(--uc-border), var(--uc-shadow-prisma);
 }
 
-/* Mesh background — usado por trás do onboarding/login pra dar profundidade. */
+/* ============================================================
+ * Mesh background — radial purple + blue.
+ * Animação 18s drift lento. Reduce-motion respeitado.
+ * ============================================================ */
 .uc-mesh {
   position: relative;
   isolation: isolate;
@@ -213,35 +284,78 @@ html, body {
   inset: -20%;
   z-index: -1;
   pointer-events: none;
-  filter: blur(80px);
-  opacity: 0.55;
+  filter: blur(96px);
+  opacity: 0.50;
+  will-change: transform;
 }
 .uc-mesh::before {
-  background: radial-gradient(closest-side, var(--uc-accent-glow), transparent 70%);
+  background: radial-gradient(closest-side, var(--uc-brand-purple-glow), transparent 70%);
   top: -10%;
-  left: -20%;
-  width: 60vmax;
-  height: 60vmax;
+  left: -10%;
+  width: 64vmax;
+  height: 64vmax;
+  animation: uc-drift-a 18s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
 }
 .uc-mesh::after {
-  background: radial-gradient(closest-side, var(--uc-irid-2), transparent 70%);
+  background: radial-gradient(closest-side, var(--uc-brand-blue-glow), transparent 70%);
   bottom: -20%;
   right: -10%;
-  width: 50vmax;
-  height: 50vmax;
-  animation: uc-drift 14s ease-in-out infinite alternate;
+  width: 54vmax;
+  height: 54vmax;
+  animation: uc-drift-b 22s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
 }
 
-@keyframes uc-drift {
+@keyframes uc-drift-a {
   from { transform: translate3d(0, 0, 0) scale(1); }
-  to   { transform: translate3d(-6%, 4%, 0) scale(1.06); }
+  to   { transform: translate3d(-6%, 5%, 0) scale(1.08); }
+}
+@keyframes uc-drift-b {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to   { transform: translate3d(8%, -4%, 0) scale(1.10); }
 }
 
-/* Smooth easing universal — curva "ease-out-quint" pra parecer fluido. */
-.uc-transition {
-  transition-property: color, background-color, border-color, opacity, box-shadow, transform, filter;
-  transition-duration: 480ms;
-  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+/* ============================================================
+ * Text prisma — gradient nas palavras-marca (logo "Copy"/"Univer").
+ * ============================================================ */
+.uc-prisma-text {
+  background: linear-gradient(120deg, var(--uc-brand-purple) 0%, var(--uc-brand-mid) 50%, var(--uc-brand-blue) 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  background-size: 200% 100%;
+  animation: uc-prisma-shift 8s var(--ease-in-out-cubic) infinite alternate;
+}
+
+@keyframes uc-prisma-shift {
+  from { background-position: 0% 50%; }
+  to   { background-position: 100% 50%; }
+}
+
+/* ============================================================
+ * Transition utilities calibradas pelo motion-design skill.
+ * ============================================================ */
+.uc-transition          { transition: all var(--dur-3) var(--ease-apple); }
+.uc-transition-fast     { transition: all var(--dur-2) var(--ease-out-quart); }
+.uc-transition-instant  { transition: all var(--dur-1) var(--ease-out-quart); }
+.uc-transition-morph    { transition: all var(--dur-4) var(--ease-in-out-cubic); }
+
+/* ============================================================
+ * Sidebar rail (collapsible)
+ * ============================================================ */
+.uc-rail-w {
+  width: var(--uc-sidebar-w);
+  transition: width var(--dur-4) var(--ease-apple);
+}
+.uc-rail-w[data-collapsed="true"] {
+  width: var(--uc-sidebar-w-collapsed);
+}
+.uc-rail-content {
+  opacity: 1;
+  transition: opacity var(--dur-2) var(--ease-out-quart);
+}
+.uc-rail-w[data-collapsed="true"] .uc-rail-content {
+  opacity: 0;
+  pointer-events: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -251,5 +365,7 @@ html, body {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
-  .uc-mesh::before, .uc-mesh::after { animation: none !important; }
+  .uc-mesh::before, .uc-mesh::after, .uc-irid-border::before, .uc-prisma-text {
+    animation: none !important;
+  }
 }

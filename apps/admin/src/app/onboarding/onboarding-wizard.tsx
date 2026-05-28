@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 
+import { Wordmark } from '@/components/brand/wordmark'
 import { StepIndicator } from '@/components/ui'
 
 import type { OnboardingState as ApiState } from './actions'
@@ -108,16 +109,19 @@ export function OnboardingWizard({ initial }: { initial: ApiState }) {
   return (
     <main className="flex-1 flex flex-col">
       <div className="mx-auto w-full max-w-3xl px-6 py-10 sm:py-16 flex flex-col gap-10 flex-1">
-        <header className="space-y-3">
-          <p className="text-xs uppercase tracking-[0.18em] font-semibold text-[var(--uc-accent)]">
-            UniverCopy · Onboarding
-          </p>
-          <h1 className="text-4xl sm:text-5xl font-bold tracking-tight text-[var(--uc-text)] leading-[1.05]">
-            {t('welcome_title')}
-          </h1>
-          <p className="text-[15px] sm:text-base leading-7 text-[var(--uc-text-soft)] max-w-2xl">
-            {t('welcome_subtitle')}
-          </p>
+        <header className="flex flex-col gap-5">
+          <Wordmark size="lg" className="self-start" />
+          <div className="space-y-3">
+            <p className="text-[10px] font-bold tracking-[0.22em] uppercase text-[var(--uc-accent)]">
+              Onboarding
+            </p>
+            <h1 className="text-4xl sm:text-5xl font-bold tracking-tight text-[var(--uc-text)] leading-[1.05]">
+              {t('welcome_title')}
+            </h1>
+            <p className="text-[15px] sm:text-base leading-7 text-[var(--uc-text-soft)] max-w-2xl">
+              {t('welcome_subtitle')}
+            </p>
+          </div>
         </header>
 
         <StepIndicator steps={labels} current={stepIdx} />
