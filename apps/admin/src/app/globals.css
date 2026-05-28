@@ -2,95 +2,100 @@
 
 /* =====================================================================
  * UniverCopy design tokens — Dark-first com light cuidado.
- * Referências: Apple, Linear, Stripe, Vercel. Aesthetic liquid glass.
- * Toda cor de UI consome --uc-*. Não hardcode hex em componentes.
- * Expandido na Fase 3/4 quando os primeiros componentes godmode entrarem.
+ * Linguagem visual: Liquid Glass (Apple/Linear/Stripe). Translucência
+ * com profundidade, gradientes iridescentes, transições fluidas 400-600ms.
  * ===================================================================== */
 
 :root {
   color-scheme: dark light;
 
-  /* Backgrounds */
-  --uc-bg: #ffffff;
-  --uc-bg-soft: #f7f8fa;
-  --uc-surface: #ffffff;
-  --uc-surface-soft: rgba(248, 250, 252, 0.78);
-  --uc-surface-2: #f1f5f9;
+  /* Surfaces — light */
+  --uc-bg: #fafaf9;
+  --uc-bg-soft: #f5f5f4;
+  --uc-surface: rgba(255, 255, 255, 0.78);
+  --uc-surface-soft: rgba(255, 255, 255, 0.55);
+  --uc-surface-2: #f5f5f4;
   --uc-surface-overlay: rgba(255, 255, 255, 0.92);
 
-  /* Borders */
-  --uc-border: rgba(15, 23, 42, 0.08);
-  --uc-border-soft: rgba(15, 23, 42, 0.04);
-  --uc-border-strong: rgba(15, 23, 42, 0.16);
+  --uc-border: rgba(28, 25, 23, 0.10);
+  --uc-border-soft: rgba(28, 25, 23, 0.06);
+  --uc-border-strong: rgba(28, 25, 23, 0.18);
 
-  /* Text */
-  --uc-text: #0f172a;
-  --uc-text-secondary: #334155;
-  --uc-text-soft: #475569;
-  --uc-text-muted: #64748b;
-  --uc-text-faint: #94a3b8;
+  --uc-text: #0c0a09;
+  --uc-text-secondary: #1c1917;
+  --uc-text-soft: #44403c;
+  --uc-text-muted: #57534e;
+  --uc-text-faint: #78716c;
   --uc-text-on-accent: #ffffff;
 
-  /* Accent (refinado na Fase 4 com a paleta final) */
-  --uc-accent: #6366f1;
-  --uc-accent-strong: #4f46e5;
-  --uc-accent-dim: #4338ca;
-  --uc-accent-soft: rgba(99, 102, 241, 0.10);
-  --uc-accent-soft-2: rgba(99, 102, 241, 0.16);
-  --uc-accent-soft-3: rgba(99, 102, 241, 0.22);
-  --uc-accent-glow: rgba(99, 102, 241, 0.28);
-  --uc-accent-ring: rgba(99, 102, 241, 0.45);
+  /* Gold accent — premium SaaS signature. */
+  --uc-accent: #ca8a04;
+  --uc-accent-strong: #a16207;
+  --uc-accent-dim: #854d0e;
+  --uc-accent-soft: rgba(202, 138, 4, 0.10);
+  --uc-accent-soft-2: rgba(202, 138, 4, 0.18);
+  --uc-accent-soft-3: rgba(202, 138, 4, 0.26);
+  --uc-accent-glow: rgba(202, 138, 4, 0.34);
+  --uc-accent-ring: rgba(202, 138, 4, 0.50);
 
-  /* Semantic */
+  /* Iridescent — para bordas vivas e glows do liquid glass. */
+  --uc-irid-1: rgba(202, 138, 4, 0.55);
+  --uc-irid-2: rgba(168, 85, 247, 0.45);
+  --uc-irid-3: rgba(99, 102, 241, 0.40);
+
   --uc-success: #10b981;
   --uc-success-bg: rgba(16, 185, 129, 0.12);
   --uc-warn: #f59e0b;
   --uc-danger: #ef4444;
-  --uc-danger-bg: rgba(239, 68, 68, 0.12);
+  --uc-danger-bg: rgba(239, 68, 68, 0.10);
   --uc-info: #0ea5e9;
-  --uc-info-bg: rgba(14, 165, 233, 0.12);
+  --uc-info-bg: rgba(14, 165, 233, 0.10);
 
-  /* Skeletons */
-  --uc-skeleton-1: rgba(148, 163, 184, 0.12);
-  --uc-skeleton-2: rgba(148, 163, 184, 0.22);
+  --uc-skeleton-1: rgba(28, 25, 23, 0.06);
+  --uc-skeleton-2: rgba(28, 25, 23, 0.12);
 
-  /* Shadows */
-  --uc-shadow-md: 0 10px 30px -12px rgba(15, 23, 42, 0.14);
-  --uc-shadow-lg: 0 24px 48px -24px rgba(15, 23, 42, 0.22);
+  --uc-shadow-md: 0 10px 30px -12px rgba(28, 25, 23, 0.14);
+  --uc-shadow-lg: 0 24px 48px -24px rgba(28, 25, 23, 0.22);
+  --uc-shadow-glow: 0 30px 60px -24px rgba(202, 138, 4, 0.30);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --uc-bg: #0a0d14;
-    --uc-bg-soft: #0f131c;
-    --uc-surface: #11151f;
-    --uc-surface-soft: rgba(20, 25, 36, 0.72);
-    --uc-surface-2: #161b27;
-    --uc-surface-overlay: rgba(17, 21, 31, 0.88);
+    --uc-bg: #0a0907;
+    --uc-bg-soft: #100e0b;
+    --uc-surface: rgba(28, 25, 23, 0.62);
+    --uc-surface-soft: rgba(28, 25, 23, 0.42);
+    --uc-surface-2: #1c1917;
+    --uc-surface-overlay: rgba(20, 18, 16, 0.88);
 
-    --uc-border: rgba(255, 255, 255, 0.08);
-    --uc-border-soft: rgba(255, 255, 255, 0.04);
-    --uc-border-strong: rgba(255, 255, 255, 0.16);
+    --uc-border: rgba(250, 250, 249, 0.10);
+    --uc-border-soft: rgba(250, 250, 249, 0.04);
+    --uc-border-strong: rgba(250, 250, 249, 0.18);
 
-    --uc-text: #f8fafc;
-    --uc-text-secondary: #cbd5e1;
-    --uc-text-soft: #94a3b8;
-    --uc-text-muted: #64748b;
-    --uc-text-faint: #475569;
+    --uc-text: #fafaf9;
+    --uc-text-secondary: #e7e5e4;
+    --uc-text-soft: #d6d3d1;
+    --uc-text-muted: #a8a29e;
+    --uc-text-faint: #78716c;
 
-    --uc-accent: #818cf8;
-    --uc-accent-strong: #a5b4fc;
-    --uc-accent-dim: #6366f1;
-    --uc-accent-soft: rgba(129, 140, 248, 0.12);
-    --uc-accent-soft-2: rgba(129, 140, 248, 0.18);
-    --uc-accent-soft-3: rgba(129, 140, 248, 0.26);
-    --uc-accent-glow: rgba(129, 140, 248, 0.36);
+    --uc-accent: #facc15;
+    --uc-accent-strong: #fde047;
+    --uc-accent-dim: #eab308;
+    --uc-accent-soft: rgba(250, 204, 21, 0.14);
+    --uc-accent-soft-2: rgba(250, 204, 21, 0.22);
+    --uc-accent-soft-3: rgba(250, 204, 21, 0.30);
+    --uc-accent-glow: rgba(250, 204, 21, 0.42);
 
-    --uc-skeleton-1: rgba(148, 163, 184, 0.08);
-    --uc-skeleton-2: rgba(148, 163, 184, 0.16);
+    --uc-irid-1: rgba(250, 204, 21, 0.50);
+    --uc-irid-2: rgba(168, 85, 247, 0.40);
+    --uc-irid-3: rgba(99, 102, 241, 0.36);
 
-    --uc-shadow-md: 0 10px 30px -12px rgba(0, 0, 0, 0.50);
-    --uc-shadow-lg: 0 24px 48px -24px rgba(0, 0, 0, 0.62);
+    --uc-skeleton-1: rgba(250, 250, 249, 0.06);
+    --uc-skeleton-2: rgba(250, 250, 249, 0.12);
+
+    --uc-shadow-md: 0 16px 40px -12px rgba(0, 0, 0, 0.55);
+    --uc-shadow-lg: 0 28px 60px -24px rgba(0, 0, 0, 0.70);
+    --uc-shadow-glow: 0 32px 80px -32px rgba(250, 204, 21, 0.20);
   }
 }
 
@@ -98,6 +103,23 @@
   --color-background: var(--uc-bg);
   --color-foreground: var(--uc-text);
   --color-accent: var(--uc-accent);
+  --color-uc-bg: var(--uc-bg);
+  --color-uc-bg-soft: var(--uc-bg-soft);
+  --color-uc-surface: var(--uc-surface);
+  --color-uc-surface-2: var(--uc-surface-2);
+  --color-uc-border: var(--uc-border);
+  --color-uc-border-strong: var(--uc-border-strong);
+  --color-uc-text: var(--uc-text);
+  --color-uc-text-secondary: var(--uc-text-secondary);
+  --color-uc-text-soft: var(--uc-text-soft);
+  --color-uc-text-muted: var(--uc-text-muted);
+  --color-uc-text-faint: var(--uc-text-faint);
+  --color-uc-accent: var(--uc-accent);
+  --color-uc-accent-strong: var(--uc-accent-strong);
+  --color-uc-accent-soft: var(--uc-accent-soft);
+  --color-uc-accent-soft-2: var(--uc-accent-soft-2);
+  --color-uc-success: var(--uc-success);
+  --color-uc-danger: var(--uc-danger);
   --font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI",
     Roboto, "Helvetica Neue", Arial, sans-serif;
 }
@@ -110,6 +132,7 @@ html, body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   font-feature-settings: "cv11", "ss01", "ss03";
+  font-variant-ligatures: contextual;
 }
 
 ::selection {
@@ -117,13 +140,110 @@ html, body {
   color: var(--uc-text);
 }
 
-/* Foco acessível padrão — sobrescrito por Radix em componentes interativos. */
 :focus-visible {
   outline: 2px solid var(--uc-accent-ring);
   outline-offset: 2px;
 }
 
-/* Reduz movimento se o usuário pediu — respeito sempre. */
+/* ============================================================
+ * Liquid glass — utilities. Aplica em superfícies "flutuantes".
+ * Backdrop-filter exige fallback opaco para Firefox antigo.
+ * ============================================================ */
+.uc-glass {
+  background: var(--uc-surface);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border: 1px solid var(--uc-border);
+  box-shadow: var(--uc-shadow-md);
+}
+
+.uc-glass-strong {
+  background: var(--uc-surface-overlay);
+  backdrop-filter: blur(40px) saturate(200%);
+  -webkit-backdrop-filter: blur(40px) saturate(200%);
+  border: 1px solid var(--uc-border-strong);
+  box-shadow: var(--uc-shadow-lg);
+}
+
+@supports not (backdrop-filter: blur(1px)) {
+  .uc-glass, .uc-glass-strong { background: var(--uc-surface-overlay); }
+}
+
+/* Borda iridescente sutil — usa mask + conic-gradient para "linha viva". */
+.uc-irid-border {
+  position: relative;
+  isolation: isolate;
+}
+.uc-irid-border::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  z-index: -1;
+  border-radius: inherit;
+  padding: 1px;
+  background: conic-gradient(
+    from 220deg at 50% 50%,
+    var(--uc-irid-1),
+    var(--uc-irid-2),
+    var(--uc-irid-3),
+    var(--uc-irid-1)
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0.55;
+}
+
+/* Glow ambiente — usado em cards de hero/step ativo. */
+.uc-glow {
+  box-shadow: var(--uc-shadow-md), 0 0 0 1px var(--uc-border), 0 30px 80px -30px var(--uc-accent-glow);
+}
+
+/* Mesh background — usado por trás do onboarding/login pra dar profundidade. */
+.uc-mesh {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+.uc-mesh::before,
+.uc-mesh::after {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  z-index: -1;
+  pointer-events: none;
+  filter: blur(80px);
+  opacity: 0.55;
+}
+.uc-mesh::before {
+  background: radial-gradient(closest-side, var(--uc-accent-glow), transparent 70%);
+  top: -10%;
+  left: -20%;
+  width: 60vmax;
+  height: 60vmax;
+}
+.uc-mesh::after {
+  background: radial-gradient(closest-side, var(--uc-irid-2), transparent 70%);
+  bottom: -20%;
+  right: -10%;
+  width: 50vmax;
+  height: 50vmax;
+  animation: uc-drift 14s ease-in-out infinite alternate;
+}
+
+@keyframes uc-drift {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to   { transform: translate3d(-6%, 4%, 0) scale(1.06); }
+}
+
+/* Smooth easing universal — curva "ease-out-quint" pra parecer fluido. */
+.uc-transition {
+  transition-property: color, background-color, border-color, opacity, box-shadow, transform, filter;
+  transition-duration: 480ms;
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
@@ -131,4 +251,5 @@ html, body {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+  .uc-mesh::before, .uc-mesh::after { animation: none !important; }
 }

@@ -31,7 +31,7 @@ const SESSION_COOKIE_NAMES = [
   'better-auth.session_token',
 ]
 
-export function middleware(req: NextRequest) {
+export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl
 
   if (PUBLIC_PATHS.has(pathname)) return NextResponse.next()
