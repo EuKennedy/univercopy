@@ -23,7 +23,7 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - uses: gitleaks/gitleaks-action@v2
@@ -42,7 +42,7 @@ jobs:
     container:
       image: returntocorp/semgrep
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - run: semgrep ci --config "p/r2c-ci" --no-suppress-errors || true
 
   # ----------------------------------------------------------
@@ -52,7 +52,7 @@ jobs:
     name: shared (type-check)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
@@ -68,7 +68,7 @@ jobs:
     name: admin (Next.js)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
@@ -90,7 +90,7 @@ jobs:
     name: landing (Next.js)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
@@ -134,7 +134,7 @@ jobs:
       SECRET_KEY_BASE: dummy_secret_key_base_for_ci_only_64_chars_long_xxxxxxxxxxxxxxxxx
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: ruby/setup-ruby@v1
         with:
           working-directory: apps/api
