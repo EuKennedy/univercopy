@@ -20,11 +20,22 @@ import { account, invitation, member, organization as org, session, user, verifi
 //   por segurança real (email já está checado via magic-link na origem).
 // ---------------------------------------------------------------------
 
-const baseURL = process.env.NEXT_PUBLIC_ADMIN_URL ?? 'http://localhost:3000'
-const apiURL  = process.env.NEXT_PUBLIC_API_URL   ?? 'http://localhost:3001'
-const cookieDomain = process.env.COOKIE_DOMAIN
+// `||` em vez de `??` porque containers podem chegar com string vazia.
+// BETTER_AUTH_URL é o canônico do plugin; fallback NEXT_PUBLIC_ADMIN_URL.
+const baseURL =
+  process.env.BETTER_AUTH_URL ||
+  process.env.NEXT_PUBLIC_ADMIN_URL ||
+  process.env.FRONTEND_URL ||
+  'http://localhost:3000'
+
+const apiURL =
+  process.env.API_URL ||
+  process.env.NEXT_PUBLIC_API_URL ||
+  'http://localhost:3001'
+
+const cookieDomain = process.env.COOKIE_DOMAIN || undefined
 const trustedOrigins = [baseURL, apiURL, ...(process.env.BETTER_AUTH_TRUSTED_ORIGINS?.split(',') ?? [])]
-  .map(s => s.trim()).filter(Boolean)
+  .map((s) => s.trim()).filter(Boolean)
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {

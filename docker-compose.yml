@@ -116,6 +116,12 @@ services:
     restart: unless-stopped
     environment:
       NODE_ENV: production
+      # Server-runtime URLs (lidos no api-client.ts e lib/auth.ts).
+      API_URL: ${API_URL}
+      FRONTEND_URL: ${FRONTEND_URL}
+      BETTER_AUTH_URL: ${FRONTEND_URL}
+      # NEXT_PUBLIC_* viram inline no bundle (build-time) — passamos como
+      # fallback de runtime caso o code path use process.env diretamente.
       NEXT_PUBLIC_API_URL: ${API_URL}
       NEXT_PUBLIC_ADMIN_URL: ${FRONTEND_URL}
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
