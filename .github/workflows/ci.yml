@@ -193,7 +193,7 @@ jobs:
             "DO \$\$ BEGIN IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname='rls_test_role') THEN CREATE ROLE rls_test_role NOSUPERUSER NOBYPASSRLS LOGIN PASSWORD 'rls_test'; GRANT USAGE ON SCHEMA public TO rls_test_role; END IF; END \$\$;"
       - name: DB setup
         working-directory: apps/api
-        run: bin/rails db:migrate
+        run: bin/rails db:prepare
       - name: Brakeman (security scan)
         working-directory: apps/api
         run: bundle exec brakeman --no-pager --exit-on-warn

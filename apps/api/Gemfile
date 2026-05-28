@@ -1,0 +1,88 @@
+source "https://rubygems.org"
+
+# -----------------------------------------------------------------------
+# Core
+# -----------------------------------------------------------------------
+ruby "3.3.6"
+
+gem "rails", "~> 8.1.3"
+gem "pg", "~> 1.5"
+gem "puma", ">= 6.5"
+gem "bootsnap", require: false
+
+# Aceita timezone em Windows/JRuby (não é nosso ambiente, mas mantém compat).
+gem "tzinfo-data", platforms: %i[ windows jruby ]
+
+# -----------------------------------------------------------------------
+# Jobs / Cache / Redis
+# Substituímos solid_queue por Sidekiq: filas priorizadas + cron + scheduler
+# casam melhor com os jobs de AI/sync. solid_cache fica como cache Rails.
+# -----------------------------------------------------------------------
+gem "sidekiq", "~> 7.3"
+gem "sidekiq-scheduler", "~> 6.0"
+gem "redis", "~> 5.3"
+gem "solid_cache"
+
+# -----------------------------------------------------------------------
+# HTTP / IO
+# -----------------------------------------------------------------------
+gem "faraday", "~> 2.12"
+gem "faraday-retry", "~> 2.2"
+gem "oj", "~> 3.16"            # JSON parser mais rápido
+gem "rack-cors", "~> 2.0"      # CORS allowlist explícito
+gem "rack-attack", "~> 6.7"    # rate limit + safelist
+
+# -----------------------------------------------------------------------
+# Domain helpers
+# -----------------------------------------------------------------------
+gem "jwt", "~> 2.9"                  # tokens programáticos (API keys legacy)
+gem "bcrypt", "~> 3.1"               # password hash (caso precise além do Better Auth)
+gem "dry-validation", "~> 1.10"      # input schemas type-safe
+gem "json_schemer", "~> 2.4"         # valida output do LLM contra JSON Schema
+gem "pagy", "~> 9.3"                 # paginação rápida
+gem "neighbor", "~> 0.6"             # pgvector ORM (RAG retrieval)
+
+# -----------------------------------------------------------------------
+# Integrações externas
+# -----------------------------------------------------------------------
+gem "anthropic", "~> 1.10"           # SDK oficial Anthropic
+gem "aws-sdk-s3", "~> 1.187", require: false   # S3 / MinIO
+gem "resend", "~> 0.21"              # email transacional
+gem "stripe", "~> 13.4", require: false        # opcional, billing externo principal
+
+# -----------------------------------------------------------------------
+# Observability
+# -----------------------------------------------------------------------
+gem "sentry-ruby", "~> 5.21"
+gem "sentry-rails", "~> 5.21"
+gem "sentry-sidekiq", "~> 5.21"
+
+# -----------------------------------------------------------------------
+# Development & Test
+# -----------------------------------------------------------------------
+group :development, :test do
+  gem "debug", platforms: %i[ mri windows ], require: "debug/prelude"
+  gem "rspec-rails", "~> 7.1"
+  gem "factory_bot_rails", "~> 6.4"
+  gem "faker", "~> 3.5"
+  gem "shoulda-matchers", "~> 6.4"
+  gem "database_cleaner-active_record", "~> 2.2"
+  gem "webmock", "~> 3.24"
+  gem "vcr", "~> 6.3"
+  gem "simplecov", "~> 0.22", require: false
+  gem "simplecov-html", "~> 0.13", require: false
+  gem "rubocop-rails-omakase", "~> 1.0", require: false
+end
+
+group :development do
+  gem "listen", "~> 3.9"
+end
+
+group :test do
+  gem "rails-controller-testing", "~> 1.0"
+end
+
+group :development, :test do
+  gem "bundler-audit", "~> 0.9", require: false
+  gem "brakeman", "~> 6.2", require: false
+end

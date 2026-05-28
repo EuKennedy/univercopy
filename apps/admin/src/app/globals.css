@@ -1,26 +1,134 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* =====================================================================
+ * UniverCopy design tokens — Dark-first com light cuidado.
+ * Referências: Apple, Linear, Stripe, Vercel. Aesthetic liquid glass.
+ * Toda cor de UI consome --uc-*. Não hardcode hex em componentes.
+ * Expandido na Fase 3/4 quando os primeiros componentes godmode entrarem.
+ * ===================================================================== */
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+:root {
+  color-scheme: dark light;
+
+  /* Backgrounds */
+  --uc-bg: #ffffff;
+  --uc-bg-soft: #f7f8fa;
+  --uc-surface: #ffffff;
+  --uc-surface-soft: rgba(248, 250, 252, 0.78);
+  --uc-surface-2: #f1f5f9;
+  --uc-surface-overlay: rgba(255, 255, 255, 0.92);
+
+  /* Borders */
+  --uc-border: rgba(15, 23, 42, 0.08);
+  --uc-border-soft: rgba(15, 23, 42, 0.04);
+  --uc-border-strong: rgba(15, 23, 42, 0.16);
+
+  /* Text */
+  --uc-text: #0f172a;
+  --uc-text-secondary: #334155;
+  --uc-text-soft: #475569;
+  --uc-text-muted: #64748b;
+  --uc-text-faint: #94a3b8;
+  --uc-text-on-accent: #ffffff;
+
+  /* Accent (refinado na Fase 4 com a paleta final) */
+  --uc-accent: #6366f1;
+  --uc-accent-strong: #4f46e5;
+  --uc-accent-dim: #4338ca;
+  --uc-accent-soft: rgba(99, 102, 241, 0.10);
+  --uc-accent-soft-2: rgba(99, 102, 241, 0.16);
+  --uc-accent-soft-3: rgba(99, 102, 241, 0.22);
+  --uc-accent-glow: rgba(99, 102, 241, 0.28);
+  --uc-accent-ring: rgba(99, 102, 241, 0.45);
+
+  /* Semantic */
+  --uc-success: #10b981;
+  --uc-success-bg: rgba(16, 185, 129, 0.12);
+  --uc-warn: #f59e0b;
+  --uc-danger: #ef4444;
+  --uc-danger-bg: rgba(239, 68, 68, 0.12);
+  --uc-info: #0ea5e9;
+  --uc-info-bg: rgba(14, 165, 233, 0.12);
+
+  /* Skeletons */
+  --uc-skeleton-1: rgba(148, 163, 184, 0.12);
+  --uc-skeleton-2: rgba(148, 163, 184, 0.22);
+
+  /* Shadows */
+  --uc-shadow-md: 0 10px 30px -12px rgba(15, 23, 42, 0.14);
+  --uc-shadow-lg: 0 24px 48px -24px rgba(15, 23, 42, 0.22);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --uc-bg: #0a0d14;
+    --uc-bg-soft: #0f131c;
+    --uc-surface: #11151f;
+    --uc-surface-soft: rgba(20, 25, 36, 0.72);
+    --uc-surface-2: #161b27;
+    --uc-surface-overlay: rgba(17, 21, 31, 0.88);
+
+    --uc-border: rgba(255, 255, 255, 0.08);
+    --uc-border-soft: rgba(255, 255, 255, 0.04);
+    --uc-border-strong: rgba(255, 255, 255, 0.16);
+
+    --uc-text: #f8fafc;
+    --uc-text-secondary: #cbd5e1;
+    --uc-text-soft: #94a3b8;
+    --uc-text-muted: #64748b;
+    --uc-text-faint: #475569;
+
+    --uc-accent: #818cf8;
+    --uc-accent-strong: #a5b4fc;
+    --uc-accent-dim: #6366f1;
+    --uc-accent-soft: rgba(129, 140, 248, 0.12);
+    --uc-accent-soft-2: rgba(129, 140, 248, 0.18);
+    --uc-accent-soft-3: rgba(129, 140, 248, 0.26);
+    --uc-accent-glow: rgba(129, 140, 248, 0.36);
+
+    --uc-skeleton-1: rgba(148, 163, 184, 0.08);
+    --uc-skeleton-2: rgba(148, 163, 184, 0.16);
+
+    --uc-shadow-md: 0 10px 30px -12px rgba(0, 0, 0, 0.50);
+    --uc-shadow-lg: 0 24px 48px -24px rgba(0, 0, 0, 0.62);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@theme inline {
+  --color-background: var(--uc-bg);
+  --color-foreground: var(--uc-text);
+  --color-accent: var(--uc-accent);
+  --font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+html, body {
+  background: var(--uc-bg);
+  color: var(--uc-text);
+  font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "cv11", "ss01", "ss03";
+}
+
+::selection {
+  background: var(--uc-accent-soft-2);
+  color: var(--uc-text);
+}
+
+/* Foco acessível padrão — sobrescrito por Radix em componentes interativos. */
+:focus-visible {
+  outline: 2px solid var(--uc-accent-ring);
+  outline-offset: 2px;
+}
+
+/* Reduz movimento se o usuário pediu — respeito sempre. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

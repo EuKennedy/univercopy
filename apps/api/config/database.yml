@@ -1,0 +1,29 @@
+# DATABASE_URL é o único source of truth em todos os ambientes. Em prod,
+# Coolify injeta a URL apontando para o serviço `db`. Em dev, o arquivo
+# .env.local define DATABASE_URL pra postgres://localhost (docker-compose.dev).
+
+default: &default
+  adapter: postgresql
+  encoding: unicode
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+  variables:
+    # Statement timeout = 30s — protege contra queries inadvertidas que
+    # travariam o pool. Subir só em jobs offline (Sidekiq seta -1).
+    statement_timeout: 30000
+
+development:
+  <<: *default
+  url: <%= ENV.fetch("DATABASE_URL") { "postgres://univercopy:univercopy_dev@localhost:5432/univercopy_development" } %>
+
+test:
+  <<: *default
+  url: <%= ENV.fetch("DATABASE_URL") { "postgres://univercopy:univercopy_test@localhost:5432/univercopy_test" } %>
+
+production:
+  primary:
+    <<: *default
+    url: <%= ENV["DATABASE_URL"] %>
+  cache:
+    <<: *default
+    url: <%= ENV["DATABASE_URL"] %>
+    migrations_paths: db/cache_migrate

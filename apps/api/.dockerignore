@@ -1,0 +1,31 @@
+.git/
+.gitignore
+.bundle
+.env
+.env.*
+.devcontainer/
+
+# Logs and tmp (keep the dirs).
+log/*
+tmp/*
+!log/.keep
+!tmp/.keep
+tmp/pids/*
+!tmp/pids/.keep
+
+# Local artifacts.
+vendor/bundle/
+coverage/
+spec/
+storage/
+*.log
+*.pem
+*.key
+config/master.key
+config/credentials/*.key
+.byebug_history
+node_modules/
+
+# Docker meta.
+.dockerignore
+Dockerfile*
