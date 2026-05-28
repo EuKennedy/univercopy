@@ -1,74 +1,81 @@
-# syntax=docker/dockerfile:1
-# check=error=true
+# syntax=docker/dockerfile:1.7
+#
+# UniverCopy API — multi-stage Dockerfile. Context = monorepo root
+# (declarado no docker-compose.yml). Não usar context apps/api/ diretamente
+# porque o packages/ai-prompts/ é COPY-ado pra dentro da image também.
 
-# This Dockerfile is designed for production, not development. Use with Kamal or build'n'run by hand:
-# docker build -t api .
-# docker run -d -p 80:3000 -e RAILS_MASTER_KEY=<value from config/master.key> --name api api
+# ---------------------------------------------------------------------
+# Stage 1 — Build: instala build tools, compila gems, precompila bootsnap.
+# ---------------------------------------------------------------------
+FROM ruby:3.3.6-slim AS build
 
-# For a containerized dev environment, see Dev Containers: https://guides.rubyonrails.org/getting_started_with_devcontainer.html
+ENV LANG=C.UTF-8 \
+    RAILS_ENV=production \
+    BUNDLE_DEPLOYMENT=1 \
+    BUNDLE_PATH=/usr/local/bundle \
+    BUNDLE_WITHOUT="development:test"
 
-# Make sure RUBY_VERSION matches the Ruby version in .ruby-version
-ARG RUBY_VERSION=3.3.6
-FROM docker.io/library/ruby:$RUBY_VERSION-slim AS base
-
-# Rails app lives here
-WORKDIR /rails
-
-# Install base packages
 RUN apt-get update -qq && \
-    apt-get install --no-install-recommends -y curl libjemalloc2 postgresql-client && \
-    ln -s /usr/lib/$(uname -m)-linux-gnu/libjemalloc.so.2 /usr/local/lib/libjemalloc.so && \
-    rm -rf /var/lib/apt/lists /var/cache/apt/archives
+    apt-get install -y --no-install-recommends \
+      build-essential libpq-dev libyaml-dev libffi-dev libssl-dev \
+      pkg-config git curl && \
+    rm -rf /var/lib/apt/lists/*
 
-# Set production environment variables and enable jemalloc for reduced memory usage and latency.
-ENV RAILS_ENV="production" \
-    BUNDLE_DEPLOYMENT="1" \
-    BUNDLE_PATH="/usr/local/bundle" \
-    BUNDLE_WITHOUT="development" \
-    LD_PRELOAD="/usr/local/lib/libjemalloc.so"
+WORKDIR /app
 
-# Throw-away build stage to reduce size of final image
-FROM base AS build
+# Gemfile primeiro (cache layer). Path explícito monorepo.
+COPY apps/api/Gemfile apps/api/Gemfile.lock ./
+RUN bundle config set --local without "$BUNDLE_WITHOUT" && \
+    bundle install --jobs 4 --retry 3 && \
+    rm -rf /usr/local/bundle/ruby/*/cache /usr/local/bundle/ruby/*/gems/*/doc
 
-# Install packages needed to build gems
+# Código da API.
+COPY apps/api/ ./
+
+# Prompts versionados (acessíveis via Rails.root.join("vendor/ai-prompts/...")).
+COPY packages/ai-prompts ./vendor/ai-prompts
+
+# Precompila bootsnap pra warm boot em prod (ignora erro se faltar SECRET).
+RUN SECRET_KEY_BASE=dummy_for_bootsnap_precompile_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx \
+    bundle exec bootsnap precompile -j 1 app/ lib/ config/ || true
+
+# ---------------------------------------------------------------------
+# Stage 2 — Runtime: imagem enxuta sem build tools.
+# ---------------------------------------------------------------------
+FROM ruby:3.3.6-slim AS runtime
+
+ENV LANG=C.UTF-8 \
+    RAILS_ENV=production \
+    BUNDLE_DEPLOYMENT=1 \
+    BUNDLE_PATH=/usr/local/bundle \
+    BUNDLE_WITHOUT="development:test" \
+    RAILS_LOG_TO_STDOUT=1
+
 RUN apt-get update -qq && \
-    apt-get install --no-install-recommends -y build-essential git libpq-dev libyaml-dev pkg-config && \
-    rm -rf /var/lib/apt/lists /var/cache/apt/archives
+    apt-get install -y --no-install-recommends \
+      libpq5 libyaml-0-2 libjemalloc2 curl tini && \
+    rm -rf /var/lib/apt/lists/*
 
-# Install application gems
-COPY vendor/* ./vendor/
-COPY Gemfile Gemfile.lock ./
+# jemalloc reduz fragmentação de memória do Ruby.
+ENV LD_PRELOAD=libjemalloc.so.2
 
-RUN bundle install && \
-    rm -rf ~/.bundle/ "${BUNDLE_PATH}"/ruby/*/cache "${BUNDLE_PATH}"/ruby/*/bundler/gems/*/.git && \
-    # -j 1 disable parallel compilation to avoid a QEMU bug: https://github.com/rails/bootsnap/issues/495
-    bundle exec bootsnap precompile -j 1 --gemfile
+WORKDIR /app
 
-# Copy application code
-COPY . .
+# User UID 1000 sem privilégios.
+RUN groupadd --system --gid 1000 app && \
+    useradd --system --uid 1000 --gid 1000 --create-home --shell /bin/bash app
 
-# Precompile bootsnap code for faster boot times.
-# -j 1 disable parallel compilation to avoid a QEMU bug: https://github.com/rails/bootsnap/issues/495
-RUN bundle exec bootsnap precompile -j 1 app/ lib/
+COPY --from=build /usr/local/bundle /usr/local/bundle
+COPY --from=build --chown=app:app /app /app
 
+USER app
 
+# Health probe interno — Coolify usa.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+  CMD curl --fail http://localhost:3000/up || exit 1
 
-
-# Final stage for app image
-FROM base
-
-# Run and own only the runtime files as a non-root user for security
-RUN groupadd --system --gid 1000 rails && \
-    useradd rails --uid 1000 --gid 1000 --create-home --shell /bin/bash
-USER 1000:1000
-
-# Copy built artifacts: gems, application
-COPY --chown=rails:rails --from=build "${BUNDLE_PATH}" "${BUNDLE_PATH}"
-COPY --chown=rails:rails --from=build /rails /rails
-
-# Entrypoint prepares the database.
-ENTRYPOINT ["/rails/bin/docker-entrypoint"]
-
-# Start the server by default, this can be overwritten at runtime
 EXPOSE 3000
-CMD ["./bin/rails", "server"]
+
+# tini = init PID 1 (sinais + zumbis). Sidekiq override CMD em docker-compose.
+ENTRYPOINT ["/usr/bin/tini", "--"]
+CMD ["bundle", "exec", "puma", "-C", "config/puma.rb"]

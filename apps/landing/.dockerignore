@@ -1,0 +1,12 @@
+.git/
+.gitignore
+.next/
+.turbo/
+node_modules/
+coverage/
+.env
+.env.*
+*.log
+.DS_Store
+Dockerfile
+.dockerignore

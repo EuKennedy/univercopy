@@ -1,21 +1,24 @@
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import createNextIntlPlugin from 'next-intl/plugin'
 import type { NextConfig } from 'next'
 
 const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts')
 
+// Monorepo standalone — Next precisa do tracing root no topo do repo,
+// senão o output pula node_modules das workspaces (@univer/shared).
+const monorepoRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), '../..')
+
 const nextConfig: NextConfig = {
-  // Pacotes do monorepo precisam ser transpilados pelo Next (TS direto, sem build).
   transpilePackages: ['@univer/shared'],
 
-  // Standalone facilita imagem Docker (copy só do que precisa).
   output: 'standalone',
+  outputFileTracingRoot: monorepoRoot,
 
   experimental: {
-    // Server Actions habilitado para mutations sem REST.
     serverActions: { bodySizeLimit: '2mb' },
   },
 
-  // Hardening básico de cabeçalhos. Refinado na Fase 9 (CSP completo).
   async headers() {
     return [
       {
