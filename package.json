@@ -9,6 +9,8 @@
     "lint": "turbo run lint",
     "type-check": "turbo run type-check",
     "test": "turbo run test",
+    "ci:local": "bash scripts/local-ci.sh",
+    "ci:local:bootstrap": "bash scripts/install-ci-deps.sh",
     "clean": "turbo run clean && rm -rf node_modules"
   },
   "devDependencies": {

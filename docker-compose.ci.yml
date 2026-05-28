@@ -1,0 +1,44 @@
+# Stack efêmera para o pipeline de CI local. SEM volumes persistentes —
+# Postgres e Redis vivem em tmpfs (RAM). Credenciais hardcoded de CI;
+# nunca usadas em outro contexto. Portas deslocadas pra não brigar com
+# docker-compose.dev.yml (5432/6379).
+#
+# Run: docker compose -f docker-compose.ci.yml up -d --wait
+# Down: docker compose -f docker-compose.ci.yml down -v --remove-orphans
+
+name: univercopy-ci
+
+services:
+
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB:       ci_db
+      POSTGRES_USER:     ci_user
+      POSTGRES_PASSWORD: ci_pw
+      POSTGRES_HOST_AUTH_METHOD: md5
+    ports:
+      # Porta de CI != dev (5432). Se já estiver ocupada, sobe random.
+      - "${UC_CI_PG_PORT:-55432}:5432"
+    tmpfs:
+      - /var/lib/postgresql/data:size=512m
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ci_user -d ci_db"]
+      interval: 3s
+      timeout: 2s
+      retries: 30
+      start_period: 5s
+
+  cache:
+    image: redis:7-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    ports:
+      - "${UC_CI_REDIS_PORT:-56379}:6379"
+    tmpfs:
+      - /data:size=128m
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 2s
+      retries: 30
+      start_period: 3s

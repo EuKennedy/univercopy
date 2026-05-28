@@ -1,0 +1,36 @@
+# Build/cache
+.next/
+.turbo/
+node_modules/
+dist/
+build/
+coverage/
+.local-ci-logs/
+
+# Rails artifacts
+apps/api/tmp/
+apps/api/log/
+apps/api/storage/
+apps/api/vendor/bundle/
+apps/api/coverage/
+apps/api/public/
+
+# Test fixtures & specs (Semgrep falso positivo em factories/seed)
+apps/api/spec/factories/
+apps/api/spec/fixtures/
+apps/api/db/seeds.rb
+apps/admin/src/**/__tests__/
+
+# Locked
+*.lock
+*.lockb
+pnpm-lock.yaml
+Gemfile.lock
+
+# Docs e config
+docs/
+*.md
+*.example
+
+# Generated
+apps/admin/next-env.d.ts

@@ -55,3 +55,6 @@ playwright/.cache/
 
 # Sentry CLI
 .sentryclirc
+
+# Local CI logs
+.local-ci-logs/
