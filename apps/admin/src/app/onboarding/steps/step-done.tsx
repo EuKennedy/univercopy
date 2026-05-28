@@ -1,28 +1,35 @@
 'use client'
 
 import Link from 'next/link'
+import { useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
 
 import { GlassButton, GlassCard } from '@/components/ui'
 
-export function StepDone() {
+import { completeOnboarding } from '../actions'
+
+type Props = {
+  workspaceSlug: string
+}
+
+export function StepDone({ workspaceSlug }: Props) {
   const t = useTranslations('onboarding')
+  const [done, setDone] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    completeOnboarding(workspaceSlug)
+      .then(() => { if (!cancelled) setDone(true) })
+      .catch(() => { /* silencioso */ })
+    return () => { cancelled = true }
+  }, [workspaceSlug])
+
   return (
     <GlassCard variant="strong" iridescent glow className="p-10 sm:p-12 text-center space-y-6">
       <div className="mx-auto size-16 rounded-2xl bg-[var(--uc-accent-soft-2)] border border-[var(--uc-accent-soft-3)] flex items-center justify-center">
-        {/* Checkmark SVG simples — sem emoji. */}
-        <svg
-          width="28"
-          height="28"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="text-[var(--uc-accent)]"
-          aria-hidden="true"
-        >
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+             className="text-[var(--uc-accent)]" aria-hidden="true">
           <path d="M5 13l4 4L19 7" />
         </svg>
       </div>
@@ -34,8 +41,8 @@ export function StepDone() {
           {t('step_done_subtitle')}
         </p>
       </div>
-      <Link href="/" className="inline-block">
-        <GlassButton size="lg" type="button">
+      <Link href={`/${workspaceSlug}`} className="inline-block">
+        <GlassButton size="lg" type="button" disabled={!done}>
           {t('step_done_cta')}
         </GlassButton>
       </Link>

@@ -5,16 +5,13 @@ import { useTranslations } from 'next-intl'
 
 import { GlassButton, GlassCard, GlassInput } from '@/components/ui'
 
-import type { DnaDraft } from '../onboarding-wizard'
+import { startOnboarding } from '../actions'
 
 type Props = {
-  onSubmit: (url: string, dna: DnaDraft) => void
+  onStarted: (info: { workspaceSlug: string; jobId: string }) => void
 }
 
-// Step 1 — coleta URL da loja/marca. Na Fase 3.D, dispara POST /api/v1/
-// onboarding/start (cria workspace + Sidekiq job que scrapeia + chama
-// Claude pra extrair DNA). Aqui simula com timeout + DNA stub.
-export function StepUrl({ onSubmit }: Props) {
+export function StepUrl({ onStarted }: Props) {
   const t = useTranslations('onboarding')
   const [url, setUrl] = useState('')
   const [loading, setLoading] = useState(false)
@@ -23,29 +20,18 @@ export function StepUrl({ onSubmit }: Props) {
   async function handle(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
-    if (!/^https?:\/\//i.test(url) && !/^[\w.-]+\.[a-z]{2,}/i.test(url)) {
+    const cleaned = url.trim()
+    if (!/^https?:\/\//i.test(cleaned) && !/^[\w.-]+\.[a-z]{2,}/i.test(cleaned)) {
       setError('Informe uma URL válida (ex.: minhamarca.com.br).')
       return
     }
+    const normalized = /^https?:\/\//i.test(cleaned) ? cleaned : `https://${cleaned}`
     setLoading(true)
     try {
-      // TODO Fase 3.D: substituir por chamada real na API Rails.
-      await new Promise((r) => setTimeout(r, 2200))
-      const stub: DnaDraft = {
-        marca: '',
-        posicionamento: '',
-        tom: '',
-        publico: '',
-        consciencia: '',
-        valores: [],
-        produtos: [],
-        provas: [],
-        objecoes: [],
-        evitar: [],
-        source_url: url,
-      }
-      onSubmit(url, stub)
-    } finally {
+      const res = await startOnboarding(normalized)
+      onStarted({ workspaceSlug: res.workspace.slug, jobId: res.job.id })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('step_url_continue'))
       setLoading(false)
     }
   }
@@ -71,6 +57,7 @@ export function StepUrl({ onSubmit }: Props) {
           onChange={(e) => setUrl(e.target.value)}
           placeholder={t('step_url_placeholder')}
           error={error ?? undefined}
+          disabled={loading}
         />
 
         <GlassButton type="submit" size="lg" loading={loading} className="w-full">

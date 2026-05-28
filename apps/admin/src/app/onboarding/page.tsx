@@ -1,8 +1,15 @@
+import { getOnboardingState } from './actions'
 import { OnboardingWizard } from './onboarding-wizard'
 
-// Server entry da rota. Na Fase 3.D busca workspace state do API Rails
-// (GET /api/v1/onboarding/state) e passa pro client. Por agora, estado
-// inicial vazio — o wizard começa do step 1.
-export default function OnboardingPage() {
-  return <OnboardingWizard />
+// Server entry — busca o estado atual via API Rails (lê Better Auth session
+// internamente) e passa pro wizard client. Wizard hidrata e decide o
+// step inicial pela onboarding_status do workspace.
+export default async function OnboardingPage() {
+  const initial = await getOnboardingState().catch(() => ({
+    workspace: null,
+    dna: null,
+    job: null,
+  }))
+
+  return <OnboardingWizard initial={initial} />
 }

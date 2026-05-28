@@ -6,10 +6,11 @@ import { useTranslations } from 'next-intl'
 
 import { StepIndicator } from '@/components/ui'
 
-import { StepUrl } from './steps/step-url'
+import type { OnboardingState as ApiState } from './actions'
 import { StepDna } from './steps/step-dna'
-import { StepQa } from './steps/step-qa'
 import { StepDone } from './steps/step-done'
+import { StepQa } from './steps/step-qa'
+import { StepUrl } from './steps/step-url'
 
 export type DnaDraft = {
   marca: string
@@ -34,34 +35,62 @@ export type QaDraft = {
   interesses: string[]
 }
 
-export type OnboardingState = {
-  step: 'url' | 'dna' | 'qa' | 'done'
+export type Step = 'url' | 'dna' | 'qa' | 'done'
+
+export type LocalState = {
+  step: Step
   workspaceSlug: string | null
+  jobId: string | null
   dna: DnaDraft | null
   qa: QaDraft | null
 }
 
-const INITIAL: OnboardingState = {
-  step: 'url',
-  workspaceSlug: null,
-  dna: null,
-  qa: null,
-}
+const STEP_ORDER: Step[] = ['url', 'dna', 'qa', 'done']
 
-const STEP_ORDER: OnboardingState['step'][] = ['url', 'dna', 'qa', 'done']
-
-// Variants das transições — easing fluido (~480ms) consistente com .uc-transition.
-// AnimatePresence mode="popLayout" evita o footgun de opacity:0 grudada que
-// AnimatePresence mode="wait" provoca quando o child desmonta antes do exit.
 const STEP_VARIANTS = {
   initial: { opacity: 0, y: 24, scale: 0.98 },
   animate: { opacity: 1, y: 0, scale: 1 },
   exit:    { opacity: 0, y: -24, scale: 0.98 },
 }
 
-export function OnboardingWizard() {
+function pickInitialStep(initial: ApiState): Step {
+  if (!initial.workspace) return 'url'
+  switch (initial.workspace.onboarding_status) {
+    case 'pending':    return 'url'
+    case 'dna_loaded': return 'dna'
+    case 'qa_done':    return 'done'
+    case 'done':       return 'done'
+    default:           return 'url'
+  }
+}
+
+function dnaFromApi(api: ApiState['dna']): DnaDraft | null {
+  if (!api) return null
+  return {
+    marca: api.marca ?? '',
+    posicionamento: api.posicionamento ?? '',
+    tom: api.tom ?? '',
+    publico: api.publico ?? '',
+    consciencia: api.consciencia ?? '',
+    valores: api.valores ?? [],
+    produtos: api.produtos ?? [],
+    provas: api.provas ?? [],
+    objecoes: api.objecoes ?? [],
+    evitar: api.evitar ?? [],
+    source_url: api.source_url ?? undefined,
+  }
+}
+
+export function OnboardingWizard({ initial }: { initial: ApiState }) {
   const t = useTranslations('onboarding')
-  const [state, setState] = useState<OnboardingState>(INITIAL)
+
+  const [state, setState] = useState<LocalState>({
+    step: pickInitialStep(initial),
+    workspaceSlug: initial.workspace?.slug ?? null,
+    jobId: initial.job?.id ?? null,
+    dna: dnaFromApi(initial.dna),
+    qa: null,
+  })
 
   const stepIdx = STEP_ORDER.indexOf(state.step)
 
@@ -72,7 +101,7 @@ export function OnboardingWizard() {
     t('step_done_title'),
   ]
 
-  function goTo(step: OnboardingState['step'], patch?: Partial<OnboardingState>) {
+  function goTo(step: Step, patch?: Partial<LocalState>) {
     setState((prev) => ({ ...prev, ...patch, step }))
   }
 
@@ -106,23 +135,28 @@ export function OnboardingWizard() {
             >
               {state.step === 'url' && (
                 <StepUrl
-                  onSubmit={(url, dnaDraft) =>
-                    goTo('dna', { dna: dnaDraft, workspaceSlug: state.workspaceSlug ?? dnaDraft.marca })
+                  onStarted={({ workspaceSlug, jobId }) =>
+                    goTo('dna', { workspaceSlug, jobId })
                   }
                 />
               )}
-              {state.step === 'dna' && state.dna && (
+              {state.step === 'dna' && state.workspaceSlug && state.jobId && (
                 <StepDna
+                  workspaceSlug={state.workspaceSlug}
+                  jobId={state.jobId}
                   initial={state.dna}
                   onContinue={(dna) => goTo('qa', { dna })}
                 />
               )}
-              {state.step === 'qa' && (
+              {state.step === 'qa' && state.workspaceSlug && (
                 <StepQa
+                  workspaceSlug={state.workspaceSlug}
                   onContinue={(qa) => goTo('done', { qa })}
                 />
               )}
-              {state.step === 'done' && <StepDone />}
+              {state.step === 'done' && state.workspaceSlug && (
+                <StepDone workspaceSlug={state.workspaceSlug} />
+              )}
             </motion.div>
           </AnimatePresence>
         </section>

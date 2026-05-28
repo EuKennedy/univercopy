@@ -58,3 +58,6 @@ playwright/.cache/
 
 # Local CI logs
 .local-ci-logs/
+
+# Dev orchestrator logs
+.dev-logs/

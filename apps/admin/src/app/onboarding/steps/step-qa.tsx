@@ -5,9 +5,11 @@ import { useTranslations } from 'next-intl'
 
 import { GlassButton, GlassCard, GlassInput } from '@/components/ui'
 
+import { saveQa } from '../actions'
 import type { QaDraft } from '../onboarding-wizard'
 
 type Props = {
+  workspaceSlug: string
   onContinue: (qa: QaDraft) => void
 }
 
@@ -15,9 +17,7 @@ const FAIXA_ETARIA = ['18-24', '25-34', '35-44', '45-54', '55+', 'múltiplas']
 const FAIXA_RENDA  = ['A', 'B', 'C', 'D/E', 'múltiplas']
 const GENERO       = ['Feminino', 'Masculino', 'Diverso', 'Indiferente']
 
-// Step 3 — Q&A sobre público-alvo. Respostas persistidas em
-// brand_dna.publico_alvo_detalhado + indexadas no RAG (Fase 5).
-export function StepQa({ onContinue }: Props) {
+export function StepQa({ workspaceSlug, onContinue }: Props) {
   const t = useTranslations()
   const [qa, setQa] = useState<QaDraft>({
     publico_alvo: '',
@@ -28,7 +28,8 @@ export function StepQa({ onContinue }: Props) {
     interesses: [],
   })
   const [interesseDraft, setInteresseDraft] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   function update<K extends keyof QaDraft>(k: K, v: QaDraft[K]) {
     setQa((prev) => ({ ...prev, [k]: v }))
@@ -44,12 +45,15 @@ export function StepQa({ onContinue }: Props) {
 
   async function handle(e: React.FormEvent) {
     e.preventDefault()
-    setLoading(true)
+    setSaving(true)
+    setError(null)
     try {
-      await new Promise((r) => setTimeout(r, 600))
+      await saveQa(workspaceSlug, qa)
       onContinue(qa)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'erro ao salvar')
     } finally {
-      setLoading(false)
+      setSaving(false)
     }
   }
 
@@ -74,24 +78,9 @@ export function StepQa({ onContinue }: Props) {
         />
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <ChipGroup
-            label={t('onboarding.qa_faixa_etaria_label')}
-            options={FAIXA_ETARIA}
-            value={qa.faixa_etaria}
-            onChange={(v) => update('faixa_etaria', v)}
-          />
-          <ChipGroup
-            label={t('onboarding.qa_faixa_renda_label')}
-            options={FAIXA_RENDA}
-            value={qa.faixa_renda}
-            onChange={(v) => update('faixa_renda', v)}
-          />
-          <ChipGroup
-            label={t('onboarding.qa_genero_label')}
-            options={GENERO}
-            value={qa.genero}
-            onChange={(v) => update('genero', v)}
-          />
+          <ChipGroup label={t('onboarding.qa_faixa_etaria_label')} options={FAIXA_ETARIA} value={qa.faixa_etaria} onChange={(v) => update('faixa_etaria', v)} />
+          <ChipGroup label={t('onboarding.qa_faixa_renda_label')}  options={FAIXA_RENDA}  value={qa.faixa_renda}  onChange={(v) => update('faixa_renda', v)} />
+          <ChipGroup label={t('onboarding.qa_genero_label')}       options={GENERO}       value={qa.genero}       onChange={(v) => update('genero', v)} />
         </div>
 
         <GlassInput
@@ -137,12 +126,22 @@ export function StepQa({ onContinue }: Props) {
           )}
         </div>
 
+        {error && (
+          <div role="alert" className="rounded-xl px-4 py-3 text-sm bg-[var(--uc-danger-bg)] text-[var(--uc-danger)] border border-[var(--uc-danger)]">
+            {error}
+          </div>
+        )}
+
         <div className="flex justify-end pt-3">
-          <GlassButton type="submit" size="lg" loading={loading}>
+          <GlassButton type="submit" size="lg" loading={saving}>
             {t('common.continue')}
           </GlassButton>
         </div>
       </form>
+
+      <p className="text-xs text-[var(--uc-text-muted)] pt-1">
+        Workspace: <code className="text-[var(--uc-text-soft)]">{workspaceSlug}</code>
+      </p>
     </GlassCard>
   )
 }

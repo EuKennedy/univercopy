@@ -11,6 +11,9 @@
     "test": "turbo run test",
     "ci:local": "bash scripts/local-ci.sh",
     "ci:local:bootstrap": "bash scripts/install-ci-deps.sh",
+    "dev:stack": "bash scripts/dev.sh",
+    "dev:api": "bash scripts/dev.sh api",
+    "dev:admin": "bash scripts/dev.sh admin",
     "clean": "turbo run clean && rm -rf node_modules"
   },
   "devDependencies": {

@@ -1,12 +1,19 @@
 Rails.application.routes.draw do
-  # Health probes — usados pelo Coolify, uptime monitors e Rack::Attack safelist.
+  # Health probes — Coolify, uptime monitors, Rack::Attack safelist.
   get "/up",     to: "health#show", as: :health_root
   get "/health", to: "health#show"
 
-  # /api/v1 montado nas Fases 4+. Health stub responde já no bootstrap.
   namespace :api do
     namespace :v1 do
       get "/health", to: "/health#show"
+
+      # Onboarding wizard.
+      get   "/onboarding/state",    to: "onboarding#state"
+      post  "/onboarding/start",    to: "onboarding#start"
+      get   "/onboarding/job/:id",  to: "onboarding#job"
+      patch "/onboarding/dna",      to: "onboarding#update_dna"
+      patch "/onboarding/qa",       to: "onboarding#update_qa"
+      post  "/onboarding/complete", to: "onboarding#complete"
     end
   end
 end
