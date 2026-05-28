@@ -1,22 +1,31 @@
-// Página placeholder do bootstrap. Substituída na Fase 3 pelo router de
-// onboarding (auth check → workspace check → onboarding wizard).
+import { redirect } from 'next/navigation'
+import { headers } from 'next/headers'
 
-export default function HomePage() {
-  return (
-    <main className="flex flex-1 items-center justify-center px-6 py-24">
-      <div className="max-w-xl text-center space-y-6">
-        <span className="inline-flex items-center gap-2 rounded-full border border-[var(--uc-border)] bg-[var(--uc-surface-soft)] px-3 py-1 text-xs font-medium tracking-wide text-[var(--uc-text-muted)] backdrop-blur">
-          worldclass · build em andamento
-        </span>
-        <h1 className="text-4xl font-bold tracking-tight text-[var(--uc-text)] sm:text-5xl">
-          UniverCopy
-        </h1>
-        <p className="text-base leading-7 text-[var(--uc-text-soft)]">
-          Hub world-class de geração, revisão e organização de copy.
-          <br />
-          Painel disponível após o onboarding (Fase 3).
-        </p>
-      </div>
-    </main>
-  )
+import { auth } from '@/lib/auth'
+import { getOnboardingState } from './onboarding/actions'
+
+// Router raiz. Decide pra onde mandar baseado em sessão + estado:
+//   - sem sessão           → /login (proxy.ts já cobre, redundante mas explícito)
+//   - sem workspace        → /onboarding
+//   - workspace pendente   → /onboarding (resume no step certo)
+//   - workspace done       → /[slug]
+//
+// Falha de API (rede/500) cai pro /onboarding como fallback safe — pior
+// caso usuário re-vê wizard com estado vazio.
+export default async function RootPage() {
+  const session = await auth.api.getSession({ headers: await headers() })
+  if (!session?.user) redirect('/login')
+
+  let state
+  try {
+    state = await getOnboardingState()
+  } catch {
+    redirect('/onboarding')
+  }
+
+  if (!state.workspace || state.workspace.onboarding_status !== 'done') {
+    redirect('/onboarding')
+  }
+
+  redirect(`/${state.workspace.slug}`)
 }
