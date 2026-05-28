@@ -1,0 +1,72 @@
+# Stack de desenvolvimento local — Postgres + Redis + MinIO.
+# A API Rails e o admin Next rodam fora do compose (faster reload).
+# Use: docker compose -f docker-compose.dev.yml up -d
+
+services:
+
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: univercopy_db_dev
+    environment:
+      POSTGRES_DB: univercopy_development
+      POSTGRES_USER: univercopy
+      POSTGRES_PASSWORD: univercopy_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - uc_pgdata_dev:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U univercopy -d univercopy_development"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  cache:
+    image: redis:7-alpine
+    container_name: univercopy_redis_dev
+    command: ["redis-server", "--save", "60", "1", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - uc_redis_dev:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  minio:
+    image: minio/minio:latest
+    container_name: univercopy_minio_dev
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: univercopy
+      MINIO_ROOT_PASSWORD: univercopy_dev_minio
+    ports:
+      - "9000:9000"   # S3 API
+      - "9001:9001"   # MinIO console
+    volumes:
+      - uc_minio_dev:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  minio_init:
+    # Cria o bucket inicial idempotentemente.
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 univercopy univercopy_dev_minio;
+      mc mb -p local/univer-copy-media || true;
+      mc anonymous set download local/univer-copy-media || true;
+      "
+
+volumes:
+  uc_pgdata_dev:
+  uc_redis_dev:
+  uc_minio_dev:

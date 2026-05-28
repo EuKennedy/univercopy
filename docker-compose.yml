@@ -1,71 +1,145 @@
-# =====================================================================
-# UniverCopy — stack 100% open-source, self-hosted no Coolify
-# Repo: https://github.com/univerbeauty777/univercopy
-# Serviços: PostgreSQL (banco) + Redis (cache/fila) + API + Web
-# O Coolify faz o proxy/HTTPS (Traefik) — as portas abaixo são internas.
-# =====================================================================
+# Stack de produção — Coolify (Hostinger) lê este arquivo.
+# Tráfego HTTPS via Traefik (gerenciado pelo Coolify). Portas internas só.
+# Domínios apontados via UI do Coolify: app.* → admin, api.* → api.
+#
+# Secrets: defina em "Environment Variables" do Coolify. Nenhum valor real aqui.
+
 services:
 
   db:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
     environment:
-      POSTGRES_DB: univercopy
-      POSTGRES_USER: univercopy
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - uc_pgdata:/var/lib/postgresql/data
-      # Aplica o schema na PRIMEIRA inicialização (volume vazio).
-      # Migrações posteriores: usar uma ferramenta de migration (ver guia).
-      - ./db:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U univercopy -d univercopy"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
-    restart: unless-stopped
 
   cache:
     image: redis:7-alpine
-    command: ["redis-server", "--save", "60", "1", "--appendonly", "yes"]
+    restart: unless-stopped
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}", "--save", "60", "1", "--appendonly", "yes"]
     volumes:
       - uc_redis:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
       interval: 10s
-      timeout: 3s
+      timeout: 5s
       retries: 5
+
+  minio:
+    image: minio/minio:latest
     restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    volumes:
+      - uc_minio:/data
+    expose:
+      - "9000"
+      - "9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   api:
-    # API Node/TypeScript (Hono). Espera-se um Dockerfile em ./api
     build:
-      context: ./api
+      context: .
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
     environment:
-      DATABASE_URL: postgres://univercopy:${POSTGRES_PASSWORD}@db:5432/univercopy
-      REDIS_URL: redis://cache:6379
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}   # geração server-side (Claude)
-      JWT_SECRET: ${JWT_SECRET}                  # auth
-      APP_ORIGIN: ${APP_ORIGIN}                  # CORS (domínio do web)
-      PORT: 8080
+      RAILS_ENV: production
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      REDIS_URL: redis://:${REDIS_PASSWORD}@cache:6379/0
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
+      TENANT_CREDENTIALS_KEY: ${TENANT_CREDENTIALS_KEY}
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      RESEND_WEBHOOK_SECRET: ${RESEND_WEBHOOK_SECRET}
+      BILLING_WEBHOOK_SECRET: ${BILLING_WEBHOOK_SECRET}
+      S3_ENDPOINT: http://minio:9000
+      S3_BUCKET: ${S3_BUCKET}
+      S3_ACCESS_KEY_ID: ${MINIO_ROOT_USER}
+      S3_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
+      FRONTEND_URL: ${FRONTEND_URL}
+      API_URL: ${API_URL}
+      COOKIE_DOMAIN: ${COOKIE_DOMAIN}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
+      SENTRY_DSN: ${SENTRY_DSN}
+      RAILS_MAX_THREADS: ${RAILS_MAX_THREADS:-5}
+      WEB_CONCURRENCY: ${WEB_CONCURRENCY:-2}
     depends_on:
-      db:    { condition: service_healthy }
+      db: { condition: service_healthy }
       cache: { condition: service_healthy }
+      minio: { condition: service_healthy }
     expose:
-      - "8080"
-    restart: unless-stopped
+      - "3000"
 
-  web:
-    # Frontend (protótipo atual ou versão React/Next). Dockerfile em ./web
+  sidekiq:
     build:
-      context: ./web
-    environment:
-      VITE_API_URL: ${API_URL}                   # URL pública da API (via Coolify)
-    depends_on:
-      - api
-    expose:
-      - "80"
+      context: .
+      dockerfile: apps/api/Dockerfile
     restart: unless-stopped
+    command: ["bundle", "exec", "sidekiq"]
+    environment:
+      RAILS_ENV: production
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      REDIS_URL: redis://:${REDIS_PASSWORD}@cache:6379/0
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      TENANT_CREDENTIALS_KEY: ${TENANT_CREDENTIALS_KEY}
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      S3_ENDPOINT: http://minio:9000
+      S3_BUCKET: ${S3_BUCKET}
+      S3_ACCESS_KEY_ID: ${MINIO_ROOT_USER}
+      S3_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
+      SIDEKIQ_CONCURRENCY: ${SIDEKIQ_CONCURRENCY:-10}
+      SENTRY_DSN: ${SENTRY_DSN}
+    depends_on:
+      db: { condition: service_healthy }
+      cache: { condition: service_healthy }
+
+  admin:
+    build:
+      context: .
+      dockerfile: apps/admin/Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: ${API_URL}
+      NEXT_PUBLIC_ADMIN_URL: ${FRONTEND_URL}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
+      BETTER_AUTH_TRUSTED_ORIGINS: ${BETTER_AUTH_TRUSTED_ORIGINS}
+      COOKIE_DOMAIN: ${COOKIE_DOMAIN}
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL}
+    depends_on:
+      db: { condition: service_healthy }
+    expose:
+      - "3000"
+
+  landing:
+    build:
+      context: .
+      dockerfile: apps/landing/Dockerfile
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+    expose:
+      - "3000"
 
 volumes:
   uc_pgdata:
   uc_redis:
+  uc_minio:

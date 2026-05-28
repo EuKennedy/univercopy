@@ -1,0 +1,227 @@
+name: CI
+
+on:
+  push:
+    branches: [worldclass, main]
+  pull_request:
+    branches: [worldclass, main]
+
+# Cancela runs antigos da mesma branch em força-push.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Token mínimo. Jobs que precisem escrever declaram explicitamente.
+permissions:
+  contents: read
+
+jobs:
+
+  # ----------------------------------------------------------
+  # Detecta áreas alteradas; outros jobs condicionam a isso.
+  # ----------------------------------------------------------
+  changes:
+    name: Detect changed areas
+    runs-on: ubuntu-latest
+    outputs:
+      api:     ${{ steps.filter.outputs.api }}
+      admin:   ${{ steps.filter.outputs.admin }}
+      landing: ${{ steps.filter.outputs.landing }}
+      shared:  ${{ steps.filter.outputs.shared }}
+      prompts: ${{ steps.filter.outputs.prompts }}
+      infra:   ${{ steps.filter.outputs.infra }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            api:
+              - 'apps/api/**'
+              - 'packages/ai-prompts/**'
+            admin:
+              - 'apps/admin/**'
+              - 'packages/shared/**'
+            landing:
+              - 'apps/landing/**'
+            shared:
+              - 'packages/shared/**'
+            prompts:
+              - 'packages/ai-prompts/**'
+            infra:
+              - 'docker-compose*.yml'
+              - 'apps/api/Dockerfile'
+              - 'apps/admin/Dockerfile'
+              - '.github/workflows/**'
+
+  # ----------------------------------------------------------
+  # Secrets scan — Hard fail em qualquer credencial encontrada.
+  # ----------------------------------------------------------
+  gitleaks:
+    name: gitleaks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ----------------------------------------------------------
+  # SAST TS/JS — semgrep com regras p/r2c-ci.
+  # ----------------------------------------------------------
+  semgrep:
+    name: semgrep
+    runs-on: ubuntu-latest
+    container:
+      image: returntocorp/semgrep
+    steps:
+      - uses: actions/checkout@v4
+      - run: semgrep ci --config "p/r2c-ci"
+        env:
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+        continue-on-error: ${{ secrets.SEMGREP_APP_TOKEN == '' }}
+
+  # ----------------------------------------------------------
+  # Shared package — tipos compartilhados.
+  # ----------------------------------------------------------
+  shared:
+    name: shared (type-check)
+    needs: changes
+    if: needs.changes.outputs.shared == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 10 }
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @univer/shared type-check
+
+  # ----------------------------------------------------------
+  # Admin (Next.js) — lint + type-check + build + unit tests.
+  # ----------------------------------------------------------
+  admin:
+    name: admin (Next.js)
+    needs: changes
+    if: needs.changes.outputs.admin == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 10 }
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter admin lint
+      - run: pnpm --filter admin type-check
+      - run: pnpm --filter admin test
+      - run: pnpm --filter admin build
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:3001
+          NEXT_PUBLIC_ADMIN_URL: http://localhost:3000
+
+  # ----------------------------------------------------------
+  # Landing — lint + build.
+  # ----------------------------------------------------------
+  landing:
+    name: landing (Next.js)
+    needs: changes
+    if: needs.changes.outputs.landing == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 10 }
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter landing lint
+      - run: pnpm --filter landing build
+
+  # ----------------------------------------------------------
+  # API Ruby — Rspec + Brakeman + bundler-audit + coverage gate.
+  # ----------------------------------------------------------
+  api:
+    name: api (Rails)
+    needs: changes
+    if: needs.changes.outputs.api == 'true'
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: univercopy
+          POSTGRES_PASSWORD: univercopy_test
+          POSTGRES_DB: univercopy_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd="pg_isready -U univercopy -d univercopy_test"
+          --health-interval=5s --health-timeout=3s --health-retries=10
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=5s --health-timeout=3s --health-retries=10
+
+    env:
+      RAILS_ENV: test
+      DATABASE_URL: postgres://univercopy:univercopy_test@localhost:5432/univercopy_test
+      REDIS_URL: redis://localhost:6379/0
+      COVERAGE_FLOOR: '30'
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          working-directory: apps/api
+          bundler-cache: true
+      - name: Create rls_test_role (NOSUPERUSER for cross-tenant tests)
+        env: { PGPASSWORD: univercopy_test }
+        run: |
+          psql -h localhost -U univercopy -d univercopy_test -c \
+            "DO \$\$ BEGIN IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname='rls_test_role') THEN CREATE ROLE rls_test_role NOSUPERUSER NOBYPASSRLS LOGIN PASSWORD 'rls_test'; GRANT USAGE ON SCHEMA public TO rls_test_role; END IF; END \$\$;"
+      - name: DB setup
+        working-directory: apps/api
+        run: bin/rails db:migrate
+      - name: Brakeman (security scan)
+        working-directory: apps/api
+        run: bundle exec brakeman --no-pager --exit-on-warn
+      - name: bundler-audit
+        working-directory: apps/api
+        run: bundle exec bundle-audit check --update
+      - name: RSpec
+        working-directory: apps/api
+        run: bundle exec rspec --format progress
+
+  # ----------------------------------------------------------
+  # Meta-job: bloqueia merge se qualquer job acima falhou.
+  # ----------------------------------------------------------
+  ci-passed:
+    name: CI Passed
+    if: always()
+    needs: [changes, gitleaks, semgrep, shared, admin, landing, api]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail if any required job failed
+        run: |
+          if [[ "${{ needs.gitleaks.result }}" == "failure" || \
+                "${{ needs.semgrep.result }}" == "failure" || \
+                "${{ needs.shared.result }}" == "failure" || \
+                "${{ needs.admin.result }}" == "failure" || \
+                "${{ needs.landing.result }}" == "failure" || \
+                "${{ needs.api.result }}" == "failure" ]]; then
+            echo "One or more required jobs failed."
+            exit 1
+          fi
+          echo "All required jobs passed (or were skipped due to no changes)."

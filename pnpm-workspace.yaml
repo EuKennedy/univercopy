@@ -1,0 +1,9 @@
+packages:
+  - "apps/admin"
+  - "apps/landing"
+  - "packages/*"
+
+# Permite postinstall scripts dessas libs (necessárias para Next.js).
+ignoredBuiltDependencies:
+  - sharp
+  - unrs-resolver

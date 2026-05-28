@@ -1,0 +1,7 @@
+{
+  "name": "@univer/ai-prompts",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Prompts versionados para o motor de IA do UniverCopy. Carregados como arquivos .md no Rails (não inline em código).",
+  "type": "module"
+}

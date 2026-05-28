@@ -1,5 +1,57 @@
-node_modules
-dist
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build artifacts
+dist/
+.next/
+.turbo/
+*.tsbuildinfo
+
+# Ruby / Rails
+apps/api/tmp/
+apps/api/log/*.log
+apps/api/storage/
+apps/api/.bundle/
+apps/api/vendor/bundle/
+apps/api/coverage/
+apps/api/public/assets/
+apps/api/public/packs/
+apps/api/.byebug_history
+apps/api/.rspec_status
+
+# Environment & secrets
 .env
-*.log
+.env.local
+.env.*.local
+*.pem
+*.key
+master.key
+
+# OS / Editor
 .DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
+*.swo
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Test artifacts
+coverage/
+test-results/
+playwright-report/
+playwright/.cache/
+
+# Docker volumes (when bind-mounted for local dev)
+.docker-data/
+
+# Sentry CLI
+.sentryclirc
