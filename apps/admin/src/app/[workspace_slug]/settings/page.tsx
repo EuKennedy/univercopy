@@ -24,7 +24,7 @@ export default async function SettingsPage({ params }: Props) {
         title="Configurações do workspace"
         description="Tudo que define como a IA gera, quem tem acesso, conectores ativos e plano em uso."
       />
-      <div className="px-8 py-10 grid grid-cols-1 md:grid-cols-2 gap-5 max-w-5xl mx-auto">
+      <div className="px-8 py-10 grid grid-cols-1 md:grid-cols-2 gap-5 max-w-6xl mx-auto">
         {SECTIONS.map((s) => (
           <Link key={s.slug} href={`/${workspace_slug}/settings/${s.slug}`} className="group cursor-pointer">
             <GlassCard className="p-6 flex gap-4 items-start uc-transition-fast hover:translate-y-[-2px] hover:shadow-[var(--uc-shadow-prisma)]">

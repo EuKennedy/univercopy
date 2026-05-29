@@ -13,7 +13,7 @@ export default async function IntelligencePage({ params }: Props) {
         title="Inteligência competitiva"
         description="Ingere PDPs de concorrentes — extrai padrão, estrutura e estratégia. NUNCA copia o texto: aprende o esqueleto."
       />
-      <div className="px-8 py-10 max-w-5xl mx-auto">
+      <div className="px-8 py-10 max-w-6xl mx-auto">
         <EmptyState
           status="wip"
           eyebrow="Fase 7 · Plano Ultra"

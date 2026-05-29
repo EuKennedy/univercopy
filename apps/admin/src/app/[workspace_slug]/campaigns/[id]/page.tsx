@@ -33,7 +33,7 @@ export default async function CampaignDetailPage({ params }: Props) {
           </Link>
         }
       />
-      <div className="px-8 py-8 max-w-5xl mx-auto w-full grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6">
+      <div className="px-8 py-8 max-w-6xl mx-auto w-full grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6">
         <div className="space-y-4 min-w-0">
           <p className="text-xs font-semibold tracking-wide uppercase text-[var(--uc-text-muted)]">Peças da campanha</p>
           {copies.length === 0 ? (

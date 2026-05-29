@@ -22,18 +22,20 @@ module Api
 
       private
 
+      # Decimais do Postgres viram String no JSON do Rails — convertemos pra
+      # Float aqui pro frontend tratar como número (evita `.toFixed` quebrar).
       def list_payload(p)
         {
           id:            p.id,
           name:          p.name,
           sku:           p.sku,
-          price:         p.price,
+          price:         p.price&.to_f,
           source:        p.source,
           permalink:     p.permalink,
           image:         Array(p.images).first,
           categories:    p.categories,
           reviews_count: p.reviews_count,
-          rating_avg:    p.rating_avg,
+          rating_avg:    p.rating_avg&.to_f,
           synced_at:     p.synced_at,
         }
       end
@@ -45,12 +47,12 @@ module Api
           sku:               p.sku,
           description:       p.description,
           short_description: p.short_description,
-          price:             p.price,
+          price:             p.price&.to_f,
           source:            p.source,
           permalink:         p.permalink,
           images:            p.images,
           categories:        p.categories,
-          rating_avg:        p.rating_avg,
+          rating_avg:        p.rating_avg&.to_f,
           reviews_count:     p.reviews_count,
           profile:           p.profile,
           synced_at:         p.synced_at,

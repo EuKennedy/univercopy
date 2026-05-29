@@ -36,7 +36,7 @@ export default async function CopyDetailPage({ params }: Props) {
           </Link>
         }
       />
-      <div className="px-8 py-8 max-w-5xl mx-auto w-full">
+      <div className="px-8 py-8 max-w-6xl mx-auto w-full">
         <CopyEditor slug={workspace_slug} copy={copy} versions={versions} />
       </div>
     </>

@@ -16,7 +16,7 @@ export default async function CampaignsPage({ params }: Props) {
         title="Campanhas"
         description="Agrupe peças por evento ou lançamento. Cada uma com objetivo, audiência e contexto que alimenta a IA."
       />
-      <div className="px-8 py-8 max-w-5xl mx-auto w-full">
+      <div className="px-8 py-8 max-w-6xl mx-auto w-full">
         <CampaignsClient slug={workspace_slug} campaigns={campaigns} />
       </div>
     </>

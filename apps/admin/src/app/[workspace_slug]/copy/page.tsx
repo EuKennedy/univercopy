@@ -44,7 +44,7 @@ export default async function CopyListPage({ params, searchParams }: Props) {
           </Link>
         }
       />
-      <div className="px-8 py-8 max-w-5xl mx-auto w-full space-y-6">
+      <div className="px-8 py-8 max-w-6xl mx-auto w-full space-y-6">
         <div className="flex flex-wrap gap-2">
           {FILTERS.map((f) => {
             const active = (status ?? '') === f.key

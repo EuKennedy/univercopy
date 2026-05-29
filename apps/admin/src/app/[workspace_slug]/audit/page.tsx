@@ -13,7 +13,7 @@ export default async function AuditPage({ params }: Props) {
         title="Análise de página"
         description="Cola a URL de qualquer página (sua ou concorrente) — a IA devolve score 0-100, diagnóstico por seção e recomendações alinhadas ao DNA."
       />
-      <div className="px-8 py-10 max-w-5xl mx-auto">
+      <div className="px-8 py-10 max-w-6xl mx-auto">
         <EmptyState
           status="wip"
           eyebrow="Fase 7"

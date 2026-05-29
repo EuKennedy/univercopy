@@ -9,10 +9,33 @@ type Props = {
   searchParams: Promise<{ q?: string }>
 }
 
+function formatPrice(v: number | null): string | null {
+  const n = typeof v === 'number' ? v : Number(v)
+  return Number.isFinite(n) ? n.toFixed(2) : null
+}
+
 export default async function ProductsPage({ params, searchParams }: Props) {
   const { workspace_slug } = await params
   const { q } = await searchParams
-  const { products, total } = await listProducts(workspace_slug, q ? { q } : undefined)
+
+  let products: Awaited<ReturnType<typeof listProducts>>['products'] = []
+  let total = 0
+  try {
+    const res = await listProducts(workspace_slug, q ? { q } : undefined)
+    products = res.products
+    total = res.total
+  } catch {
+    return (
+      <>
+        <Topbar eyebrow="CATÁLOGO" title="Produtos" description="Catálogo sincronizado da sua loja." />
+        <div className="px-8 py-8 max-w-6xl mx-auto w-full">
+          <GlassCard className="p-8 text-center text-sm text-[var(--uc-text-soft)]">
+            Não foi possível carregar o catálogo agora. Tente recarregar em instantes.
+          </GlassCard>
+        </div>
+      </>
+    )
+  }
 
   return (
     <>
@@ -22,7 +45,7 @@ export default async function ProductsPage({ params, searchParams }: Props) {
         description="Catálogo sincronizado da sua loja. Use no gerador pra escrever descrições respeitando o DNA."
         actions={total > 0 ? <span className="text-sm text-[var(--uc-text-muted)]">{total} produtos</span> : undefined}
       />
-      <div className="px-8 py-8 max-w-5xl mx-auto w-full space-y-6">
+      <div className="px-8 py-8 max-w-6xl mx-auto w-full space-y-6">
         {total === 0 ? (
           <GlassCard variant="strong" iridescent className="p-12 flex flex-col items-center text-center gap-5">
             <span className="flex items-center justify-center size-14 rounded-2xl text-white" style={{ background: 'linear-gradient(135deg, var(--uc-brand-purple) 0%, var(--uc-brand-blue) 100%)' }}>
@@ -64,7 +87,7 @@ export default async function ProductsPage({ params, searchParams }: Props) {
                   <div className="min-w-0">
                     <h3 className="text-sm font-semibold text-[var(--uc-text)] line-clamp-2">{p.name}</h3>
                     <div className="flex items-center gap-2 mt-1.5 text-xs text-[var(--uc-text-muted)]">
-                      {p.price != null && <span className="text-[var(--uc-text)] font-semibold">R$ {p.price.toFixed(2)}</span>}
+                      {formatPrice(p.price) && <span className="text-[var(--uc-text)] font-semibold">R$ {formatPrice(p.price)}</span>}
                       {p.sku && <span>· {p.sku}</span>}
                     </div>
                   </div>
