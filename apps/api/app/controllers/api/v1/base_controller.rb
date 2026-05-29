@@ -12,6 +12,10 @@ module Api
       rescue_from ActionController::ParameterMissing,   with: :render_bad_request
       rescue_from Security::SsrfBlocked,                with: :render_ssrf_blocked
       rescue_from Ai::CallFailed,                       with: :render_ai_failed
+      # Catch-all: garante body JSON com detalhe + log estruturado.
+      # Sem isso, Rails default returns 500 com body vazio em prod → admin
+      # vê `body: null` e não tem como diagnosticar.
+      rescue_from StandardError,                        with: :render_internal_error
 
       private
 
@@ -40,6 +44,29 @@ module Api
 
       def render_ai_failed(e)
         render json: { error: "ai_failed", message: e.message }, status: :bad_gateway
+      end
+
+      def render_internal_error(e)
+        # Loga sempre com stack trace completo (top 12 frames) — log
+        # estruturado JSON pra grep + correlation_id da request_id do Rails.
+        Rails.logger.error({
+          api_error:      "internal",
+          class:          e.class.name,
+          message:        e.message,
+          request_id:     request.request_id,
+          path:           request.path,
+          method:         request.method,
+          backtrace:      e.backtrace&.first(12),
+        }.to_json)
+
+        # Body sempre presente com class+message (não vaza secret pq exception
+        # message do Rails é controlada pelo nosso código).
+        render json: {
+          error:        "internal_error",
+          message:      e.message,
+          exception:    e.class.name,
+          request_id:   request.request_id,
+        }, status: :internal_server_error
       end
     end
   end
