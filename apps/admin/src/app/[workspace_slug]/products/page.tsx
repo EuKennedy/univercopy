@@ -1,31 +1,81 @@
+import Link from 'next/link'
+
 import { Icon, Topbar } from '@/components/shell'
-import { EmptyState, GlassButton } from '@/components/ui'
+import { GlassButton, GlassCard } from '@/components/ui'
+import { listProducts } from '@/lib/api/queries'
 
-type Props = { params: Promise<{ workspace_slug: string }> }
+type Props = {
+  params: Promise<{ workspace_slug: string }>
+  searchParams: Promise<{ q?: string }>
+}
 
-export default async function ProductsPage({ params }: Props) {
+export default async function ProductsPage({ params, searchParams }: Props) {
   const { workspace_slug } = await params
+  const { q } = await searchParams
+  const { products, total } = await listProducts(workspace_slug, q ? { q } : undefined)
 
   return (
     <>
       <Topbar
         eyebrow="CATÁLOGO"
         title="Produtos"
-        description="Catálogo sincronizado da sua loja. WooCommerce, Shopify, Nuvemshop, Tray ou CSV — gera descrições em lote e publica de volta com 1 clique."
+        description="Catálogo sincronizado da sua loja. Use no gerador pra escrever descrições respeitando o DNA."
+        actions={total > 0 ? <span className="text-sm text-[var(--uc-text-muted)]">{total} produtos</span> : undefined}
       />
-      <div className="px-8 py-10 max-w-5xl mx-auto">
-        <EmptyState
-          status="wip"
-          eyebrow="Fase 6"
-          icon={<Icon name="product" size={28} />}
-          title="Nenhum produto sincronizado"
-          description="Conecte uma loja em Configurações → Integrações pra puxar o catálogo. A IA respeita o DNA + Q&A do onboarding pra cada descrição."
-          primaryAction={
-            <a href={`/${workspace_slug}/settings/integrations`}>
-              <GlassButton size="lg">Conectar loja</GlassButton>
-            </a>
-          }
-        />
+      <div className="px-8 py-8 max-w-5xl mx-auto w-full space-y-6">
+        {total === 0 ? (
+          <GlassCard variant="strong" iridescent className="p-12 flex flex-col items-center text-center gap-5">
+            <span className="flex items-center justify-center size-14 rounded-2xl text-white" style={{ background: 'linear-gradient(135deg, var(--uc-brand-purple) 0%, var(--uc-brand-blue) 100%)' }}>
+              <Icon name="product" size={26} />
+            </span>
+            <div className="space-y-1.5 max-w-sm">
+              <h3 className="text-xl font-bold text-[var(--uc-text)]">Nenhum produto sincronizado</h3>
+              <p className="text-sm leading-6 text-[var(--uc-text-soft)]">
+                Conecte sua loja WooCommerce pra puxar o catálogo. A IA respeita o DNA + Q&A do onboarding em cada descrição.
+              </p>
+            </div>
+            <Link href={`/${workspace_slug}/settings/integrations`}>
+              <GlassButton size="lg"><Icon name="product" size={18} />Conectar loja</GlassButton>
+            </Link>
+          </GlassCard>
+        ) : (
+          <>
+            <form className="flex gap-2" action={`/${workspace_slug}/products`}>
+              <input
+                name="q"
+                defaultValue={q ?? ''}
+                placeholder="Buscar por nome ou SKU…"
+                className="flex-1 h-11 px-4 rounded-2xl uc-glass text-[15px] text-[var(--uc-text)] outline-none focus:border-[var(--uc-accent-ring)] focus:shadow-[0_0_0_4px_var(--uc-accent-soft-2)]"
+              />
+              <GlassButton size="md" variant="secondary" type="submit">Buscar</GlassButton>
+            </form>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {products.map((p) => (
+                <GlassCard key={p.id} className="p-4 flex flex-col gap-3">
+                  <div className="aspect-[4/3] rounded-xl overflow-hidden bg-[var(--uc-bg-mute)] flex items-center justify-center">
+                    {p.image ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={p.image} alt={p.name} className="size-full object-cover" />
+                    ) : (
+                      <Icon name="product" size={28} className="text-[var(--uc-text-faint)]" />
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="text-sm font-semibold text-[var(--uc-text)] line-clamp-2">{p.name}</h3>
+                    <div className="flex items-center gap-2 mt-1.5 text-xs text-[var(--uc-text-muted)]">
+                      {p.price != null && <span className="text-[var(--uc-text)] font-semibold">R$ {p.price.toFixed(2)}</span>}
+                      {p.sku && <span>· {p.sku}</span>}
+                    </div>
+                  </div>
+                  <Link href={`/${workspace_slug}/generate`} className="mt-auto">
+                    <GlassButton size="sm" variant="secondary" className="w-full"><Icon name="spark" size={14} />Gerar descrição</GlassButton>
+                  </Link>
+                </GlassCard>
+              ))}
+            </div>
+          </>
+        )}
       </div>
     </>
   )

@@ -1,22 +1,22 @@
 import Link from 'next/link'
 
 import { Icon, Topbar } from '@/components/shell'
-import { listIntegrations } from '@/lib/api/queries'
+import { getDna } from '@/lib/api/queries'
 
-import { IntegrationsClient } from './integrations-client'
+import { DnaClient } from './dna-client'
 
 type Props = { params: Promise<{ workspace_slug: string }> }
 
-export default async function IntegrationsPage({ params }: Props) {
+export default async function DnaSettingsPage({ params }: Props) {
   const { workspace_slug } = await params
-  const { connectors, products_count } = await listIntegrations(workspace_slug)
+  const bundle = await getDna(workspace_slug)
 
   return (
     <>
       <Topbar
-        eyebrow="CONECTORES"
-        title="Integrações com lojas"
-        description="Sincroniza catálogo pra gerar descrições em lote. Credenciais cifradas em repouso."
+        eyebrow="IDENTIDADE"
+        title="DNA da marca"
+        description="O contexto que alimenta toda geração. Edite atual + proposto e escolha qual alimenta o gerador."
         actions={
           <Link href={`/${workspace_slug}/settings`} className="text-sm text-[var(--uc-text-soft)] hover:text-[var(--uc-text)] inline-flex items-center gap-1.5">
             <Icon name="chevron-left" size={16} />Configurações
@@ -24,7 +24,7 @@ export default async function IntegrationsPage({ params }: Props) {
         }
       />
       <div className="px-8 py-8 max-w-4xl mx-auto w-full">
-        <IntegrationsClient slug={workspace_slug} connectors={connectors} productsCount={products_count} />
+        <DnaClient slug={workspace_slug} bundle={bundle} />
       </div>
     </>
   )

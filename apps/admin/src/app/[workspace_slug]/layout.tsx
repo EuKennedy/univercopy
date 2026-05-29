@@ -3,6 +3,7 @@ import { headers } from 'next/headers'
 
 import { Shell } from '@/components/shell'
 import { auth } from '@/lib/auth'
+import { listWorkspaces } from '@/lib/api/queries'
 
 type Props = {
   children: React.ReactNode
@@ -25,8 +26,14 @@ export default async function WorkspaceLayout({ children, params }: Props) {
     image: session.user.image ?? null,
   }
 
+  const workspaces = await listWorkspaces().catch(() => [])
+
   return (
-    <Shell workspaceSlug={workspace_slug} user={user}>
+    <Shell
+      workspaceSlug={workspace_slug}
+      user={user}
+      workspaces={workspaces.map((w) => ({ slug: w.slug, name: w.name }))}
+    >
       {children}
     </Shell>
   )

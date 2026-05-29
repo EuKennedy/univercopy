@@ -1,30 +1,46 @@
-import { Icon, Topbar } from '@/components/shell'
-import { EmptyState, GlassButton } from '@/components/ui'
+import { Topbar } from '@/components/shell'
+
+import {
+  getCategories,
+  getFrameworks,
+  getPieceTypes,
+  getStyles,
+  listCampaigns,
+  listProducts,
+} from '@/lib/api/queries'
+
+import { GeneratorForm } from './generator-form'
 
 type Props = { params: Promise<{ workspace_slug: string }> }
 
 export default async function GeneratorPage({ params }: Props) {
   const { workspace_slug } = await params
 
+  const [pieceTypes, styles, frameworks, categories, products, campaigns] = await Promise.all([
+    getPieceTypes(),
+    getStyles(),
+    getFrameworks(),
+    getCategories(),
+    listProducts(workspace_slug).then((r) => r.products).catch(() => []),
+    listCampaigns(workspace_slug).catch(() => []),
+  ])
+
   return (
     <>
       <Topbar
         eyebrow="GERADOR"
         title="Gerador multicanal"
-        description="DNA + Estilo + Framework + Tipo de peça + Brief → 2 variações em PT-BR."
+        description="DNA + estilo + framework + tipo de peça + brief → variações prontas pra escolher."
       />
-      <div className="px-8 py-10 max-w-5xl mx-auto">
-        <EmptyState
-          status="wip"
-          eyebrow="Fase 5"
-          icon={<Icon name="spark" size={28} />}
-          title="Motor de geração em construção"
-          description="Aqui você vai escolher a peça (e-commerce, página de vendas, ads, e-mail, social, marca, SEO), pegar 44 estilos de copywriters lendários, 17 frameworks e gerar variações com Auto Router (Haiku/Sonnet/Opus)."
-          secondaryAction={
-            <a href={`/${workspace_slug}/settings`}>
-              <GlassButton size="lg" variant="secondary">Revisar DNA da marca</GlassButton>
-            </a>
-          }
+      <div className="px-8 py-8 max-w-6xl mx-auto w-full">
+        <GeneratorForm
+          slug={workspace_slug}
+          pieceTypes={pieceTypes}
+          styles={styles}
+          frameworks={frameworks}
+          categories={categories}
+          products={products.map((p) => ({ id: p.id, name: p.name }))}
+          campaigns={campaigns.map((c) => ({ id: c.id, name: c.name }))}
         />
       </div>
     </>

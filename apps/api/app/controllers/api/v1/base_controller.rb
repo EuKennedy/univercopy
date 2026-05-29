@@ -12,6 +12,8 @@ module Api
       rescue_from ActionController::ParameterMissing,   with: :render_bad_request
       rescue_from Security::SsrfBlocked,                with: :render_ssrf_blocked
       rescue_from Ai::CallFailed,                       with: :render_ai_failed
+      rescue_from FeatureLocked,                        with: :render_feature_locked
+      rescue_from CapReached,                           with: :render_cap_reached
       # Catch-all: garante body JSON com detalhe + log estruturado.
       # Sem isso, Rails default returns 500 com body vazio em prod → admin
       # vê `body: null` e não tem como diagnosticar.
@@ -44,6 +46,27 @@ module Api
 
       def render_ai_failed(e)
         render json: { error: "ai_failed", message: e.message }, status: :bad_gateway
+      end
+
+      # 402 — feature fora do plano. Frontend mostra paywall/upgrade.
+      def render_feature_locked(e)
+        render json: {
+          error:   "feature_locked",
+          feature: e.feature,
+          plan:    e.plan,
+          message: e.message,
+        }, status: :payment_required
+      end
+
+      # 402 — cap mensal de custo AI atingido. Frontend mostra cap + upgrade.
+      def render_cap_reached(e)
+        render json: {
+          error:        "cap_reached",
+          kind:         e.kind,
+          limit:        e.limit,
+          used:         e.used,
+          message:      e.message,
+        }, status: :payment_required
       end
 
       def render_internal_error(e)

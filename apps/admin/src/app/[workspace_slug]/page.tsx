@@ -1,94 +1,111 @@
-import { Topbar } from '@/components/shell'
-import { GlassCard } from '@/components/ui'
+import Link from 'next/link'
 
-type Props = {
-  params: Promise<{ workspace_slug: string }>
+import { Icon, Topbar } from '@/components/shell'
+import { GlassButton, GlassCard } from '@/components/ui'
+import { getOverview } from '@/lib/api/queries'
+import type { CopyStatus } from '@/lib/api/types'
+
+type Props = { params: Promise<{ workspace_slug: string }> }
+
+const STATUS_LABEL: Record<CopyStatus, string> = {
+  rascunho: 'Rascunho', revisao: 'Revisão', aprovado: 'Aprovado', publicado: 'Publicado', arquivado: 'Arquivado',
 }
 
-// Visão geral do workspace. Placeholder editorial até Fase 4 trazer
-// dados reais (KPIs, atividade recente, quota gauge).
 export default async function WorkspaceOverviewPage({ params }: Props) {
   const { workspace_slug } = await params
+  const o = await getOverview(workspace_slug)
+
+  const stats = [
+    { label: 'Copies', value: o.counts.copies, href: `/${workspace_slug}/copy` },
+    { label: 'Em revisão', value: o.counts.copies_revisao, href: `/${workspace_slug}/copy?status=revisao` },
+    { label: 'Campanhas', value: o.counts.campaigns, href: `/${workspace_slug}/campaigns` },
+    { label: 'Produtos', value: o.counts.products, href: `/${workspace_slug}/products` },
+    { label: 'Gerações no mês', value: o.counts.generations_month, href: `/${workspace_slug}/generate` },
+  ]
 
   return (
     <>
       <Topbar
         eyebrow="Visão geral"
-        title="Bem-vindo de volta"
-        description="Aqui é o ponto de partida da sua marca. A IA tem o seu DNA — agora é só pedir."
+        title={o.workspace.name}
+        description="Ponto de partida da sua marca. A IA tem o seu DNA — agora é só pedir."
+        actions={
+          <Link href={`/${workspace_slug}/generate`}>
+            <GlassButton size="sm"><Icon name="spark" size={16} />Gerar copy</GlassButton>
+          </Link>
+        }
       />
 
-      <div className="px-8 py-8 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-        <ActionCard
-          eyebrow="GERADOR"
-          title="Criar uma copy multicanal"
-          body="Escolha peça, framework e estilo. A IA combina com o DNA da marca e devolve variações pra escolher."
-          href={`/${workspace_slug}/generate`}
-          cta="Abrir o gerador"
-        />
-        <ActionCard
-          eyebrow="ACERVO"
-          title="Voltar pras copies em revisão"
-          body="Versões aguardando aprovação aparecem aqui assim que existirem peças."
-          href={`/${workspace_slug}/copy`}
-          cta="Ver acervo"
-        />
-        <ActionCard
-          eyebrow="CAMPANHAS"
-          title="Planejar próxima campanha"
-          body="Organize peças por evento. Stories, e-mails e ads em uma linha do tempo."
-          href={`/${workspace_slug}/campaigns`}
-          cta="Nova campanha"
-        />
-      </div>
+      <div className="px-8 py-8 space-y-6 max-w-6xl mx-auto w-full">
+        {/* KPIs */}
+        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
+          {stats.map((s) => (
+            <Link key={s.label} href={s.href} className="cursor-pointer">
+              <GlassCard className="p-5 uc-transition-fast hover:translate-y-[-2px] hover:shadow-[var(--uc-shadow-prisma)]">
+                <p className="text-3xl font-bold text-[var(--uc-text)] tracking-tight">{s.value}</p>
+                <p className="text-xs text-[var(--uc-text-muted)] mt-1 uppercase tracking-wider">{s.label}</p>
+              </GlassCard>
+            </Link>
+          ))}
+        </div>
 
-      <div className="px-8 pb-12">
-        <GlassCard variant="strong" iridescent className="p-7 sm:p-8 flex flex-wrap items-center gap-6 justify-between">
-          <div className="max-w-xl space-y-2">
-            <p className="text-[10px] font-bold tracking-[0.22em] uppercase text-[var(--uc-accent)]">
-              Próximo passo
-            </p>
-            <h2 className="text-xl font-semibold text-[var(--uc-text)] leading-snug">
-              Conecte sua loja para gerar copies em lote
-            </h2>
-            <p className="text-sm leading-6 text-[var(--uc-text-soft)]">
-              WooCommerce, Shopify, Nuvemshop ou CSV. Sincronizamos o catálogo e geramos descrições
-              respeitando seu DNA + Q&A do onboarding.
-            </p>
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6">
+          {/* Recentes */}
+          <div className="space-y-3">
+            <p className="text-xs font-semibold tracking-wide uppercase text-[var(--uc-text-muted)]">Copies recentes</p>
+            {o.recent_copies.length === 0 ? (
+              <GlassCard variant="strong" iridescent className="p-10 flex flex-col items-center text-center gap-4">
+                <span className="flex items-center justify-center size-14 rounded-2xl text-white" style={{ background: 'linear-gradient(135deg, var(--uc-brand-purple) 0%, var(--uc-brand-blue) 100%)' }}>
+                  <Icon name="spark" size={26} />
+                </span>
+                <div className="space-y-1.5 max-w-sm">
+                  <h3 className="text-lg font-bold text-[var(--uc-text)]">Gere sua primeira copy</h3>
+                  <p className="text-sm leading-6 text-[var(--uc-text-soft)]">A IA combina o DNA da marca com estilo + framework e devolve variações prontas.</p>
+                </div>
+                <Link href={`/${workspace_slug}/generate`}><GlassButton size="lg">Abrir o gerador</GlassButton></Link>
+              </GlassCard>
+            ) : (
+              <div className="space-y-2">
+                {o.recent_copies.map((c) => (
+                  <Link key={c.id} href={`/${workspace_slug}/copy/${c.id}`} className="group cursor-pointer block">
+                    <GlassCard className="p-4 flex items-center justify-between gap-3 uc-transition-fast hover:translate-y-[-2px]">
+                      <span className="text-sm font-semibold text-[var(--uc-text)] truncate">{c.title}</span>
+                      <span className="text-xs text-[var(--uc-text-muted)] shrink-0">{STATUS_LABEL[c.status]}</span>
+                    </GlassCard>
+                  </Link>
+                ))}
+              </div>
+            )}
           </div>
-          <a
-            href={`/${workspace_slug}/settings/integrations`}
-            className="inline-flex items-center gap-2 rounded-2xl px-5 py-3 text-sm font-semibold text-white uc-transition-fast cursor-pointer shadow-[0_12px_32px_-12px_rgba(139,92,246,0.5)]"
-            style={{ background: 'linear-gradient(135deg, var(--uc-brand-purple) 0%, var(--uc-brand-blue) 100%)' }}
-          >
-            Conectar loja
-          </a>
-        </GlassCard>
+
+          {/* Custo + DNA */}
+          <div className="space-y-4">
+            <GlassCard className="p-6 space-y-3">
+              <p className="text-xs font-semibold tracking-wide uppercase text-[var(--uc-text-muted)]">Custo de IA no mês</p>
+              <p className="text-2xl font-bold text-[var(--uc-text)]">
+                US$ {o.cost.used_usd.toFixed(2)}
+                {o.cost.limit_usd != null && <span className="text-sm font-normal text-[var(--uc-text-muted)]"> / {o.cost.limit_usd.toFixed(0)}</span>}
+              </p>
+              {o.cost.percent != null && (
+                <div className="h-2 rounded-full bg-[var(--uc-bg-mute)] overflow-hidden">
+                  <div className="h-full rounded-full" style={{ width: `${Math.min(o.cost.percent, 100)}%`, background: 'linear-gradient(90deg, var(--uc-brand-purple), var(--uc-brand-blue))' }} />
+                </div>
+              )}
+              <p className="text-xs text-[var(--uc-text-muted)] capitalize">Plano {o.workspace.plan}</p>
+            </GlassCard>
+
+            <Link href={`/${workspace_slug}/settings/dna`}>
+              <GlassCard className="p-5 uc-transition-fast hover:translate-y-[-2px] cursor-pointer flex items-center gap-3">
+                <Icon name="sparkle" size={18} className="text-[var(--uc-accent)]" />
+                <div>
+                  <p className="text-sm font-semibold text-[var(--uc-text)]">DNA em uso: <span className="capitalize">{o.dna_in_use}</span></p>
+                  <p className="text-xs text-[var(--uc-text-muted)]">Editar ou trocar →</p>
+                </div>
+              </GlassCard>
+            </Link>
+          </div>
+        </div>
       </div>
     </>
-  )
-}
-
-function ActionCard({
-  eyebrow, title, body, href, cta,
-}: { eyebrow: string; title: string; body: string; href: string; cta: string }) {
-  return (
-    <GlassCard className="p-6 flex flex-col gap-4 uc-transition-fast hover:translate-y-[-2px] hover:shadow-[var(--uc-shadow-prisma)] cursor-pointer">
-      <p className="text-[10px] font-bold tracking-[0.22em] uppercase text-[var(--uc-text-muted)]">
-        {eyebrow}
-      </p>
-      <h3 className="text-lg font-semibold tracking-tight text-[var(--uc-text)] leading-snug">
-        {title}
-      </h3>
-      <p className="text-sm leading-6 text-[var(--uc-text-soft)] flex-1">
-        {body}
-      </p>
-      <a
-        href={href}
-        className="inline-flex items-center gap-2 text-sm font-semibold uc-prisma-text cursor-pointer"
-      >
-        {cta} →
-      </a>
-    </GlassCard>
   )
 }

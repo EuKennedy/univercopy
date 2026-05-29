@@ -1,11 +1,12 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { useState } from 'react'
 
 import { Wordmark } from '@/components/brand/wordmark'
 import { cn } from '@/lib/cn'
+import { signOut } from '@/lib/auth-client'
 
 import { Icon, type IconName } from './icon'
 
@@ -16,10 +17,13 @@ type NavItem = {
   badge?: string
 }
 
+type WorkspaceOption = { slug: string; name: string }
+
 type Props = {
   workspaceSlug?: string
   nav?: NavItem[]
   user?: { name?: string; email: string; image?: string | null } | null
+  workspaces?: WorkspaceOption[]
   defaultCollapsed?: boolean
 }
 
@@ -30,8 +34,9 @@ function writeCookie(name: string, value: string) {
   document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax`
 }
 
-export function Sidebar({ workspaceSlug, nav, user, defaultCollapsed = false }: Props) {
+export function Sidebar({ workspaceSlug, nav, user, workspaces, defaultCollapsed = false }: Props) {
   const pathname = usePathname()
+  const router = useRouter()
   const [collapsed, setCollapsed] = useState(defaultCollapsed)
 
   function toggle() {
@@ -122,18 +127,70 @@ export function Sidebar({ workspaceSlug, nav, user, defaultCollapsed = false }: 
         })}
       </nav>
 
-      {user && (
-        <div className="mt-4 pt-3 border-t border-[var(--uc-border)]">
-          <div className="flex items-center gap-3 px-1.5">
-            <Avatar name={user.name ?? user.email} image={user.image ?? undefined} />
-            <div className="uc-rail-content min-w-0 flex-1">
-              <p className="text-sm font-semibold text-[var(--uc-text)] truncate">{user.name ?? user.email.split('@')[0]}</p>
-              <p className="text-xs text-[var(--uc-text-muted)] truncate">{user.email}</p>
-            </div>
-          </div>
+      {workspaces && workspaces.length > 1 && (
+        <div className="uc-rail-content mb-2">
+          <label className="sr-only" htmlFor="ws-switch">Trocar workspace</label>
+          <select
+            id="ws-switch"
+            value={workspaceSlug ?? ''}
+            onChange={(e) => router.push(`/${e.target.value}`)}
+            className="w-full h-10 px-3 rounded-xl uc-glass text-sm text-[var(--uc-text)] outline-none cursor-pointer focus:border-[var(--uc-accent-ring)]"
+          >
+            {workspaces.map((w) => <option key={w.slug} value={w.slug}>{w.name}</option>)}
+          </select>
         </div>
       )}
+
+      {user && (
+        <UserMenu user={user} collapsed={collapsed} onLogout={async () => {
+          await signOut()
+          router.push('/login')
+        }} />
+      )}
     </aside>
+  )
+}
+
+function UserMenu({
+  user, collapsed, onLogout,
+}: {
+  user: { name?: string; email: string; image?: string | null }
+  collapsed: boolean
+  onLogout: () => Promise<void>
+}) {
+  const [open, setOpen] = useState(false)
+  const [busy, setBusy] = useState(false)
+
+  return (
+    <div className="mt-4 pt-3 border-t border-[var(--uc-border)] relative">
+      {open && !collapsed && (
+        <div className="absolute bottom-full left-0 right-0 mb-2 p-1.5 rounded-2xl uc-glass-strong shadow-[var(--uc-shadow-prisma)]">
+          <button
+            type="button"
+            disabled={busy}
+            onClick={async () => { setBusy(true); await onLogout() }}
+            className="w-full flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--uc-text-soft)] hover:text-[var(--uc-danger)] hover:bg-[var(--uc-surface-soft)] uc-transition-fast cursor-pointer"
+          >
+            <Icon name="logout" size={16} />
+            {busy ? 'Saindo…' : 'Sair da conta'}
+          </button>
+        </div>
+      )}
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center gap-3 px-1.5 py-1 rounded-xl hover:bg-[var(--uc-surface-soft)] uc-transition-fast cursor-pointer"
+        aria-haspopup="menu"
+        aria-expanded={open}
+      >
+        <Avatar name={user.name ?? user.email} image={user.image ?? undefined} />
+        <div className="uc-rail-content min-w-0 flex-1 text-left">
+          <p className="text-sm font-semibold text-[var(--uc-text)] truncate">{user.name ?? user.email.split('@')[0]}</p>
+          <p className="text-xs text-[var(--uc-text-muted)] truncate">{user.email}</p>
+        </div>
+        <span className="uc-rail-content text-[var(--uc-text-faint)]"><Icon name={open ? 'chevron-left' : 'chevron-right'} size={16} /></span>
+      </button>
+    </div>
   )
 }
 
