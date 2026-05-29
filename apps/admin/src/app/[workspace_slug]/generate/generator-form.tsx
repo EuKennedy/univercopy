@@ -23,6 +23,7 @@ type Props = {
   categories: Category[]
   products: { id: string; name: string }[]
   campaigns: { id: string; name: string }[]
+  initialProductId?: string
 }
 
 const MODELS = [
@@ -37,13 +38,20 @@ const fieldCls =
   'w-full h-12 px-4 rounded-2xl uc-glass uc-transition text-[15px] text-[var(--uc-text)] outline-none ' +
   'focus:border-[var(--uc-accent-ring)] focus:shadow-[0_0_0_4px_var(--uc-accent-soft-2)]'
 
-export function GeneratorForm({ slug, pieceTypes, styles, frameworks, categories, products, campaigns }: Props) {
+export function GeneratorForm({ slug, pieceTypes, styles, frameworks, categories, products, campaigns, initialProductId = '' }: Props) {
   const router = useRouter()
 
-  const [pieceTypeKey, setPieceTypeKey] = useState(pieceTypes[0]?.key ?? '')
+  // Tipo de peça default: se veio de um produto, prioriza peça da categoria
+  // "ecommerce" (descrição de produto); senão, primeira da lista.
+  const defaultPiece =
+    (initialProductId && pieceTypes.find((pt) => pt.category_key === 'ecommerce')?.key) ||
+    pieceTypes[0]?.key ||
+    ''
+
+  const [pieceTypeKey, setPieceTypeKey] = useState(defaultPiece)
   const [styleKey, setStyleKey] = useState('')
   const [frameworkKey, setFrameworkKey] = useState('')
-  const [productId, setProductId] = useState('')
+  const [productId, setProductId] = useState(initialProductId)
   const [campaignId, setCampaignId] = useState('')
   const [brief, setBrief] = useState('')
   const [n, setN] = useState(2)
@@ -114,7 +122,7 @@ export function GeneratorForm({ slug, pieceTypes, styles, frameworks, categories
       {/* Painel de controle */}
       <GlassCard className="p-6 h-fit lg:sticky lg:top-28 space-y-5">
         <div>
-          <label className={labelCls} htmlFor="piece">Tipo de peça</label>
+          <label className={labelCls} htmlFor="piece">Formato da peça <span className="normal-case text-[var(--uc-text-faint)]">(o que escrever)</span></label>
           <select id="piece" className={fieldCls} value={pieceTypeKey} onChange={(e) => setPieceTypeKey(e.target.value)}>
             {pieceGroups.map(([catKey, items]) => (
               <optgroup key={catKey} label={catLabel(catKey)}>
@@ -149,7 +157,7 @@ export function GeneratorForm({ slug, pieceTypes, styles, frameworks, categories
 
         {products.length > 0 && (
           <div>
-            <label className={labelCls} htmlFor="prod">Produto <span className="normal-case text-[var(--uc-text-faint)]">(opcional)</span></label>
+            <label className={labelCls} htmlFor="prod">Produto da loja <span className="normal-case text-[var(--uc-text-faint)]">(opcional — base da copy)</span></label>
             <select id="prod" className={fieldCls} value={productId} onChange={(e) => setProductId(e.target.value)}>
               <option value="">Nenhum</option>
               {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}

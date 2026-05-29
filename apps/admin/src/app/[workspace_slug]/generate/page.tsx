@@ -11,10 +11,14 @@ import {
 
 import { GeneratorForm } from './generator-form'
 
-type Props = { params: Promise<{ workspace_slug: string }> }
+type Props = {
+  params: Promise<{ workspace_slug: string }>
+  searchParams: Promise<{ product?: string }>
+}
 
-export default async function GeneratorPage({ params }: Props) {
+export default async function GeneratorPage({ params, searchParams }: Props) {
   const { workspace_slug } = await params
+  const { product } = await searchParams
 
   const [pieceTypes, styles, frameworks, categories, products, campaigns] = await Promise.all([
     getPieceTypes(),
@@ -41,6 +45,7 @@ export default async function GeneratorPage({ params }: Props) {
           categories={categories}
           products={products.map((p) => ({ id: p.id, name: p.name }))}
           campaigns={campaigns.map((c) => ({ id: c.id, name: c.name }))}
+          initialProductId={product ?? ''}
         />
       </div>
     </>

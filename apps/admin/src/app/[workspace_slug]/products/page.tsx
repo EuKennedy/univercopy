@@ -6,7 +6,17 @@ import { listProducts } from '@/lib/api/queries'
 
 type Props = {
   params: Promise<{ workspace_slug: string }>
-  searchParams: Promise<{ q?: string }>
+  searchParams: Promise<{ q?: string; source?: string }>
+}
+
+const SOURCE_LABEL: Record<string, string> = {
+  woocommerce: 'WooCommerce',
+  shopify: 'Shopify',
+  nuvemshop: 'Nuvemshop',
+  tray: 'Tray',
+  csv: 'CSV',
+  site: 'Site',
+  manual: 'Manual',
 }
 
 function formatPrice(v: number | null): string | null {
@@ -16,12 +26,12 @@ function formatPrice(v: number | null): string | null {
 
 export default async function ProductsPage({ params, searchParams }: Props) {
   const { workspace_slug } = await params
-  const { q } = await searchParams
+  const { q, source } = await searchParams
 
   let products: Awaited<ReturnType<typeof listProducts>>['products'] = []
   let total = 0
   try {
-    const res = await listProducts(workspace_slug, q ? { q } : undefined)
+    const res = await listProducts(workspace_slug, { q, source })
     products = res.products
     total = res.total
   } catch {
@@ -37,16 +47,19 @@ export default async function ProductsPage({ params, searchParams }: Props) {
     )
   }
 
+  // Origens presentes no catálogo (pra montar os filtros só com o que existe).
+  const sources = Array.from(new Set(products.map((p) => p.source)))
+
   return (
     <>
       <Topbar
         eyebrow="CATÁLOGO"
         title="Produtos"
-        description="Catálogo sincronizado da sua loja. Use no gerador pra escrever descrições respeitando o DNA."
+        description="Catálogo da sua loja. Selecione um produto pra gerar a copy respeitando o DNA."
         actions={total > 0 ? <span className="text-sm text-[var(--uc-text-muted)]">{total} produtos</span> : undefined}
       />
-      <div className="px-8 py-8 max-w-6xl mx-auto w-full space-y-6">
-        {total === 0 ? (
+      <div className="px-8 py-8 max-w-6xl mx-auto w-full space-y-5">
+        {total === 0 && !q && !source ? (
           <GlassCard variant="strong" iridescent className="p-12 flex flex-col items-center text-center gap-5">
             <span className="flex items-center justify-center size-14 rounded-2xl text-white" style={{ background: 'linear-gradient(135deg, var(--uc-brand-purple) 0%, var(--uc-brand-blue) 100%)' }}>
               <Icon name="product" size={26} />
@@ -63,40 +76,89 @@ export default async function ProductsPage({ params, searchParams }: Props) {
           </GlassCard>
         ) : (
           <>
-            <form className="flex gap-2" action={`/${workspace_slug}/products`}>
-              <input
-                name="q"
-                defaultValue={q ?? ''}
-                placeholder="Buscar por nome ou SKU…"
-                className="flex-1 h-11 px-4 rounded-2xl uc-glass text-[15px] text-[var(--uc-text)] outline-none focus:border-[var(--uc-accent-ring)] focus:shadow-[0_0_0_4px_var(--uc-accent-soft-2)]"
-              />
+            {/* Busca + filtro de origem */}
+            <form className="flex flex-wrap gap-2 items-center" action={`/${workspace_slug}/products`}>
+              <div className="relative flex-1 min-w-[220px]">
+                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--uc-text-faint)]"><Icon name="audit" size={16} /></span>
+                <input
+                  name="q"
+                  defaultValue={q ?? ''}
+                  placeholder="Buscar por nome ou SKU…"
+                  className="w-full h-11 pl-10 pr-4 rounded-2xl uc-glass text-[15px] text-[var(--uc-text)] outline-none focus:border-[var(--uc-accent-ring)] focus:shadow-[0_0_0_4px_var(--uc-accent-soft-2)]"
+                />
+              </div>
+              {sources.length > 1 && (
+                <select
+                  name="source"
+                  defaultValue={source ?? ''}
+                  className="h-11 px-4 rounded-2xl uc-glass text-[15px] text-[var(--uc-text)] outline-none cursor-pointer focus:border-[var(--uc-accent-ring)]"
+                >
+                  <option value="">Todas as origens</option>
+                  {sources.map((s) => <option key={s} value={s}>{SOURCE_LABEL[s] ?? s}</option>)}
+                </select>
+              )}
               <GlassButton size="md" variant="secondary" type="submit">Buscar</GlassButton>
             </form>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {products.map((p) => (
-                <GlassCard key={p.id} className="p-4 flex flex-col gap-3">
-                  <div className="aspect-[4/3] rounded-xl overflow-hidden bg-[var(--uc-bg-mute)] flex items-center justify-center">
-                    {p.image ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={p.image} alt={p.name} className="size-full object-cover" />
-                    ) : (
-                      <Icon name="product" size={28} className="text-[var(--uc-text-faint)]" />
-                    )}
-                  </div>
-                  <div className="min-w-0">
-                    <h3 className="text-sm font-semibold text-[var(--uc-text)] line-clamp-2">{p.name}</h3>
-                    <div className="flex items-center gap-2 mt-1.5 text-xs text-[var(--uc-text-muted)]">
-                      {formatPrice(p.price) && <span className="text-[var(--uc-text)] font-semibold">R$ {formatPrice(p.price)}</span>}
-                      {p.sku && <span>· {p.sku}</span>}
-                    </div>
-                  </div>
-                  <Link href={`/${workspace_slug}/generate`} className="mt-auto">
-                    <GlassButton size="sm" variant="secondary" className="w-full"><Icon name="spark" size={14} />Gerar descrição</GlassButton>
-                  </Link>
-                </GlassCard>
-              ))}
-            </div>
+            {products.length === 0 ? (
+              <GlassCard className="p-8 text-center text-sm text-[var(--uc-text-soft)]">
+                Nenhum produto encontrado pra “{q}”.
+              </GlassCard>
+            ) : (
+              <GlassCard className="overflow-hidden p-0">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-[var(--uc-border)] text-left">
+                        <th className="font-semibold text-[var(--uc-text-muted)] uppercase tracking-wider text-[11px] px-5 py-3">Produto</th>
+                        <th className="font-semibold text-[var(--uc-text-muted)] uppercase tracking-wider text-[11px] px-4 py-3 hidden md:table-cell">Categorias</th>
+                        <th className="font-semibold text-[var(--uc-text-muted)] uppercase tracking-wider text-[11px] px-4 py-3">Preço</th>
+                        <th className="font-semibold text-[var(--uc-text-muted)] uppercase tracking-wider text-[11px] px-4 py-3 hidden sm:table-cell">Origem</th>
+                        <th className="px-5 py-3" />
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {products.map((p) => (
+                        <tr key={p.id} className="border-b border-[var(--uc-border-soft)] last:border-0 uc-transition-fast hover:bg-[var(--uc-surface-soft)]">
+                          <td className="px-5 py-3">
+                            <div className="flex items-center gap-3 min-w-0">
+                              <span className="size-10 shrink-0 rounded-lg overflow-hidden bg-[var(--uc-bg-mute)] flex items-center justify-center">
+                                {p.image ? (
+                                  // eslint-disable-next-line @next/next/no-img-element
+                                  <img src={p.image} alt="" className="size-full object-cover" />
+                                ) : (
+                                  <Icon name="product" size={16} className="text-[var(--uc-text-faint)]" />
+                                )}
+                              </span>
+                              <div className="min-w-0">
+                                <p className="font-medium text-[var(--uc-text)] truncate max-w-[280px]">{p.name}</p>
+                                {p.sku && <p className="text-xs text-[var(--uc-text-faint)] truncate">SKU {p.sku}</p>}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 hidden md:table-cell text-[var(--uc-text-muted)] text-xs">
+                            {Array.isArray(p.categories) && p.categories.length > 0 ? p.categories.slice(0, 2).join(', ') : '—'}
+                          </td>
+                          <td className="px-4 py-3 font-semibold text-[var(--uc-text)] whitespace-nowrap">
+                            {formatPrice(p.price) ? `R$ ${formatPrice(p.price)}` : '—'}
+                          </td>
+                          <td className="px-4 py-3 hidden sm:table-cell">
+                            <span className="text-[11px] font-semibold rounded-full px-2 py-0.5 bg-[var(--uc-accent-soft)] text-[var(--uc-accent)]">
+                              {SOURCE_LABEL[p.source] ?? p.source}
+                            </span>
+                          </td>
+                          <td className="px-5 py-3 text-right">
+                            <Link href={`/${workspace_slug}/generate?product=${p.id}`}>
+                              <GlassButton size="sm" variant="secondary"><Icon name="spark" size={14} />Gerar copy</GlassButton>
+                            </Link>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </GlassCard>
+            )}
           </>
         )}
       </div>
