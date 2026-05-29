@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import { NextIntlClientProvider } from 'next-intl'
 import { getLocale, getMessages } from 'next-intl/server'
@@ -21,6 +21,21 @@ export const metadata: Metadata = {
   authors: [{ name: 'UniverCopy' }],
   // Indexação só na landing — admin é privado.
   robots: { index: false, follow: false },
+  // Manifest + icons servidos via convention files (app/icon.svg + apple-icon.svg).
+  icons: {
+    icon: [
+      { url: '/icon.svg',     type: 'image/svg+xml' },
+      { url: '/favicon.svg',  type: 'image/svg+xml' },
+    ],
+    apple: { url: '/apple-icon.svg', sizes: '180x180', type: 'image/svg+xml' },
+  },
+}
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#fafaf9' },
+    { media: '(prefers-color-scheme: dark)',  color: '#0a0b10' },
+  ],
 }
 
 export default async function RootLayout({
