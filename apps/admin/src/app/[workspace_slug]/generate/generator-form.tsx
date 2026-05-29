@@ -33,6 +33,21 @@ const MODELS = [
   { value: 'opus', label: 'Opus · máximo' },
 ]
 
+// Traduz códigos de erro do backend pra mensagem limpa (evita despejar
+// hash cru da API Anthropic na UI).
+function friendlyError(code: string, raw: string): string {
+  switch (code) {
+    case 'ai_failed':
+      return 'A IA não respondeu agora. Verifique a configuração de IA do workspace ou tente novamente em instantes.'
+    case 'feature_locked':
+      return 'Esse recurso não está no seu plano atual.'
+    case 'cap_reached':
+      return 'Você atingiu o limite de uso de IA do mês.'
+    default:
+      return raw?.length > 160 ? 'Não foi possível gerar agora. Tente novamente.' : raw
+  }
+}
+
 const labelCls = 'text-xs font-semibold tracking-wide uppercase text-[var(--uc-text-muted)] mb-1.5 block'
 const fieldCls =
   'w-full h-12 px-4 rounded-2xl uc-glass uc-transition text-[15px] text-[var(--uc-text)] outline-none ' +
@@ -109,7 +124,7 @@ export function GeneratorForm({ slug, pieceTypes, styles, frameworks, categories
     setLoading(false)
     if (!res.ok) {
       if (res.error === 'feature_locked' || res.error === 'cap_reached') setPaywall(true)
-      setError(res.message)
+      setError(friendlyError(res.error, res.message))
       return
     }
     setVariations(res.data.variations)
