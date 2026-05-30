@@ -17,6 +17,10 @@ Rails.application.routes.draw do
       get "/categories",   to: "libraries#categories"
 
       # ---------------------------------------------------------------
+      # Conta do usuário (preferências — nível conta, não workspace).
+      get   "/me", to: "account#show"
+      patch "/me", to: "account#update"
+
       # Onboarding wizard.
       # ---------------------------------------------------------------
       get   "/onboarding/state",    to: "onboarding#state"
@@ -68,8 +72,14 @@ Rails.application.routes.draw do
         post   "/integrations/:type/sync",       to: "integrations#sync"
         delete "/integrations/:type",            to: "integrations#disconnect"
 
-        # Dashboard — counts agregados.
-        get "/overview", to: "workspaces#overview"
+        # Análise de página (page audit).
+        get  "/page-audits", to: "page_audits#index"
+        post "/page-audits", to: "page_audits#create"
+
+        # Dashboard + plano + auditoria.
+        get "/overview",    to: "workspaces#overview"
+        get "/plan",        to: "workspaces#plan"
+        get "/audit-logs",  to: "workspaces#audit_logs"
       end
     end
   end

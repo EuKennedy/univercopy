@@ -190,6 +190,52 @@ export type Overview = {
   recent_copies: { id: string; title: string; status: CopyStatus; updated_at: string }[]
 }
 
+export type Account = {
+  id: string
+  email: string
+  name: string | null
+  default_locale: string
+  preferred_ai_model: 'auto' | 'haiku' | 'sonnet' | 'opus'
+}
+
+export type PlanSnapshot = {
+  snapshot: {
+    plan: Plan
+    features: Record<string, boolean>
+    limits: Record<string, number | null>
+  }
+  cost: CostReport
+  usage: { generations_month: number; copies: number; products: number; members: number }
+}
+
+export type Member = {
+  user_id: string
+  email: string
+  name: string | null
+  role: string
+  accepted_at: string | null
+}
+
+export type AuditLogEntry = {
+  id: string
+  action: string
+  metadata: Record<string, unknown>
+  ip: string | null
+  created_at: string
+}
+
+export type PageAuditSection = { title: string; score: number; notes: string }
+
+export type PageAudit = {
+  id: string
+  url: string
+  brand_name: string | null
+  score: number | null
+  summary: string | null
+  sections: PageAuditSection[]
+  created_at: string
+}
+
 // Erro normalizado de paywall/cap pra UI tratar 402.
 export type ActionError = {
   ok: false

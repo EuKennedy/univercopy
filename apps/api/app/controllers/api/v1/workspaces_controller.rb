@@ -42,6 +42,34 @@ module Api
         end
       end
 
+      # GET /api/v1/workspaces/:workspace_slug/plan — plano + features + uso.
+      def plan
+        ws = current_app_user.workspaces.find_by!(slug: params.require(:workspace_slug))
+        ApplicationRecord.with_workspace_rls(ws.id, user_id: current_app_user.id) do
+          render json: {
+            snapshot: PlanFeatures.snapshot(ws),
+            cost:     AiCostCap.report(ws),
+            usage: {
+              generations_month: ws.generations.where("created_at >= ?", Time.current.beginning_of_month).count,
+              copies:            ws.copies.count,
+              products:          ws.products.count,
+              members:           ws.workspace_members.count,
+            },
+          }
+        end
+      end
+
+      # GET /api/v1/workspaces/:workspace_slug/audit-logs
+      def audit_logs
+        ws = current_app_user.workspaces.find_by!(slug: params.require(:workspace_slug))
+        ApplicationRecord.with_workspace_rls(ws.id, user_id: current_app_user.id) do
+          logs = ws.audit_logs.order(created_at: :desc).limit(100).map do |l|
+            { id: l.id, action: l.action, metadata: l.metadata, ip: l.ip, created_at: l.created_at }
+          end
+          render json: { logs: logs }
+        end
+      end
+
       private
 
       def workspace_payload(w)

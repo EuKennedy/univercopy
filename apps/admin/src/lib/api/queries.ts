@@ -3,6 +3,8 @@ import 'server-only'
 import { apiFetch } from '@/lib/api-client'
 
 import type {
+  Account,
+  AuditLogEntry,
   CampaignDetail,
   CampaignListItem,
   Category,
@@ -12,8 +14,11 @@ import type {
   ConnectorState,
   DnaBundle,
   Framework,
+  Member,
   Overview,
+  PageAudit,
   PieceType,
+  PlanSnapshot,
   ProductListItem,
   Style,
 } from './types'
@@ -89,4 +94,21 @@ export async function listProducts(slug: string, query?: { q?: string; source?: 
 // --- Integrations ---
 export async function listIntegrations(slug: string) {
   return apiFetch<{ connectors: ConnectorState[]; products_count: number }>(`${ws(slug)}/integrations`)
+}
+
+// --- Conta + plano + auditoria + page audits ---
+export async function getAccount() {
+  return apiFetch<Account>('/api/v1/me')
+}
+export async function getPlan(slug: string) {
+  return apiFetch<PlanSnapshot>(`${ws(slug)}/plan`)
+}
+export async function getWorkspaceMembers(slug: string) {
+  return (await apiFetch<{ members: Member[] }>(`${ws(slug)}`)).members
+}
+export async function listAuditLogs(slug: string) {
+  return (await apiFetch<{ logs: AuditLogEntry[] }>(`${ws(slug)}/audit-logs`)).logs
+}
+export async function listPageAudits(slug: string) {
+  return (await apiFetch<{ audits: PageAudit[] }>(`${ws(slug)}/page-audits`)).audits
 }

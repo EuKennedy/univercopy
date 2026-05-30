@@ -5,11 +5,13 @@ import { revalidatePath } from 'next/cache'
 import { ApiError, apiFetch } from '@/lib/api-client'
 
 import type {
+  Account,
   ActionResult,
   CampaignDetail,
   CopyDetail,
   Dna,
   GenerateResult,
+  PageAudit,
 } from './types'
 
 const ws = (slug: string) => `/api/v1/workspaces/${encodeURIComponent(slug)}`
@@ -244,5 +246,29 @@ export async function disconnectConnector(slug: string, type: string): Promise<A
     apiFetch<{ ok: boolean; status: string }>(`${ws(slug)}/integrations/${type}`, { method: 'DELETE' }),
   )
   if (result.ok) revalidatePath(`/${slug}/settings/integrations`)
+  return result
+}
+
+// ---------------- Conta (preferências) ----------------
+export async function updateAccount(
+  slug: string,
+  patch: { default_locale?: string; preferred_ai_model?: string },
+): Promise<ActionResult<Account>> {
+  const result = await run(() =>
+    apiFetch<Account>('/api/v1/me', { method: 'PATCH', body: JSON.stringify(patch) }),
+  )
+  if (result.ok) revalidatePath(`/${slug}/settings/preferences`)
+  return result
+}
+
+// ---------------- Análise de página ----------------
+export async function runPageAudit(
+  slug: string,
+  input: { url: string; model?: string },
+): Promise<ActionResult<PageAudit>> {
+  const result = await run(() =>
+    apiFetch<PageAudit>(`${ws(slug)}/page-audits`, { method: 'POST', body: JSON.stringify(input) }),
+  )
+  if (result.ok) revalidatePath(`/${slug}/audit`)
   return result
 }
