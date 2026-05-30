@@ -332,6 +332,24 @@ html, body {
 }
 
 /* ============================================================
+ * Skeleton — shimmer entre skeleton-1 e skeleton-2.
+ * ============================================================ */
+.uc-skeleton {
+  background: linear-gradient(
+    100deg,
+    var(--uc-skeleton-1) 30%,
+    var(--uc-skeleton-2) 50%,
+    var(--uc-skeleton-1) 70%
+  );
+  background-size: 200% 100%;
+  animation: uc-shimmer 1.4s var(--ease-in-out-cubic) infinite;
+}
+@keyframes uc-shimmer {
+  from { background-position: 200% 0; }
+  to   { background-position: -200% 0; }
+}
+
+/* ============================================================
  * Transition utilities calibradas pelo motion-design skill.
  * ============================================================ */
 .uc-transition          { transition: all var(--dur-3) var(--ease-apple); }

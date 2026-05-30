@@ -56,12 +56,14 @@ const fieldCls =
 export function GeneratorForm({ slug, pieceTypes, styles, frameworks, categories, products, campaigns, initialProductId = '' }: Props) {
   const router = useRouter()
 
-  // Tipo de peça default: se veio de um produto, prioriza peça da categoria
-  // "ecommerce" (descrição de produto); senão, primeira da lista.
-  const defaultPiece =
-    (initialProductId && pieceTypes.find((pt) => pt.category_key === 'ecommerce')?.key) ||
-    pieceTypes[0]?.key ||
-    ''
+  // Tipo de peça default: se veio de um produto, prioriza descrição de produto
+  // detalhada; senão qualquer peça de e-commerce; senão a primeira da lista.
+  const defaultPiece = initialProductId
+    ? (pieceTypes.find((pt) => pt.key === 'ecom:desc-prod-longa')?.key
+       || pieceTypes.find((pt) => pt.category_key === 'ecom')?.key
+       || pieceTypes[0]?.key
+       || '')
+    : (pieceTypes[0]?.key ?? '')
 
   const [pieceTypeKey, setPieceTypeKey] = useState(defaultPiece)
   const [styleKey, setStyleKey] = useState('')
