@@ -9,6 +9,7 @@ import { generateProductField, publishProduct } from '@/lib/api/mutations'
 import type { ProductDetail, ProductFaq } from '@/lib/api/types'
 
 import { RichTextField } from './rich-text-field'
+import { FaqIcon, FAQ_ICON_VALUES } from './faq-icons'
 
 const field =
   'w-full px-4 py-2.5 rounded-xl uc-glass uc-transition text-[15px] text-[var(--uc-text)] outline-none leading-6 ' +
@@ -203,20 +204,52 @@ export function ProductEditor({ slug, product }: { slug: string; product: Produc
         ai={<AiButton slug={slug} id={product.id} field="faq" label="Gerar FAQ com IA" onResult={(v) => Array.isArray(v) && patch('faq', v as ProductFaq[])} />}
       >
         <div className="space-y-3">
-          {form.faq.map((f, i) => (
-            <div key={i} className="rounded-xl bg-[var(--uc-bg-mute)] p-4 space-y-2">
-              <div className="flex items-center gap-2">
-                <input className={cn(field, 'flex-1')} placeholder="Pergunta" value={f.title} onChange={(e) => {
-                  const next = [...form.faq]; next[i] = { ...f, title: e.target.value }; patch('faq', next)
-                }} />
-                <GlassButton size="sm" variant="ghost" onClick={() => patch('faq', form.faq.filter((_, j) => j !== i))}>Remover</GlassButton>
+          {form.faq.map((f, i) => {
+            const update = (p: Partial<ProductFaq>) => {
+              const next = [...form.faq]; next[i] = { ...f, ...p }; patch('faq', next)
+            }
+            return (
+              <div key={i} className="rounded-2xl border border-[var(--uc-border)] bg-[var(--uc-bg-mute)] p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <span className="size-10 shrink-0 rounded-xl grid place-items-center bg-[var(--uc-accent-soft)] text-[var(--uc-accent)]">
+                    <FaqIcon value={f.icon_value} size={20} />
+                  </span>
+                  <input className={cn(field, 'flex-1')} placeholder="Pergunta" value={f.title} onChange={(e) => update({ title: e.target.value })} />
+                  <GlassButton size="sm" variant="ghost" onClick={() => patch('faq', form.faq.filter((_, j) => j !== i))}>Remover</GlassButton>
+                </div>
+
+                {/* Picker de ícone (presets do plugin) */}
+                <div>
+                  <p className="text-[10px] font-bold tracking-wide uppercase text-[var(--uc-text-muted)] mb-1.5">Ícone</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {FAQ_ICON_VALUES.map((v) => (
+                      <button
+                        key={v}
+                        type="button"
+                        onClick={() => update({ icon_type: 'preset', icon_value: v })}
+                        title={v}
+                        className={cn(
+                          'size-9 rounded-lg grid place-items-center uc-transition-fast cursor-pointer border',
+                          f.icon_value === v
+                            ? 'border-[var(--uc-accent-ring)] bg-[var(--uc-accent-soft)] text-[var(--uc-accent)]'
+                            : 'border-[var(--uc-border)] text-[var(--uc-text-muted)] hover:text-[var(--uc-text)] hover:border-[var(--uc-border-strong)]',
+                        )}
+                      >
+                        <FaqIcon value={v} size={16} />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Resposta — editor visual */}
+                <div>
+                  <p className="text-[10px] font-bold tracking-wide uppercase text-[var(--uc-text-muted)] mb-1.5">Resposta</p>
+                  <RichTextField value={f.content} onChange={(v) => update({ content: v })} rows={3} />
+                </div>
               </div>
-              <textarea rows={3} className={cn(field, 'resize-y')} placeholder="Resposta" value={f.content} onChange={(e) => {
-                const next = [...form.faq]; next[i] = { ...f, content: e.target.value }; patch('faq', next)
-              }} />
-            </div>
-          ))}
-          <GlassButton size="sm" variant="secondary" onClick={() => patch('faq', [...form.faq, { title: '', content: '' }])}>+ Nova pergunta</GlassButton>
+            )
+          })}
+          <GlassButton size="sm" variant="secondary" onClick={() => patch('faq', [...form.faq, { title: '', content: '', icon_type: 'preset', icon_value: 'help-circle' }])}>+ Nova pergunta</GlassButton>
         </div>
       </Section>
 
