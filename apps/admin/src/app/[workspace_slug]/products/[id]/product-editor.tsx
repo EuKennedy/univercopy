@@ -8,6 +8,8 @@ import { cn } from '@/lib/cn'
 import { generateProductField, publishProduct } from '@/lib/api/mutations'
 import type { ProductDetail, ProductFaq } from '@/lib/api/types'
 
+import { RichTextField } from './rich-text-field'
+
 const field =
   'w-full px-4 py-2.5 rounded-xl uc-glass uc-transition text-[15px] text-[var(--uc-text)] outline-none leading-6 ' +
   'focus:border-[var(--uc-accent-ring)] focus:shadow-[0_0_0_4px_var(--uc-accent-soft-2)]'
@@ -157,13 +159,13 @@ export function ProductEditor({ slug, product }: { slug: string; product: Produc
 
       {/* Descrição longa */}
       <Section title="Descrição do produto" ai={<AiButton slug={slug} id={product.id} field="description_html" onResult={(v) => patch('description_html', String(v))} />}>
-        <textarea rows={8} className={cn(field, 'resize-y font-mono text-[13px]')} value={form.description_html} onChange={(e) => patch('description_html', e.target.value)} />
+        <RichTextField value={form.description_html} onChange={(v) => patch('description_html', v)} rows={8} />
         <p className="text-xs text-[var(--uc-text-faint)] mt-1.5">Aceita HTML. Renderiza na página do produto.</p>
       </Section>
 
       {/* Breve descrição (bullets) */}
       <Section title="Breve descrição (bullet points)" ai={<AiButton slug={slug} id={product.id} field="short_description_html" onResult={(v) => patch('short_description_html', String(v))} />}>
-        <textarea rows={5} className={cn(field, 'resize-y font-mono text-[13px]')} value={form.short_description_html} onChange={(e) => patch('short_description_html', e.target.value)} />
+        <RichTextField value={form.short_description_html} onChange={(v) => patch('short_description_html', v)} rows={5} />
       </Section>
 
       {/* Entrega */}
@@ -192,7 +194,7 @@ export function ProductEditor({ slug, product }: { slug: string; product: Produc
           <label className={label}>Descrição</label>
           <AiButton slug={slug} id={product.id} field="about_description" onResult={(v) => patch('about', { ...form.about, description: String(v) })} />
         </div>
-        <textarea rows={5} className={cn(field, 'resize-y font-mono text-[13px]')} value={form.about.description} onChange={(e) => patch('about', { ...form.about, description: e.target.value })} />
+        <RichTextField value={form.about.description} onChange={(v) => patch('about', { ...form.about, description: v })} rows={5} />
       </Section>
 
       {/* FAQ do Produto */}

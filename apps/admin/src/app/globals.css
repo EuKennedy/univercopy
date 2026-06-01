@@ -332,6 +332,22 @@ html, body {
 }
 
 /* ============================================================
+ * Rich text (editor Visual) — renderiza HTML do produto legível.
+ * ============================================================ */
+.uc-rich :where(h1,h2,h3,h4) { font-weight: 700; line-height: 1.25; margin: 0.6em 0 0.3em; }
+.uc-rich h1 { font-size: 1.5rem; }
+.uc-rich h2 { font-size: 1.3rem; }
+.uc-rich h3 { font-size: 1.15rem; }
+.uc-rich p  { margin: 0.5em 0; }
+.uc-rich ul { list-style: disc;    padding-left: 1.4em; margin: 0.5em 0; }
+.uc-rich ol { list-style: decimal; padding-left: 1.4em; margin: 0.5em 0; }
+.uc-rich li { margin: 0.2em 0; }
+.uc-rich a  { color: var(--uc-accent); text-decoration: underline; }
+.uc-rich strong, .uc-rich b { font-weight: 700; color: var(--uc-text); }
+.uc-rich img { max-width: 100%; border-radius: 8px; }
+.uc-rich:empty::before { content: attr(data-placeholder); color: var(--uc-text-faint); }
+
+/* ============================================================
  * Skeleton — shimmer entre skeleton-1 e skeleton-2.
  * ============================================================ */
 .uc-skeleton {
