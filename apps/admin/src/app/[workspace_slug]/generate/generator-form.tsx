@@ -208,13 +208,24 @@ export function GeneratorForm({ slug, pieceTypes, styles, frameworks, categories
               </div>
             ))}
           </div>
-          <div>
-            <label className="text-xs font-semibold tracking-wide uppercase text-[var(--uc-text-muted)] mb-1.5 block">Framework <span className="normal-case text-[var(--uc-text-faint)]">(opcional)</span></label>
-            <select className={cn(fieldCls, 'h-12')} value={frameworkKey} onChange={(e) => setFrameworkKey(e.target.value)}>
-              <option value="">Auto (sugerido pelo formato)</option>
-              {frameworks.map((f) => <option key={f.key} value={f.key}>{f.name}</option>)}
-            </select>
-          </div>
+          {/* Framework é jargão de copy — escondido em "Avançado". Auto cobre 99%. */}
+          <details className="rounded-2xl uc-glass px-4 py-3 group">
+            <summary className="cursor-pointer list-none flex items-center justify-between text-sm font-semibold text-[var(--uc-text-soft)] hover:text-[var(--uc-text)]">
+              <span>Avançado · estrutura de copy</span>
+              <span className="text-[var(--uc-text-faint)] group-open:rotate-90 uc-transition-fast"><Icon name="chevron-right" size={16} /></span>
+            </summary>
+            <div className="pt-3">
+              <p className="text-xs text-[var(--uc-text-muted)] leading-5 mb-2">
+                Estruturas usadas por copywriters profissionais (AIDA, PAS…). Deixe no <strong>Auto</strong> se não tiver certeza — a IA escolhe a melhor para o formato.
+              </p>
+              <select className={cn(fieldCls, 'h-12')} value={frameworkKey} onChange={(e) => setFrameworkKey(e.target.value)}>
+                <option value="">Auto (recomendado)</option>
+                {frameworks.map((f) => (
+                  <option key={f.key} value={f.key}>{f.name}{f.structure ? ` — ${f.structure.slice(0, 60)}` : ''}</option>
+                ))}
+              </select>
+            </div>
+          </details>
           <div className="flex justify-between pt-1">
             <GlassButton variant="ghost" onClick={() => setStep(0)}><Icon name="chevron-left" size={16} />Voltar</GlassButton>
             <GlassButton onClick={() => setStep(2)}>Continuar<Icon name="chevron-right" size={16} /></GlassButton>

@@ -34,7 +34,7 @@ export default async function GeneratorPage({ params, searchParams }: Props) {
       <Topbar
         eyebrow="GERADOR"
         title="Gerador multicanal"
-        description="DNA + estilo + framework + tipo de peça + brief → variações prontas pra escolher."
+        description="Escolha o conteúdo, o estilo e o brief — a IA escreve variações com o DNA da sua marca."
       />
       <div className="px-8 py-8 max-w-6xl mx-auto w-full">
         <GeneratorForm
