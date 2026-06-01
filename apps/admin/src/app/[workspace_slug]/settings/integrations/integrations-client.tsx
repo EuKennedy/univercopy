@@ -105,7 +105,7 @@ function WooCard({ slug, state, productsCount }: { slug: string; state: Connecto
         </div>
 
         <div className="flex gap-2 shrink-0">
-          {connected ? (
+          {connected || state.status === 'error' ? (
             <>
               <GlassButton size="sm" variant="secondary" loading={busy === 'sync'} onClick={sync}>Sincronizar</GlassButton>
               <GlassButton size="sm" variant="ghost" loading={busy === 'disconnect'} onClick={disconnect}>Desconectar</GlassButton>

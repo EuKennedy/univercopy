@@ -62,8 +62,11 @@ module Api
 
       private
 
+      # Qualquer integração Woo com config (mesmo status=error): a config
+      # cifrada continua válida; usamos pra refresh ao vivo e auto-curamos o
+      # status quando a chamada dá certo.
       def woo_integration
-        current_workspace.integrations.find_by(integration_type: "woocommerce", status: "connected")
+        current_workspace.integrations.find_by(integration_type: "woocommerce")
       end
 
       # Refresh best-effort do produto a partir da loja (não falha a request).
@@ -75,6 +78,9 @@ module Api
         product.assign_attributes(attrs.except(:source, :external_id))
         product.synced_at = Time.current
         product.save!
+
+        # Self-heal: chamada funcionou → integração está saudável.
+        integ.update_columns(status: "connected", last_error: nil) unless integ.status == "connected"
       rescue Connectors::WooCommerce::ConnectionError => e
         Rails.logger.warn({ product_refresh: "fail", id: product.id, error: e.message }.to_json)
       end
