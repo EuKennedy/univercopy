@@ -40,7 +40,7 @@ export default async function WorkspaceOverviewPage({ params }: Props) {
         }
       />
 
-      <div className="px-8 py-8 space-y-6 max-w-6xl mx-auto w-full">
+      <div className="px-4 sm:px-6 lg:px-8 py-8 space-y-6 max-w-6xl mx-auto w-full">
         {/* KPIs */}
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
           {stats.map((s) => (

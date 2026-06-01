@@ -25,7 +25,7 @@ export default async function AuditLogPage({ params }: Props) {
           </Link>
         }
       />
-      <div className="px-8 py-8 max-w-6xl mx-auto w-full">
+      <div className="px-4 sm:px-6 lg:px-8 py-8 max-w-6xl mx-auto w-full">
         {logs.length === 0 ? (
           <GlassCard className="p-10 text-center space-y-2">
             <span className="inline-flex items-center justify-center size-12 rounded-2xl text-white mb-2" style={{ background: 'linear-gradient(135deg, var(--uc-brand-purple) 0%, var(--uc-brand-blue) 100%)' }}>

@@ -19,7 +19,7 @@ export default async function AuditPage({ params }: Props) {
         title={t('title')}
         description={t('description')}
       />
-      <div className="px-8 py-8 max-w-6xl mx-auto w-full">
+      <div className="px-4 sm:px-6 lg:px-8 py-8 max-w-6xl mx-auto w-full">
         <AuditClient slug={workspace_slug} initial={audits} />
       </div>
     </>

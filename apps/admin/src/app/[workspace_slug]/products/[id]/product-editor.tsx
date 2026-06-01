@@ -119,7 +119,7 @@ export function ProductEditor({ slug, product }: { slug: string; product: Produc
             <p className="text-xs text-[var(--uc-text-muted)]">{t('categories_label', { list: product.categories.join(', ') })}</p>
           )}
         </div>
-        <div className="flex flex-col gap-2 items-end">
+        <div className="flex flex-col gap-2 w-full sm:w-auto items-stretch sm:items-end">
           <GlassButton size="lg" loading={publishing} onClick={publish}>
             <Icon name="product" size={16} />{t('publish_woo')}
           </GlassButton>

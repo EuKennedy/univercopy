@@ -40,7 +40,7 @@ export default async function ProductsPage({ params, searchParams }: Props) {
     return (
       <>
         <Topbar eyebrow={t('eyebrow')} title={t('title')} description={t('description_short')} />
-        <div className="px-8 py-8 max-w-6xl mx-auto w-full">
+        <div className="px-4 sm:px-6 lg:px-8 py-8 max-w-6xl mx-auto w-full">
           <GlassCard className="p-8 text-center text-sm text-[var(--uc-text-soft)]">
             {t('load_error')}
           </GlassCard>
@@ -60,7 +60,7 @@ export default async function ProductsPage({ params, searchParams }: Props) {
         description={t('description')}
         actions={total > 0 ? <span className="text-sm text-[var(--uc-text-muted)]">{t('count', { count: total })}</span> : undefined}
       />
-      <div className="px-8 py-8 max-w-6xl mx-auto w-full space-y-5">
+      <div className="px-4 sm:px-6 lg:px-8 py-8 max-w-6xl mx-auto w-full space-y-5">
         {total === 0 && !q && !source ? (
           <GlassCard variant="strong" iridescent className="p-12 flex flex-col items-center text-center gap-5">
             <span className="flex items-center justify-center size-14 rounded-2xl text-white" style={{ background: 'linear-gradient(135deg, var(--uc-brand-purple) 0%, var(--uc-brand-blue) 100%)' }}>

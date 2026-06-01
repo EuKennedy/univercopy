@@ -16,7 +16,7 @@ export default async function IntelligencePage({ params }: Props) {
         title={t('title')}
         description={t('description')}
       />
-      <div className="px-8 py-10 max-w-6xl mx-auto">
+      <div className="px-4 sm:px-6 lg:px-8 py-10 max-w-6xl mx-auto">
         <EmptyState
           status="wip"
           eyebrow={t('wip_eyebrow')}

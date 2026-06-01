@@ -26,7 +26,7 @@ export default async function PreferencesPage({ params }: Props) {
           </Link>
         }
       />
-      <div className="px-8 py-8 max-w-6xl mx-auto w-full">
+      <div className="px-4 sm:px-6 lg:px-8 py-8 max-w-6xl mx-auto w-full">
         <PreferencesClient slug={workspace_slug} account={account} />
       </div>
     </>

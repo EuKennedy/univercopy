@@ -45,7 +45,7 @@ export default async function BillingPage({ params }: Props) {
           </Link>
         }
       />
-      <div className="px-8 py-8 max-w-6xl mx-auto w-full space-y-5">
+      <div className="px-4 sm:px-6 lg:px-8 py-8 max-w-6xl mx-auto w-full space-y-5">
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-5">
           {/* Recursos */}
           <GlassCard className="p-6">

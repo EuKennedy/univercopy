@@ -138,7 +138,7 @@ export function GeneratorForm({ slug, pieceTypes, styles, frameworks, categories
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
       {/* Stepper */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 overflow-x-auto pb-1 -mx-1 px-1">
         {STEPS.map((label, i) => (
           <button
             key={label}
@@ -146,7 +146,7 @@ export function GeneratorForm({ slug, pieceTypes, styles, frameworks, categories
             onClick={() => i < step && setStep(i)}
             disabled={i > step}
             className={cn(
-              'flex items-center gap-2 px-3.5 h-10 rounded-2xl text-sm font-semibold uc-transition-fast',
+              'flex items-center gap-2 px-3.5 h-10 rounded-2xl text-sm font-semibold uc-transition-fast shrink-0',
               i === step ? 'bg-[var(--uc-accent-soft)] text-[var(--uc-accent)] shadow-[inset_0_0_0_1px_var(--uc-accent-soft-2)]'
                 : i < step ? 'text-[var(--uc-text)] hover:bg-[var(--uc-surface-soft)] cursor-pointer'
                 : 'text-[var(--uc-text-faint)] cursor-default',
@@ -156,8 +156,8 @@ export function GeneratorForm({ slug, pieceTypes, styles, frameworks, categories
               style={i <= step ? { background: 'linear-gradient(135deg, var(--uc-brand-purple), var(--uc-brand-blue))' } : undefined}>
               {i + 1}
             </span>
-            {label}
-            {i < STEPS.length - 1 && <span className="w-6 h-px bg-[var(--uc-border)] ml-1" />}
+            <span className={cn(i !== step && 'hidden sm:inline')}>{label}</span>
+            {i < STEPS.length - 1 && <span className="hidden sm:inline-block w-6 h-px bg-[var(--uc-border)] ml-1" />}
           </button>
         ))}
       </div>

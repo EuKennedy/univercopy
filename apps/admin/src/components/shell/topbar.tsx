@@ -17,7 +17,7 @@ export function Topbar({ title, eyebrow, description, actions, className }: Topb
   return (
     <header
       className={cn(
-        'sticky top-0 z-30 px-8 py-6',
+        'sticky top-14 lg:top-0 z-20 px-4 sm:px-6 lg:px-8 py-4 sm:py-6',
         'border-b border-[var(--uc-border-soft)] bg-[var(--uc-bg)]/72 backdrop-blur-xl',
         className,
       )}
@@ -30,7 +30,7 @@ export function Topbar({ title, eyebrow, description, actions, className }: Topb
               {eyebrow}
             </p>
           )}
-          <h1 className="text-3xl font-bold tracking-tight text-[var(--uc-text)] leading-[1.05] truncate">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[var(--uc-text)] leading-[1.05] truncate">
             {title}
           </h1>
           {description && (

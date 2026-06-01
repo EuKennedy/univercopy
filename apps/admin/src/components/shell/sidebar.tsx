@@ -25,29 +25,19 @@ type Props = {
   nav?: NavItem[]
   user?: { name?: string; email: string; image?: string | null } | null
   workspaces?: WorkspaceOption[]
-  defaultCollapsed?: boolean
+  collapsed: boolean
+  onToggleCollapse: () => void
+  mobileOpen: boolean
+  onCloseMobile: () => void
 }
 
-const COOKIE_NAME = 'uc_sidebar_collapsed'
-
-function writeCookie(name: string, value: string) {
-  if (typeof document === 'undefined') return
-  document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax`
-}
-
-export function Sidebar({ workspaceSlug, nav, user, workspaces, defaultCollapsed = false }: Props) {
+export function Sidebar({
+  workspaceSlug, nav, user, workspaces,
+  collapsed, onToggleCollapse, mobileOpen, onCloseMobile,
+}: Props) {
   const pathname = usePathname()
   const router = useRouter()
   const t = useTranslations('nav')
-  const [collapsed, setCollapsed] = useState(defaultCollapsed)
-
-  function toggle() {
-    setCollapsed((prev) => {
-      const next = !prev
-      writeCookie(COOKIE_NAME, next ? '1' : '0')
-      return next
-    })
-  }
 
   const items = nav ?? defaultNav(workspaceSlug, t)
 
@@ -55,47 +45,60 @@ export function Sidebar({ workspaceSlug, nav, user, workspaces, defaultCollapsed
     <aside
       data-collapsed={collapsed}
       className={cn(
-        'uc-rail-w uc-glass-rail',
-        'fixed left-0 top-0 bottom-0 z-40 flex flex-col px-3 py-4',
+        'uc-rail-w uc-glass-rail fixed left-0 top-0 bottom-0 z-40 flex flex-col px-3 py-4',
+        'max-lg:z-50 max-lg:transition-transform max-lg:duration-300 lg:translate-x-0',
+        mobileOpen ? 'max-lg:translate-x-0' : 'max-lg:-translate-x-full',
       )}
     >
       <div className="flex items-center gap-2 px-2 pb-5">
-        <Link href={workspaceSlug ? `/${workspaceSlug}` : '/'} className="flex items-center gap-2 min-w-0 cursor-pointer">
+        <Link href={workspaceSlug ? `/${workspaceSlug}` : '/'} onClick={onCloseMobile} className="flex items-center gap-2 min-w-0 cursor-pointer">
           {collapsed ? (
             <span
               aria-hidden
-              className="size-9 rounded-[10px] flex items-center justify-center text-white font-extrabold uc-transition shadow-[0_8px_24px_-8px_rgba(139,92,246,0.55)]"
+              className="hidden lg:flex size-9 rounded-[10px] items-center justify-center text-white font-extrabold uc-transition shadow-[0_8px_24px_-8px_rgba(139,92,246,0.55)]"
               style={{ background: 'linear-gradient(135deg, var(--uc-brand-purple) 0%, var(--uc-brand-blue) 100%)' }}
             >
               u
             </span>
-          ) : (
-            <span className="uc-rail-content">
-              <Wordmark size="sm" />
-            </span>
-          )}
+          ) : null}
+          <span className={cn('uc-rail-content', collapsed && 'lg:hidden')}>
+            <Wordmark size="sm" />
+          </span>
         </Link>
+
+        {/* Colapsar (desktop) */}
         <button
           type="button"
-          onClick={toggle}
+          onClick={onToggleCollapse}
           aria-label={collapsed ? t('expandSidebar') : t('collapseSidebar')}
           className={cn(
-            'ml-auto cursor-pointer uc-transition rounded-lg p-1.5 text-[var(--uc-text-muted)]',
+            'ml-auto hidden lg:block cursor-pointer uc-transition rounded-lg p-1.5 text-[var(--uc-text-muted)]',
             'hover:bg-[var(--uc-surface-soft)] hover:text-[var(--uc-text)]',
             collapsed && 'mx-auto ml-0',
           )}
         >
           <Icon name={collapsed ? 'chevron-right' : 'chevron-left'} />
         </button>
+
+        {/* Fechar (mobile) */}
+        <button
+          type="button"
+          onClick={onCloseMobile}
+          aria-label="Fechar menu"
+          className="ml-auto lg:hidden cursor-pointer rounded-lg p-1.5 text-[var(--uc-text-muted)] hover:bg-[var(--uc-surface-soft)] hover:text-[var(--uc-text)]"
+        >
+          <Icon name="x" />
+        </button>
       </div>
 
-      <nav className="flex-1 flex flex-col gap-0.5 mt-1" aria-label={t('primaryNav')}>
+      <nav className="flex-1 flex flex-col gap-0.5 mt-1 overflow-y-auto" aria-label={t('primaryNav')}>
         {items.map((item) => {
           const active = pathname?.startsWith(item.href)
           return (
             <Link
               key={item.href}
               href={item.href}
+              onClick={onCloseMobile}
               data-active={active || undefined}
               className={cn(
                 'group flex items-center gap-3 rounded-xl px-2.5 py-2.5 cursor-pointer uc-transition-fast',
@@ -106,7 +109,7 @@ export function Sidebar({ workspaceSlug, nav, user, workspaces, defaultCollapsed
             >
               <span
                 className={cn(
-                  'flex items-center justify-center size-9 rounded-lg uc-transition-fast',
+                  'flex items-center justify-center size-9 rounded-lg uc-transition-fast shrink-0',
                   active
                     ? 'text-white shadow-[0_6px_16px_-6px_rgba(139,92,246,0.5)]'
                     : 'text-[var(--uc-text-muted)] group-hover:text-[var(--uc-text)] bg-[var(--uc-bg-mute)]',
@@ -135,7 +138,7 @@ export function Sidebar({ workspaceSlug, nav, user, workspaces, defaultCollapsed
           <select
             id="ws-switch"
             value={workspaceSlug ?? ''}
-            onChange={(e) => router.push(`/${e.target.value}`)}
+            onChange={(e) => { onCloseMobile(); router.push(`/${e.target.value}`) }}
             className="w-full h-10 px-3 rounded-xl uc-glass text-sm text-[var(--uc-text)] outline-none cursor-pointer focus:border-[var(--uc-accent-ring)]"
           >
             {workspaces.map((w) => <option key={w.slug} value={w.slug}>{w.name}</option>)}
@@ -201,7 +204,7 @@ function Avatar({ name, image }: { name: string; image?: string }) {
   const initials = name.split(/\s+/).slice(0, 2).map((s) => s[0]?.toUpperCase()).join('') || 'U'
   return (
     <span
-      className="size-9 rounded-full flex items-center justify-center text-white text-xs font-bold shadow-[0_6px_18px_-6px_rgba(139,92,246,0.5)]"
+      className="size-9 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0 shadow-[0_6px_18px_-6px_rgba(139,92,246,0.5)]"
       style={{ background: image ? `center/cover url(${image})` : 'linear-gradient(135deg, var(--uc-brand-purple) 0%, var(--uc-brand-blue) 100%)' }}
       aria-hidden
     >
@@ -213,13 +216,13 @@ function Avatar({ name, image }: { name: string; image?: string }) {
 function defaultNav(workspaceSlug: string | undefined, t: (key: string) => string): NavItem[] {
   const base = workspaceSlug ? `/${workspaceSlug}` : ''
   return [
-    { href: `${base || '/'}`,           label: t('overview'),     icon: 'dashboard' },
-    { href: `${base}/copy`,             label: t('copy'),         icon: 'copy' },
-    { href: `${base}/generate`,         label: t('generate'),     icon: 'spark', badge: 'AI' },
-    { href: `${base}/campaigns`,        label: t('campaigns'),    icon: 'campaign' },
-    { href: `${base}/products`,         label: t('products'),     icon: 'product' },
-    { href: `${base}/audit`,            label: t('audit'),        icon: 'audit' },
-    { href: `${base}/intelligence`,     label: t('intelligence'), icon: 'intelligence' },
-    { href: `${base}/settings`,         label: t('settings'),     icon: 'settings' },
+    { href: `${base || '/'}`,        label: t('overview'),     icon: 'dashboard' },
+    { href: `${base}/copy`,          label: t('copy'),         icon: 'copy' },
+    { href: `${base}/generate`,      label: t('generate'),     icon: 'spark', badge: 'AI' },
+    { href: `${base}/campaigns`,     label: t('campaigns'),    icon: 'campaign' },
+    { href: `${base}/products`,      label: t('products'),     icon: 'product' },
+    { href: `${base}/audit`,         label: t('audit'),        icon: 'audit' },
+    { href: `${base}/intelligence`,  label: t('intelligence'), icon: 'intelligence' },
+    { href: `${base}/settings`,      label: t('settings'),     icon: 'settings' },
   ]
 }

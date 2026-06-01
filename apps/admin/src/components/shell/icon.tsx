@@ -23,6 +23,8 @@ export type IconName =
   | 'sparkle'
   | 'wand'
   | 'cube'
+  | 'menu'
+  | 'x'
 
 export function Icon({ name, className, size = 18 }: IconProps) {
   const paths = ICON_PATHS[name]
@@ -144,4 +146,6 @@ const ICON_PATHS: Record<IconName, React.ReactNode> = {
       <path d="M12 22.08V12" />
     </>
   ),
+  menu: (<><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" /></>),
+  x: (<><path d="M18 6 6 18" /><path d="m6 6 12 12" /></>),
 }

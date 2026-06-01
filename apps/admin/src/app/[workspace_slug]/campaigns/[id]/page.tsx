@@ -37,7 +37,7 @@ export default async function CampaignDetailPage({ params }: Props) {
           </Link>
         }
       />
-      <div className="px-8 py-8 max-w-6xl mx-auto w-full grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6">
+      <div className="px-4 sm:px-6 lg:px-8 py-8 max-w-6xl mx-auto w-full grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6">
         <div className="space-y-4 min-w-0">
           <p className="text-xs font-semibold tracking-wide uppercase text-[var(--uc-text-muted)]">{t('campaign_pieces')}</p>
           {copies.length === 0 ? (

@@ -29,7 +29,7 @@ export default async function TeamPage({ params }: Props) {
           </Link>
         }
       />
-      <div className="px-8 py-8 max-w-6xl mx-auto w-full space-y-4">
+      <div className="px-4 sm:px-6 lg:px-8 py-8 max-w-6xl mx-auto w-full space-y-4">
         <GlassCard className="overflow-hidden p-0">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">

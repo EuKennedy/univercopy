@@ -396,6 +396,20 @@ html, body {
   pointer-events: none;
 }
 
+/* ============================================================
+ * Layout responsivo — main reage ao collapse no desktop; mobile vira
+ * drawer (sem padding lateral, sidebar full + labels visíveis).
+ * ============================================================ */
+.uc-main { transition: padding-left var(--dur-4) var(--ease-apple); }
+@media (min-width: 1024px) {
+  .uc-main { padding-left: var(--uc-sidebar-w); }
+  .uc-main[data-collapsed="true"] { padding-left: var(--uc-sidebar-w-collapsed); }
+}
+@media (max-width: 1023px) {
+  .uc-rail-w, .uc-rail-w[data-collapsed="true"] { width: var(--uc-sidebar-w); }
+  .uc-rail-w .uc-rail-content { opacity: 1 !important; pointer-events: auto !important; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
