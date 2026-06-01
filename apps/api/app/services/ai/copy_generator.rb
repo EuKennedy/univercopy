@@ -80,9 +80,18 @@ module Ai
     end
 
     def parse_variations(text)
-      parsed = Ai::JsonExtractor.parse(text)
+      return [] if text.to_s.strip.empty?
+
+      begin
+        parsed = Ai::JsonExtractor.parse(text)
+      rescue ArgumentError, JSON::ParserError
+        # Modelo respondeu em prosa (sem JSON). Salva como 1 variação em vez
+        # de explodir — usuário recebe algo utilizável.
+        return [{ title: "Variação", angle: "", content: text.to_s.strip }]
+      end
+
       raw = parsed.is_a?(Hash) ? (parsed["variations"] || parsed[:variations]) : parsed
-      Array(raw).filter_map do |v|
+      vars = Array(raw).filter_map do |v|
         next unless v.is_a?(Hash)
 
         content = (v["content"] || v[:content]).to_s.strip
@@ -94,6 +103,9 @@ module Ai
           content: content,
         }
       end
+
+      # JSON veio mas sem variações utilizáveis → salva o texto cru.
+      vars.presence || [{ title: "Variação", angle: "", content: text.to_s.strip }]
     end
   end
 end

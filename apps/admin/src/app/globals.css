@@ -103,23 +103,26 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --uc-bg: #0a0b10;
-    --uc-bg-soft: #11131c;
-    --uc-bg-mute: #14161f;
-    --uc-surface: rgba(20, 22, 31, 0.62);
-    --uc-surface-soft: rgba(20, 22, 31, 0.42);
-    --uc-surface-2: #14161f;
-    --uc-surface-overlay: rgba(15, 17, 25, 0.88);
+    /* Fundo levemente mais quente/azulado + superfícies MAIS CLARAS que o
+     * fundo → cards "pulam" (profundidade premium, fim do "tudo escuro"). */
+    --uc-bg: #0b0d14;
+    --uc-bg-soft: #12151f;
+    --uc-bg-mute: #1b1f2b;
+    --uc-surface: rgba(30, 34, 47, 0.74);
+    --uc-surface-soft: rgba(38, 43, 58, 0.55);
+    --uc-surface-2: #1c2030;
+    --uc-surface-overlay: rgba(26, 30, 42, 0.94);
 
-    --uc-border: rgba(255, 255, 255, 0.08);
-    --uc-border-soft: rgba(255, 255, 255, 0.04);
-    --uc-border-strong: rgba(255, 255, 255, 0.16);
+    --uc-border: rgba(255, 255, 255, 0.11);
+    --uc-border-soft: rgba(255, 255, 255, 0.06);
+    --uc-border-strong: rgba(255, 255, 255, 0.22);
 
-    --uc-text: #f7f7f9;
-    --uc-text-secondary: #e3e3e7;
-    --uc-text-soft: #c1c1c8;
-    --uc-text-muted: #93939c;
-    --uc-text-faint: #696973;
+    /* Texto com contraste AA+ sobre o fundo escuro. */
+    --uc-text: #f9fafc;
+    --uc-text-secondary: #e8eaf0;
+    --uc-text-soft: #d3d7e0;
+    --uc-text-muted: #a8adbd;
+    --uc-text-faint: #7e8499;
 
     --uc-accent: #a78bfa;
     --uc-accent-strong: #c4b5fd;
@@ -202,7 +205,8 @@ html, body {
   backdrop-filter: blur(28px) saturate(180%);
   -webkit-backdrop-filter: blur(28px) saturate(180%);
   border: 1px solid var(--uc-border);
-  box-shadow: var(--uc-shadow-md);
+  /* Highlight sutil no topo (luz de vidro) + sombra de profundidade. */
+  box-shadow: var(--uc-shadow-md), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .uc-glass-strong {
@@ -210,7 +214,7 @@ html, body {
   backdrop-filter: blur(40px) saturate(200%);
   -webkit-backdrop-filter: blur(40px) saturate(200%);
   border: 1px solid var(--uc-border-strong);
-  box-shadow: var(--uc-shadow-lg);
+  box-shadow: var(--uc-shadow-lg), inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 .uc-glass-rail {
