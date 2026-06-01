@@ -12,6 +12,7 @@ import type {
   Dna,
   GenerateResult,
   PageAudit,
+  ProductDetail,
 } from './types'
 
 const ws = (slug: string) => `/api/v1/workspaces/${encodeURIComponent(slug)}`
@@ -259,6 +260,36 @@ export async function updateAccount(
   )
   if (result.ok) revalidatePath(`/${slug}/settings/preferences`)
   return result
+}
+
+// ---------------- Produto: write-back + IA por campo ----------------
+export async function publishProduct(
+  slug: string,
+  id: string,
+  payload: Record<string, unknown>,
+): Promise<ActionResult<ProductDetail>> {
+  const result = await run(() =>
+    apiFetch<ProductDetail>(`${ws(slug)}/products/${id}/publish`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  )
+  if (result.ok) revalidatePath(`/${slug}/products/${id}`)
+  return result
+}
+
+export async function generateProductField(
+  slug: string,
+  id: string,
+  field: string,
+  instruction?: string,
+): Promise<ActionResult<{ field: string; kind: string; value: unknown }>> {
+  return run(() =>
+    apiFetch<{ field: string; kind: string; value: unknown }>(`${ws(slug)}/products/${id}/generate-field`, {
+      method: 'POST',
+      body: JSON.stringify({ field, instruction }),
+    }),
+  )
 }
 
 // ---------------- Análise de página ----------------

@@ -147,10 +147,15 @@ export default async function ProductsPage({ params, searchParams }: Props) {
                               {SOURCE_LABEL[p.source] ?? p.source}
                             </span>
                           </td>
-                          <td className="px-5 py-3 text-right">
-                            <Link href={`/${workspace_slug}/generate?product=${p.id}`}>
-                              <GlassButton size="sm" variant="secondary"><Icon name="spark" size={14} />Gerar copy</GlassButton>
-                            </Link>
+                          <td className="px-5 py-3 text-right whitespace-nowrap">
+                            <span className="inline-flex gap-2">
+                              <Link href={`/${workspace_slug}/products/${p.id}`}>
+                                <GlassButton size="sm"><Icon name="product" size={14} />Editar</GlassButton>
+                              </Link>
+                              <Link href={`/${workspace_slug}/generate?product=${p.id}`}>
+                                <GlassButton size="sm" variant="secondary"><Icon name="spark" size={14} />Copy</GlassButton>
+                              </Link>
+                            </span>
                           </td>
                         </tr>
                       ))}

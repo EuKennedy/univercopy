@@ -19,6 +19,7 @@ import type {
   PageAudit,
   PieceType,
   PlanSnapshot,
+  ProductDetail,
   ProductListItem,
   Style,
 } from './types'
@@ -89,6 +90,9 @@ export async function listProducts(slug: string, query?: { q?: string; source?: 
   if (query?.source) qs.set('source', query.source)
   const suffix = qs.toString() ? `?${qs.toString()}` : ''
   return apiFetch<{ products: ProductListItem[]; total: number }>(`${ws(slug)}/products${suffix}`)
+}
+export async function getProduct(slug: string, id: string) {
+  return apiFetch<ProductDetail>(`${ws(slug)}/products/${id}`)
 }
 
 // --- Integrations ---

@@ -61,9 +61,11 @@ Rails.application.routes.draw do
         post "/generate",     to: "generations#create"
         get  "/generations",  to: "generations#index"
 
-        # Produtos (catálogo importado)
-        get  "/products",     to: "products#index"
-        get  "/products/:id", to: "products#show"
+        # Produtos (catálogo importado) + editor/write-back
+        get  "/products",                to: "products#index"
+        get  "/products/:id",            to: "products#show"
+        post "/products/:id/publish",        to: "products#publish"
+        post "/products/:id/generate-field", to: "products#generate_field"
 
         # Integrações / conectores
         get    "/integrations",                  to: "integrations#index"

@@ -139,6 +139,44 @@ export type ProductListItem = {
   synced_at: string | null
 }
 
+export type ProductFaq = {
+  title: string
+  content: string
+  icon_type?: string
+  icon_value?: string
+  icon_attachment_id?: number
+}
+
+export type ProductAttribute = { name: string; options: string[]; visible?: boolean }
+
+export type ProductDetail = {
+  id: string
+  external_id: string
+  name: string
+  sku: string | null
+  permalink: string | null
+  price: number | null
+  images: string[]
+  images_full: { id: number; src: string; alt: string }[]
+  categories: string[]
+  categories_full: { id: number; name: string }[]
+  tags: string[]
+  description_html: string
+  short_description_html: string
+  attributes: ProductAttribute[]
+  regular_price: number | null
+  sale_price: number | null
+  manage_stock: boolean | null
+  stock_quantity: number | null
+  stock_status: string | null
+  backorders: string | null
+  weight: string | null
+  dimensions: { length: string | null; width: string | null; height: string | null }
+  about: { title: string; description: string }
+  faq: ProductFaq[]
+  synced_at: string | null
+}
+
 export type ConnectorState = {
   type: string
   label: string
