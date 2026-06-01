@@ -41,15 +41,20 @@ module Ai
 
     def call(prompt:, model:, task:, max_tokens:, system:, temperature:)
       chosen = resolve_model(model, task)
-      response = anthropic.messages.create(
+      params = {
         model:       MODEL_IDS.fetch(chosen),
         max_tokens:  max_tokens,
-        system:      system,
         messages:    [{ role: "user", content: prompt }],
         temperature: temperature,
-      )
+      }
+      # API Anthropic exige `system` como array de content blocks (não string).
+      params[:system] = [{ type: "text", text: system.to_s }] if system.present?
 
-      text = response.content.filter_map { |c| c.text if c.type == "text" }.join("\n").strip
+      response = anthropic.messages.create(**params)
+
+      # `type` pode vir como Symbol (:text) ou String ("text") conforme versão
+      # do SDK — normaliza pra string antes de comparar.
+      text = response.content.filter_map { |c| c.text if c.type.to_s == "text" }.join("\n").strip
       usage = response.usage
       cost  = cost_for(chosen, usage.input_tokens, usage.output_tokens)
 
