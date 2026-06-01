@@ -51,6 +51,7 @@ module Api
 
         Connectors::SyncProductsJob.perform_later(
           workspace_id:   current_workspace.id,
+          user_id:        current_app_user.id,
           integration_id: integration.id,
         )
 
@@ -64,6 +65,7 @@ module Api
         integration = current_workspace.integrations.find_by!(integration_type: params.require(:type))
         Connectors::SyncProductsJob.perform_later(
           workspace_id:   current_workspace.id,
+          user_id:        current_app_user.id,
           integration_id: integration.id,
         )
         render json: { ok: true, sync: "queued" }
