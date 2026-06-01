@@ -8,5 +8,5 @@ class AppUser < ApplicationRecord
   enum :preferred_ai_model, %w[auto haiku sonnet opus].index_with(&:itself), prefix: :ai_model
 
   validates :email, presence: true, uniqueness: { case_sensitive: false }
-  validates :default_locale, inclusion: { in: %w[pt-BR en-US es-AR] }
+  validates :default_locale, inclusion: { in: %w[pt-BR en-US es-AR fr-FR] }
 end

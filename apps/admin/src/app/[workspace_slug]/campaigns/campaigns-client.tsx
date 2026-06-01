@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 
 import { GlassButton, GlassCard, GlassInput } from '@/components/ui'
 import { Icon } from '@/components/shell/icon'
@@ -10,19 +11,20 @@ import { cn } from '@/lib/cn'
 import { createCampaign } from '@/lib/api/mutations'
 import type { CampaignListItem } from '@/lib/api/types'
 
-const STATUS_META: Record<string, { label: string; cls: string }> = {
-  planejada: { label: 'Planejada', cls: 'bg-[var(--uc-surface-soft)] text-[var(--uc-text-soft)]' },
-  ativa:     { label: 'Ativa',     cls: 'bg-emerald-500/15 text-emerald-300' },
-  concluida: { label: 'Concluída', cls: 'bg-[var(--uc-accent-soft-2)] text-[var(--uc-accent)]' },
-  arquivada: { label: 'Arquivada', cls: 'bg-[var(--uc-surface-soft)] text-[var(--uc-text-faint)]' },
-}
-
 const fieldCls =
   'w-full px-4 py-3 rounded-2xl uc-glass uc-transition text-[15px] text-[var(--uc-text)] outline-none leading-6 ' +
   'focus:border-[var(--uc-accent-ring)] focus:shadow-[0_0_0_4px_var(--uc-accent-soft-2)]'
 
 export function CampaignsClient({ slug, campaigns }: { slug: string; campaigns: CampaignListItem[] }) {
   const router = useRouter()
+  const t = useTranslations('campaigns')
+  const tc = useTranslations('common')
+  const STATUS_META: Record<string, { label: string; cls: string }> = {
+    planejada: { label: t('status_planejada'), cls: 'bg-[var(--uc-surface-soft)] text-[var(--uc-text-soft)]' },
+    ativa:     { label: t('status_ativa'),     cls: 'bg-emerald-500/15 text-emerald-300' },
+    concluida: { label: t('status_concluida'), cls: 'bg-[var(--uc-accent-soft-2)] text-[var(--uc-accent)]' },
+    arquivada: { label: t('status_arquivada'), cls: 'bg-[var(--uc-surface-soft)] text-[var(--uc-text-faint)]' },
+  }
   const [open, setOpen] = useState(false)
   const [name, setName] = useState('')
   const [objective, setObjective] = useState('')
@@ -55,25 +57,25 @@ export function CampaignsClient({ slug, campaigns }: { slug: string; campaigns: 
       <div className="flex justify-end">
         <GlassButton onClick={() => setOpen((v) => !v)}>
           <Icon name={open ? 'chevron-left' : 'campaign'} size={16} />
-          {open ? 'Cancelar' : 'Nova campanha'}
+          {open ? tc('cancel') : t('new_campaign')}
         </GlassButton>
       </div>
 
       {open && (
         <GlassCard variant="strong" className="p-6 space-y-4">
-          <GlassInput label="Nome" placeholder="Black Friday 2026" value={name} onChange={(e) => setName(e.target.value)} />
-          <GlassInput label="Objetivo" placeholder="Maximizar conversão na semana de pico" value={objective} onChange={(e) => setObjective(e.target.value)} />
-          <GlassInput label="Audiência" placeholder="Clientes recorrentes + carrinho abandonado" value={audience} onChange={(e) => setAudience(e.target.value)} />
+          <GlassInput label={t('name')} placeholder={t('name_placeholder')} value={name} onChange={(e) => setName(e.target.value)} />
+          <GlassInput label={t('objective')} placeholder={t('objective_placeholder')} value={objective} onChange={(e) => setObjective(e.target.value)} />
+          <GlassInput label={t('audience')} placeholder={t('audience_placeholder')} value={audience} onChange={(e) => setAudience(e.target.value)} />
           <div>
-            <label className="text-xs font-semibold tracking-wide uppercase text-[var(--uc-text-muted)] mb-1.5 block">Contexto</label>
-            <textarea rows={4} className={cn(fieldCls, 'resize-y')} placeholder="Contexto rico que alimenta a IA: ofertas, regras, tom específico da campanha." value={context} onChange={(e) => setContext(e.target.value)} />
+            <label className="text-xs font-semibold tracking-wide uppercase text-[var(--uc-text-muted)] mb-1.5 block">{t('context')}</label>
+            <textarea rows={4} className={cn(fieldCls, 'resize-y')} placeholder={t('context_placeholder')} value={context} onChange={(e) => setContext(e.target.value)} />
           </div>
           {error && (
             <p className={cn('text-sm', paywall ? 'text-[var(--uc-accent-strong)]' : 'text-[var(--uc-danger)]')}>
-              {paywall ? 'Campanhas não disponíveis no seu plano. ' : ''}{error}
+              {paywall ? t('plan_locked') : ''}{error}
             </p>
           )}
-          <GlassButton loading={busy} disabled={!name.trim()} onClick={submit}>Criar campanha</GlassButton>
+          <GlassButton loading={busy} disabled={!name.trim()} onClick={submit}>{t('create_campaign')}</GlassButton>
         </GlassCard>
       )}
 
@@ -83,10 +85,10 @@ export function CampaignsClient({ slug, campaigns }: { slug: string; campaigns: 
             <Icon name="campaign" size={26} />
           </span>
           <div className="space-y-1.5 max-w-sm">
-            <h3 className="text-xl font-bold text-[var(--uc-text)]">Nenhuma campanha ainda</h3>
-            <p className="text-sm leading-6 text-[var(--uc-text-soft)]">Agrupe peças por evento ou lançamento. O contexto da campanha alimenta a IA em cada geração.</p>
+            <h3 className="text-xl font-bold text-[var(--uc-text)]">{t('empty_title')}</h3>
+            <p className="text-sm leading-6 text-[var(--uc-text-soft)]">{t('empty_description')}</p>
           </div>
-          <GlassButton size="lg" onClick={() => setOpen(true)}>Criar primeira campanha</GlassButton>
+          <GlassButton size="lg" onClick={() => setOpen(true)}>{t('create_first')}</GlassButton>
         </GlassCard>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -100,7 +102,7 @@ export function CampaignsClient({ slug, campaigns }: { slug: string; campaigns: 
                     <span className={`shrink-0 text-[11px] font-semibold rounded-full px-2 py-0.5 ${meta.cls}`}>{meta.label}</span>
                   </div>
                   {c.objective && <p className="text-sm leading-6 text-[var(--uc-text-soft)] line-clamp-2">{c.objective}</p>}
-                  <p className="text-xs text-[var(--uc-text-faint)] mt-3">{c.pieces} {c.pieces === 1 ? 'peça' : 'peças'}</p>
+                  <p className="text-xs text-[var(--uc-text-faint)] mt-3">{t('pieces', { count: c.pieces })}</p>
                 </GlassCard>
               </Link>
             )

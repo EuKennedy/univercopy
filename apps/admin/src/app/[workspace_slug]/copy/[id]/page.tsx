@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { getTranslations } from 'next-intl/server'
 
 import { Icon, Topbar } from '@/components/shell'
 import { ApiError } from '@/lib/api-client'
@@ -11,6 +12,7 @@ type Props = { params: Promise<{ workspace_slug: string; id: string }> }
 
 export default async function CopyDetailPage({ params }: Props) {
   const { workspace_slug, id } = await params
+  const t = await getTranslations('copy')
 
   let copy
   let versions
@@ -27,12 +29,12 @@ export default async function CopyDetailPage({ params }: Props) {
   return (
     <>
       <Topbar
-        eyebrow="ACERVO"
+        eyebrow={t('eyebrow')}
         title={copy.title}
-        description="Edite o conteúdo, crie versões e mova pelo fluxo de aprovação."
+        description={t('detail_description')}
         actions={
           <Link href={`/${workspace_slug}/copy`} className="text-sm text-[var(--uc-text-soft)] hover:text-[var(--uc-text)] inline-flex items-center gap-1.5">
-            <Icon name="chevron-left" size={16} />Voltar ao acervo
+            <Icon name="chevron-left" size={16} />{t('back_to_library')}
           </Link>
         }
       />

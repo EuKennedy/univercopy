@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { getTranslations } from 'next-intl/server'
 
 import { Icon, Topbar } from '@/components/shell'
 import { GlassCard } from '@/components/ui'
@@ -6,23 +7,25 @@ import { getWorkspaceMembers } from '@/lib/api/queries'
 
 type Props = { params: Promise<{ workspace_slug: string }> }
 
-const ROLE_LABEL: Record<string, string> = {
-  owner: 'Owner', admin: 'Admin', editor: 'Editor', reviewer: 'Revisor', viewer: 'Leitor',
-}
-
 export default async function TeamPage({ params }: Props) {
   const { workspace_slug } = await params
   const members = await getWorkspaceMembers(workspace_slug).catch(() => [])
+  const t = await getTranslations('team')
+  const ts = await getTranslations('settings')
+
+  const ROLE_LABEL: Record<string, string> = {
+    owner: t('role_owner'), admin: t('role_admin'), editor: t('role_editor'), reviewer: t('role_reviewer'), viewer: t('role_viewer'),
+  }
 
   return (
     <>
       <Topbar
-        eyebrow="EQUIPE"
-        title="Membros & permissões"
-        description="Quem tem acesso a este workspace e seus papéis."
+        eyebrow={t('eyebrow')}
+        title={t('title')}
+        description={t('description')}
         actions={
           <Link href={`/${workspace_slug}/settings`} className="text-sm text-[var(--uc-text-soft)] hover:text-[var(--uc-text)] inline-flex items-center gap-1.5">
-            <Icon name="chevron-left" size={16} />Configurações
+            <Icon name="chevron-left" size={16} />{ts('back')}
           </Link>
         }
       />
@@ -32,9 +35,9 @@ export default async function TeamPage({ params }: Props) {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[var(--uc-border)] text-left">
-                  <th className="font-semibold text-[var(--uc-text-muted)] uppercase tracking-wider text-[11px] px-5 py-3">Membro</th>
-                  <th className="font-semibold text-[var(--uc-text-muted)] uppercase tracking-wider text-[11px] px-4 py-3">Papel</th>
-                  <th className="font-semibold text-[var(--uc-text-muted)] uppercase tracking-wider text-[11px] px-4 py-3 hidden sm:table-cell">Desde</th>
+                  <th className="font-semibold text-[var(--uc-text-muted)] uppercase tracking-wider text-[11px] px-5 py-3">{t('col_member')}</th>
+                  <th className="font-semibold text-[var(--uc-text-muted)] uppercase tracking-wider text-[11px] px-4 py-3">{t('col_role')}</th>
+                  <th className="font-semibold text-[var(--uc-text-muted)] uppercase tracking-wider text-[11px] px-4 py-3 hidden sm:table-cell">{t('col_since')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -66,7 +69,7 @@ export default async function TeamPage({ params }: Props) {
           </div>
         </GlassCard>
         <p className="text-xs text-[var(--uc-text-muted)] leading-5">
-          Convites e mudança de permissões são feitos pelo owner do workspace por segurança. Em breve no painel.
+          {t('footnote')}
         </p>
       </div>
     </>

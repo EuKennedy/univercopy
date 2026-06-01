@@ -1,3 +1,5 @@
+import { getTranslations } from 'next-intl/server'
+
 import { Topbar } from '@/components/shell'
 
 import {
@@ -19,6 +21,7 @@ type Props = {
 export default async function GeneratorPage({ params, searchParams }: Props) {
   const { workspace_slug } = await params
   const { product } = await searchParams
+  const t = await getTranslations('generate')
 
   const [pieceTypes, styles, frameworks, categories, products, campaigns] = await Promise.all([
     getPieceTypes(),
@@ -32,9 +35,9 @@ export default async function GeneratorPage({ params, searchParams }: Props) {
   return (
     <>
       <Topbar
-        eyebrow="GERADOR"
-        title="Gerador multicanal"
-        description="Escolha o conteúdo, o estilo e o brief — a IA escreve variações com o DNA da sua marca."
+        eyebrow={t('eyebrow')}
+        title={t('title')}
+        description={t('description')}
       />
       <div className="px-8 py-8 max-w-6xl mx-auto w-full">
         <GeneratorForm

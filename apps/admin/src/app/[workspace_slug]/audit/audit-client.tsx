@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useTranslations } from 'next-intl'
 
 import { GlassButton, GlassCard } from '@/components/ui'
 import { Icon } from '@/components/shell/icon'
@@ -16,6 +17,7 @@ function scoreColor(n: number | null): string {
 }
 
 export function AuditClient({ slug, initial }: { slug: string; initial: PageAudit[] }) {
+  const t = useTranslations('audit')
   const [url, setUrl] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -29,7 +31,7 @@ export function AuditClient({ slug, initial }: { slug: string; initial: PageAudi
     setLoading(false)
     if (!res.ok) {
       if (res.error === 'feature_locked' || res.error === 'cap_reached') setPaywall(true)
-      setError(res.error === 'ai_failed' ? 'A IA não conseguiu analisar essa URL agora. Verifique o link e tente de novo.' : res.message)
+      setError(res.error === 'ai_failed' ? t('ai_failed') : res.message)
       return
     }
     setResult(res.data)
@@ -44,16 +46,16 @@ export function AuditClient({ slug, initial }: { slug: string; initial: PageAudi
           <input
             value={url}
             onChange={(e) => setUrl(e.target.value)}
-            placeholder="https://pagina-para-analisar.com/produto"
+            placeholder={t('url_placeholder')}
             className="flex-1 h-12 px-4 rounded-2xl uc-glass text-[15px] text-[var(--uc-text)] outline-none focus:border-[var(--uc-accent-ring)] focus:shadow-[0_0_0_4px_var(--uc-accent-soft-2)]"
           />
           <GlassButton size="lg" loading={loading} disabled={!url.trim()} onClick={run}>
-            {!loading && <Icon name="audit" size={16} />}{loading ? 'Analisando…' : 'Analisar'}
+            {!loading && <Icon name="audit" size={16} />}{loading ? t('analyzing') : t('analyze')}
           </GlassButton>
         </div>
         {error && (
           <p className={cn('text-sm', paywall ? 'text-[var(--uc-accent-strong)]' : 'text-[var(--uc-danger)]')}>
-            {paywall ? 'Recurso fora do seu plano. ' : ''}{error}
+            {paywall ? t('out_of_plan') : ''}{error}
           </p>
         )}
       </GlassCard>
@@ -62,7 +64,7 @@ export function AuditClient({ slug, initial }: { slug: string; initial: PageAudi
 
       {history.length > 0 && (
         <div className="space-y-3">
-          <p className="text-xs font-semibold tracking-wide uppercase text-[var(--uc-text-muted)]">Análises anteriores</p>
+          <p className="text-xs font-semibold tracking-wide uppercase text-[var(--uc-text-muted)]">{t('previous')}</p>
           {history.map((a) => <AuditResult key={a.id} audit={a} compact />)}
         </div>
       )}

@@ -1,28 +1,30 @@
 import Link from 'next/link'
+import { getTranslations } from 'next-intl/server'
 
 import { Icon, Topbar } from '@/components/shell'
 import { GlassCard } from '@/components/ui'
 
 type Props = { params: Promise<{ workspace_slug: string }> }
 
-const SECTIONS = [
-  { slug: 'dna',          eyebrow: 'IDENTIDADE',     title: 'DNA da marca',                description: 'Editar atual + proposto. Re-extrair via URL. Trocar qual DNA alimenta o gerador.',  icon: 'sparkle' as const },
-  { slug: 'team',         eyebrow: 'EQUIPE',         title: 'Membros & convites',          description: 'Adicionar editores e revisores. Permissões por papel (owner/admin/editor/viewer).',   icon: 'intelligence' as const },
-  { slug: 'integrations', eyebrow: 'CONECTORES',     title: 'Integrações com lojas',       description: 'WooCommerce, Shopify, Nuvemshop, Tray ou CSV. Sync manual, publish back.',           icon: 'product' as const },
-  { slug: 'billing',      eyebrow: 'PLANO',          title: 'Plano & uso',                 description: 'Plano atual (entry/medium/ultra), gerações no mês, cost cap, histórico de cobrança.', icon: 'cube' as const },
-  { slug: 'audit-log',    eyebrow: 'AUDITORIA',      title: 'Log de auditoria',            description: 'Toda ação sensível registrada com IP + user agent + diff.',                            icon: 'audit' as const },
-  { slug: 'preferences',  eyebrow: 'PESSOAL',        title: 'Idioma & modelo padrão',      description: 'PT-BR / EN-US / ES. Modelo padrão (Auto/Haiku/Sonnet/Opus) por ação de IA.',           icon: 'settings' as const },
-]
-
 export default async function SettingsPage({ params }: Props) {
   const { workspace_slug } = await params
+  const t = await getTranslations('settings')
+
+  const SECTIONS = [
+    { slug: 'dna',          eyebrow: t('dna_eyebrow'),          title: t('dna_title'),          description: t('dna_description'),          icon: 'sparkle' as const },
+    { slug: 'team',         eyebrow: t('team_eyebrow'),         title: t('team_title'),         description: t('team_description'),         icon: 'intelligence' as const },
+    { slug: 'integrations', eyebrow: t('integrations_eyebrow'), title: t('integrations_title'), description: t('integrations_description'), icon: 'product' as const },
+    { slug: 'billing',      eyebrow: t('billing_eyebrow'),      title: t('billing_title'),      description: t('billing_description'),      icon: 'cube' as const },
+    { slug: 'audit-log',    eyebrow: t('auditlog_eyebrow'),     title: t('auditlog_title'),     description: t('auditlog_description'),     icon: 'audit' as const },
+    { slug: 'preferences',  eyebrow: t('preferences_eyebrow'),  title: t('preferences_title'),  description: t('preferences_description'),  icon: 'settings' as const },
+  ]
 
   return (
     <>
       <Topbar
-        eyebrow="CONFIGURAÇÕES"
-        title="Configurações do workspace"
-        description="Tudo que define como a IA gera, quem tem acesso, conectores ativos e plano em uso."
+        eyebrow={t('eyebrow')}
+        title={t('title')}
+        description={t('description')}
       />
       <div className="px-8 py-10 grid grid-cols-1 md:grid-cols-2 gap-5 max-w-6xl mx-auto">
         {SECTIONS.map((s) => (

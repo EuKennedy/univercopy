@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useTranslations } from 'next-intl'
 
 import { GlassButton, GlassCard } from '@/components/ui'
 import { Icon } from '@/components/shell/icon'
@@ -59,6 +60,8 @@ function toForm(p: ProductDetail): Form {
 }
 
 export function ProductEditor({ slug, product }: { slug: string; product: ProductDetail }) {
+  const t = useTranslations('products')
+  const tc = useTranslations('common')
   const [form, setForm] = useState<Form>(toForm(product))
   const [publishing, setPublishing] = useState(false)
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null)
@@ -90,8 +93,8 @@ export function ProductEditor({ slug, product }: { slug: string; product: Produc
     const res = await publishProduct(slug, product.id, payload)
     setPublishing(false)
     setMsg(res.ok
-      ? { ok: true, text: 'Publicado no WooCommerce.' }
-      : { ok: false, text: res.error === 'no_connector' ? 'Conecte a loja WooCommerce primeiro.' : res.message })
+      ? { ok: true, text: t('published_ok') }
+      : { ok: false, text: res.error === 'no_connector' ? t('no_connector') : res.message })
   }
 
   const mainImage = product.images?.[0]
@@ -108,20 +111,20 @@ export function ProductEditor({ slug, product }: { slug: string; product: Produc
         </span>
         <div className="flex-1 min-w-[260px] space-y-2">
           <div className="flex items-center justify-between gap-2">
-            <label className={label}>Título do produto</label>
+            <label className={label}>{t('product_title')}</label>
             <AiButton slug={slug} id={product.id} field="name" onResult={(v) => patch('name', String(v))} />
           </div>
           <input className={field} value={form.name} onChange={(e) => patch('name', e.target.value)} />
           {product.categories.length > 0 && (
-            <p className="text-xs text-[var(--uc-text-muted)]">Categorias: {product.categories.join(', ')}</p>
+            <p className="text-xs text-[var(--uc-text-muted)]">{t('categories_label', { list: product.categories.join(', ') })}</p>
           )}
         </div>
         <div className="flex flex-col gap-2 items-end">
           <GlassButton size="lg" loading={publishing} onClick={publish}>
-            <Icon name="product" size={16} />Publicar no WooCommerce
+            <Icon name="product" size={16} />{t('publish_woo')}
           </GlassButton>
           {product.permalink && (
-            <a href={product.permalink} target="_blank" rel="noreferrer" className="text-xs text-[var(--uc-text-muted)] hover:text-[var(--uc-accent)]">Ver na loja ↗</a>
+            <a href={product.permalink} target="_blank" rel="noreferrer" className="text-xs text-[var(--uc-text-muted)] hover:text-[var(--uc-accent)]">{t('view_in_store')}</a>
           )}
           {msg && <span className={cn('text-sm', msg.ok ? 'text-emerald-400' : 'text-[var(--uc-danger)]')}>{msg.text}</span>}
         </div>
@@ -129,29 +132,29 @@ export function ProductEditor({ slug, product }: { slug: string; product: Produc
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* Geral */}
-        <Section title="Geral">
+        <Section title={t('section_general')}>
           <div className="grid grid-cols-2 gap-4">
-            <Field label="Preço (R$)"><input className={field} value={form.regular_price} onChange={(e) => patch('regular_price', e.target.value)} inputMode="decimal" /></Field>
-            <Field label="Preço promocional (R$)"><input className={field} value={form.sale_price} onChange={(e) => patch('sale_price', e.target.value)} inputMode="decimal" /></Field>
+            <Field label={t('price')}><input className={field} value={form.regular_price} onChange={(e) => patch('regular_price', e.target.value)} inputMode="decimal" /></Field>
+            <Field label={t('sale_price')}><input className={field} value={form.sale_price} onChange={(e) => patch('sale_price', e.target.value)} inputMode="decimal" /></Field>
           </div>
         </Section>
 
         {/* Estoque */}
-        <Section title="Estoque">
+        <Section title={t('section_stock')}>
           <div className="grid grid-cols-2 gap-4">
-            <Field label="SKU"><input className={field} value={form.sku} onChange={(e) => patch('sku', e.target.value)} /></Field>
-            <Field label="Quantidade"><input className={field} value={form.stock_quantity} onChange={(e) => patch('stock_quantity', e.target.value)} inputMode="numeric" disabled={!form.manage_stock} /></Field>
+            <Field label={t('sku')}><input className={field} value={form.sku} onChange={(e) => patch('sku', e.target.value)} /></Field>
+            <Field label={t('quantity')}><input className={field} value={form.stock_quantity} onChange={(e) => patch('stock_quantity', e.target.value)} inputMode="numeric" disabled={!form.manage_stock} /></Field>
           </div>
           <div className="flex items-center gap-4 mt-3">
             <label className="flex items-center gap-2 text-sm text-[var(--uc-text)] cursor-pointer">
               <input type="checkbox" checked={form.manage_stock} onChange={(e) => patch('manage_stock', e.target.checked)} />
-              Gerenciar estoque
+              {t('manage_stock')}
             </label>
             <div className="flex-1">
               <select className={cn(field, 'py-2')} value={form.backorders} onChange={(e) => patch('backorders', e.target.value)}>
-                <option value="no">Encomenda: não permitir</option>
-                <option value="notify">Permitir, avisar cliente</option>
-                <option value="yes">Permitir encomenda</option>
+                <option value="no">{t('backorder_no')}</option>
+                <option value="notify">{t('backorder_notify')}</option>
+                <option value="yes">{t('backorder_yes')}</option>
               </select>
             </div>
           </div>
@@ -159,40 +162,40 @@ export function ProductEditor({ slug, product }: { slug: string; product: Produc
       </div>
 
       {/* Descrição longa */}
-      <Section title="Descrição do produto" ai={<AiButton slug={slug} id={product.id} field="description_html" onResult={(v) => patch('description_html', String(v))} />}>
+      <Section title={t('section_description')} ai={<AiButton slug={slug} id={product.id} field="description_html" onResult={(v) => patch('description_html', String(v))} />}>
         <RichTextField value={form.description_html} onChange={(v) => patch('description_html', v)} rows={8} />
-        <p className="text-xs text-[var(--uc-text-faint)] mt-1.5">Aceita HTML. Renderiza na página do produto.</p>
+        <p className="text-xs text-[var(--uc-text-faint)] mt-1.5">{t('description_html_hint')}</p>
       </Section>
 
       {/* Breve descrição (bullets) */}
-      <Section title="Breve descrição (bullet points)" ai={<AiButton slug={slug} id={product.id} field="short_description_html" onResult={(v) => patch('short_description_html', String(v))} />}>
+      <Section title={t('section_short')} ai={<AiButton slug={slug} id={product.id} field="short_description_html" onResult={(v) => patch('short_description_html', String(v))} />}>
         <RichTextField value={form.short_description_html} onChange={(v) => patch('short_description_html', v)} rows={5} />
       </Section>
 
       {/* Entrega */}
-      <Section title="Entrega">
+      <Section title={t('section_delivery')}>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <Field label="Peso (kg)"><input className={field} value={form.weight} onChange={(e) => patch('weight', e.target.value)} inputMode="decimal" /></Field>
-          <Field label="Comprimento (cm)"><input className={field} value={form.dimensions.length} onChange={(e) => patch('dimensions', { ...form.dimensions, length: e.target.value })} inputMode="decimal" /></Field>
-          <Field label="Largura (cm)"><input className={field} value={form.dimensions.width} onChange={(e) => patch('dimensions', { ...form.dimensions, width: e.target.value })} inputMode="decimal" /></Field>
-          <Field label="Altura (cm)"><input className={field} value={form.dimensions.height} onChange={(e) => patch('dimensions', { ...form.dimensions, height: e.target.value })} inputMode="decimal" /></Field>
+          <Field label={t('weight')}><input className={field} value={form.weight} onChange={(e) => patch('weight', e.target.value)} inputMode="decimal" /></Field>
+          <Field label={t('length')}><input className={field} value={form.dimensions.length} onChange={(e) => patch('dimensions', { ...form.dimensions, length: e.target.value })} inputMode="decimal" /></Field>
+          <Field label={t('width')}><input className={field} value={form.dimensions.width} onChange={(e) => patch('dimensions', { ...form.dimensions, width: e.target.value })} inputMode="decimal" /></Field>
+          <Field label={t('height')}><input className={field} value={form.dimensions.height} onChange={(e) => patch('dimensions', { ...form.dimensions, height: e.target.value })} inputMode="decimal" /></Field>
         </div>
       </Section>
 
       {/* Tags */}
-      <Section title="Tags do produto" ai={<AiButton slug={slug} id={product.id} field="tags" onResult={(v) => Array.isArray(v) && patch('tags', v.map(String))} />}>
-        <ChipsInput value={form.tags} onChange={(t) => patch('tags', t)} />
+      <Section title={t('section_tags')} ai={<AiButton slug={slug} id={product.id} field="tags" onResult={(v) => Array.isArray(v) && patch('tags', v.map(String))} />}>
+        <ChipsInput value={form.tags} onChange={(tags) => patch('tags', tags)} placeholder={t('add_tag')} />
       </Section>
 
       {/* Sobre o Produto */}
-      <Section title="Sobre o Produto">
+      <Section title={t('section_about')}>
         <div className="flex items-center justify-between gap-2 mb-1.5">
-          <label className={label}>Título</label>
+          <label className={label}>{t('about_title')}</label>
           <AiButton slug={slug} id={product.id} field="about_title" onResult={(v) => patch('about', { ...form.about, title: String(v) })} />
         </div>
         <input className={field} value={form.about.title} onChange={(e) => patch('about', { ...form.about, title: e.target.value })} />
         <div className="flex items-center justify-between gap-2 mt-4 mb-1.5">
-          <label className={label}>Descrição</label>
+          <label className={label}>{t('about_description')}</label>
           <AiButton slug={slug} id={product.id} field="about_description" onResult={(v) => patch('about', { ...form.about, description: String(v) })} />
         </div>
         <RichTextField value={form.about.description} onChange={(v) => patch('about', { ...form.about, description: v })} rows={5} />
@@ -200,8 +203,8 @@ export function ProductEditor({ slug, product }: { slug: string; product: Produc
 
       {/* FAQ do Produto */}
       <Section
-        title="FAQ do Produto"
-        ai={<AiButton slug={slug} id={product.id} field="faq" label="Gerar FAQ com IA" onResult={(v) => Array.isArray(v) && patch('faq', v as ProductFaq[])} />}
+        title={t('section_faq')}
+        ai={<AiButton slug={slug} id={product.id} field="faq" label={t('faq_generate')} onResult={(v) => Array.isArray(v) && patch('faq', v as ProductFaq[])} />}
       >
         <div className="space-y-3">
           {form.faq.map((f, i) => {
@@ -214,13 +217,13 @@ export function ProductEditor({ slug, product }: { slug: string; product: Produc
                   <span className="size-10 shrink-0 rounded-xl grid place-items-center bg-[var(--uc-accent-soft)] text-[var(--uc-accent)]">
                     <FaqIcon value={f.icon_value} size={20} />
                   </span>
-                  <input className={cn(field, 'flex-1')} placeholder="Pergunta" value={f.title} onChange={(e) => update({ title: e.target.value })} />
-                  <GlassButton size="sm" variant="ghost" onClick={() => patch('faq', form.faq.filter((_, j) => j !== i))}>Remover</GlassButton>
+                  <input className={cn(field, 'flex-1')} placeholder={t('faq_question')} value={f.title} onChange={(e) => update({ title: e.target.value })} />
+                  <GlassButton size="sm" variant="ghost" onClick={() => patch('faq', form.faq.filter((_, j) => j !== i))}>{tc('remove')}</GlassButton>
                 </div>
 
                 {/* Picker de ícone (presets do plugin) */}
                 <div>
-                  <p className="text-[10px] font-bold tracking-wide uppercase text-[var(--uc-text-muted)] mb-1.5">Ícone</p>
+                  <p className="text-[10px] font-bold tracking-wide uppercase text-[var(--uc-text-muted)] mb-1.5">{t('faq_icon')}</p>
                   <div className="flex flex-wrap gap-1.5">
                     {FAQ_ICON_VALUES.map((v) => (
                       <button
@@ -243,20 +246,20 @@ export function ProductEditor({ slug, product }: { slug: string; product: Produc
 
                 {/* Resposta — editor visual */}
                 <div>
-                  <p className="text-[10px] font-bold tracking-wide uppercase text-[var(--uc-text-muted)] mb-1.5">Resposta</p>
+                  <p className="text-[10px] font-bold tracking-wide uppercase text-[var(--uc-text-muted)] mb-1.5">{t('faq_answer')}</p>
                   <RichTextField value={f.content} onChange={(v) => update({ content: v })} rows={3} />
                 </div>
               </div>
             )
           })}
-          <GlassButton size="sm" variant="secondary" onClick={() => patch('faq', [...form.faq, { title: '', content: '', icon_type: 'preset', icon_value: 'help-circle' }])}>+ Nova pergunta</GlassButton>
+          <GlassButton size="sm" variant="secondary" onClick={() => patch('faq', [...form.faq, { title: '', content: '', icon_type: 'preset', icon_value: 'help-circle' }])}>{t('faq_new')}</GlassButton>
         </div>
       </Section>
 
       {/* Publicar (rodapé) */}
       <div className="flex items-center justify-end gap-3 pt-2">
         {msg && <span className={cn('text-sm', msg.ok ? 'text-emerald-400' : 'text-[var(--uc-danger)]')}>{msg.text}</span>}
-        <GlassButton size="lg" loading={publishing} onClick={publish}><Icon name="product" size={16} />Publicar no WooCommerce</GlassButton>
+        <GlassButton size="lg" loading={publishing} onClick={publish}><Icon name="product" size={16} />{t('publish_woo')}</GlassButton>
       </div>
     </div>
   )
@@ -278,19 +281,19 @@ function Field({ label: l, children }: { label: string; children: React.ReactNod
   return <div><label className={label}>{l}</label>{children}</div>
 }
 
-function ChipsInput({ value, onChange }: { value: string[]; onChange: (v: string[]) => void }) {
+function ChipsInput({ value, onChange, placeholder }: { value: string[]; onChange: (v: string[]) => void; placeholder: string }) {
   const [draft, setDraft] = useState('')
   return (
     <div className="flex flex-wrap gap-2 items-center">
-      {value.map((t, i) => (
+      {value.map((tag, i) => (
         <span key={i} className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm bg-[var(--uc-accent-soft)] text-[var(--uc-accent)]">
-          {t}
+          {tag}
           <button type="button" onClick={() => onChange(value.filter((_, j) => j !== i))} className="cursor-pointer hover:text-[var(--uc-danger)]">×</button>
         </span>
       ))}
       <input
         className="flex-1 min-w-[140px] h-9 px-3 rounded-xl uc-glass text-sm text-[var(--uc-text)] outline-none"
-        placeholder="Adicionar tag + Enter"
+        placeholder={placeholder}
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
         onKeyDown={(e) => {
@@ -302,7 +305,7 @@ function ChipsInput({ value, onChange }: { value: string[]; onChange: (v: string
 }
 
 function AiButton({
-  slug, id, field, label: text = 'Gerar com IA', onResult,
+  slug, id, field, label: text, onResult,
 }: {
   slug: string
   id: string
@@ -310,15 +313,17 @@ function AiButton({
   label?: string
   onResult: (value: unknown) => void
 }) {
+  const t = useTranslations('products')
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState<string | null>(null)
+  const buttonLabel = text ?? t('ai_generate')
 
   async function run() {
     setBusy(true); setErr(null)
     const res = await generateProductField(slug, id, field)
     setBusy(false)
     if (!res.ok) {
-      setErr(res.error === 'feature_locked' ? 'Fora do plano' : res.error === 'cap_reached' ? 'Limite de IA' : 'Falhou')
+      setErr(res.error === 'feature_locked' ? t('ai_out_of_plan') : res.error === 'cap_reached' ? t('ai_cap') : t('ai_failed'))
       return
     }
     onResult(res.data.value)
@@ -328,7 +333,7 @@ function AiButton({
     <span className="inline-flex items-center gap-2">
       {err && <span className="text-xs text-[var(--uc-danger)]">{err}</span>}
       <GlassButton size="sm" variant="secondary" loading={busy} onClick={run}>
-        <Icon name="sparkle" size={14} />{text}
+        <Icon name="sparkle" size={14} />{buttonLabel}
       </GlassButton>
     </span>
   )

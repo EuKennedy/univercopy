@@ -28,7 +28,7 @@ class Workspace < ApplicationRecord
 
   validates :slug, presence: true, uniqueness: true, format: { with: /\A[a-z0-9-]+\z/ }
   validates :name, presence: true
-  validates :default_locale, inclusion: { in: %w[pt-BR en-US es-AR] }
+  validates :default_locale, inclusion: { in: %w[pt-BR en-US es-AR fr-FR] }
 
   # DNA "em uso" pelo gerador (atual ou proposto). Padrão = atual.
   def dna_in_use

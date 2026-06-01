@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { getTranslations } from 'next-intl/server'
 
 import { Icon, Topbar } from '@/components/shell'
 import { ApiError } from '@/lib/api-client'
@@ -11,6 +12,7 @@ type Props = { params: Promise<{ workspace_slug: string; id: string }> }
 
 export default async function ProductDetailPage({ params }: Props) {
   const { workspace_slug, id } = await params
+  const t = await getTranslations('products')
 
   let product
   try {
@@ -23,12 +25,12 @@ export default async function ProductDetailPage({ params }: Props) {
   return (
     <>
       <Topbar
-        eyebrow="PRODUTO"
+        eyebrow={t('detail_eyebrow')}
         title={product.name}
-        description="Edite todos os campos do produto e publique direto no WooCommerce. Cada campo tem geração com IA."
+        description={t('detail_description')}
         actions={
           <Link href={`/${workspace_slug}/products`} className="text-sm text-[var(--uc-text-soft)] hover:text-[var(--uc-text)] inline-flex items-center gap-1.5">
-            <Icon name="chevron-left" size={16} />Catálogo
+            <Icon name="chevron-left" size={16} />{t('catalog')}
           </Link>
         }
       />

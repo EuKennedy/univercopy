@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { getTranslations } from 'next-intl/server'
 
 import { Icon, Topbar } from '@/components/shell'
 import { GlassButton, GlassCard } from '@/components/ui'
@@ -27,6 +28,7 @@ function formatPrice(v: number | null): string | null {
 export default async function ProductsPage({ params, searchParams }: Props) {
   const { workspace_slug } = await params
   const { q, source } = await searchParams
+  const t = await getTranslations('products')
 
   let products: Awaited<ReturnType<typeof listProducts>>['products'] = []
   let total = 0
@@ -37,10 +39,10 @@ export default async function ProductsPage({ params, searchParams }: Props) {
   } catch {
     return (
       <>
-        <Topbar eyebrow="CATÁLOGO" title="Produtos" description="Catálogo sincronizado da sua loja." />
+        <Topbar eyebrow={t('eyebrow')} title={t('title')} description={t('description_short')} />
         <div className="px-8 py-8 max-w-6xl mx-auto w-full">
           <GlassCard className="p-8 text-center text-sm text-[var(--uc-text-soft)]">
-            Não foi possível carregar o catálogo agora. Tente recarregar em instantes.
+            {t('load_error')}
           </GlassCard>
         </div>
       </>
@@ -53,10 +55,10 @@ export default async function ProductsPage({ params, searchParams }: Props) {
   return (
     <>
       <Topbar
-        eyebrow="CATÁLOGO"
-        title="Produtos"
-        description="Catálogo da sua loja. Selecione um produto pra gerar a copy respeitando o DNA."
-        actions={total > 0 ? <span className="text-sm text-[var(--uc-text-muted)]">{total} produtos</span> : undefined}
+        eyebrow={t('eyebrow')}
+        title={t('title')}
+        description={t('description')}
+        actions={total > 0 ? <span className="text-sm text-[var(--uc-text-muted)]">{t('count', { count: total })}</span> : undefined}
       />
       <div className="px-8 py-8 max-w-6xl mx-auto w-full space-y-5">
         {total === 0 && !q && !source ? (
@@ -65,13 +67,13 @@ export default async function ProductsPage({ params, searchParams }: Props) {
               <Icon name="product" size={26} />
             </span>
             <div className="space-y-1.5 max-w-sm">
-              <h3 className="text-xl font-bold text-[var(--uc-text)]">Nenhum produto sincronizado</h3>
+              <h3 className="text-xl font-bold text-[var(--uc-text)]">{t('empty_title')}</h3>
               <p className="text-sm leading-6 text-[var(--uc-text-soft)]">
-                Conecte sua loja WooCommerce pra puxar o catálogo. A IA respeita o DNA + Q&A do onboarding em cada descrição.
+                {t('empty_description')}
               </p>
             </div>
             <Link href={`/${workspace_slug}/settings/integrations`}>
-              <GlassButton size="lg"><Icon name="product" size={18} />Conectar loja</GlassButton>
+              <GlassButton size="lg"><Icon name="product" size={18} />{t('connect_store')}</GlassButton>
             </Link>
           </GlassCard>
         ) : (
@@ -83,7 +85,7 @@ export default async function ProductsPage({ params, searchParams }: Props) {
                 <input
                   name="q"
                   defaultValue={q ?? ''}
-                  placeholder="Buscar por nome ou SKU…"
+                  placeholder={t('search_placeholder')}
                   className="w-full h-11 pl-10 pr-4 rounded-2xl uc-glass text-[15px] text-[var(--uc-text)] outline-none focus:border-[var(--uc-accent-ring)] focus:shadow-[0_0_0_4px_var(--uc-accent-soft-2)]"
                 />
               </div>
@@ -93,16 +95,16 @@ export default async function ProductsPage({ params, searchParams }: Props) {
                   defaultValue={source ?? ''}
                   className="h-11 px-4 rounded-2xl uc-glass text-[15px] text-[var(--uc-text)] outline-none cursor-pointer focus:border-[var(--uc-accent-ring)]"
                 >
-                  <option value="">Todas as origens</option>
+                  <option value="">{t('all_sources')}</option>
                   {sources.map((s) => <option key={s} value={s}>{SOURCE_LABEL[s] ?? s}</option>)}
                 </select>
               )}
-              <GlassButton size="md" variant="secondary" type="submit">Buscar</GlassButton>
+              <GlassButton size="md" variant="secondary" type="submit">{t('search')}</GlassButton>
             </form>
 
             {products.length === 0 ? (
               <GlassCard className="p-8 text-center text-sm text-[var(--uc-text-soft)]">
-                Nenhum produto encontrado pra “{q}”.
+                {t('not_found', { q: q ?? '' })}
               </GlassCard>
             ) : (
               <GlassCard className="overflow-hidden p-0">
@@ -110,10 +112,10 @@ export default async function ProductsPage({ params, searchParams }: Props) {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-[var(--uc-border)] text-left">
-                        <th className="font-semibold text-[var(--uc-text-muted)] uppercase tracking-wider text-[11px] px-5 py-3">Produto</th>
-                        <th className="font-semibold text-[var(--uc-text-muted)] uppercase tracking-wider text-[11px] px-4 py-3 hidden md:table-cell">Categorias</th>
-                        <th className="font-semibold text-[var(--uc-text-muted)] uppercase tracking-wider text-[11px] px-4 py-3">Preço</th>
-                        <th className="font-semibold text-[var(--uc-text-muted)] uppercase tracking-wider text-[11px] px-4 py-3 hidden sm:table-cell">Origem</th>
+                        <th className="font-semibold text-[var(--uc-text-muted)] uppercase tracking-wider text-[11px] px-5 py-3">{t('col_product')}</th>
+                        <th className="font-semibold text-[var(--uc-text-muted)] uppercase tracking-wider text-[11px] px-4 py-3 hidden md:table-cell">{t('col_categories')}</th>
+                        <th className="font-semibold text-[var(--uc-text-muted)] uppercase tracking-wider text-[11px] px-4 py-3">{t('col_price')}</th>
+                        <th className="font-semibold text-[var(--uc-text-muted)] uppercase tracking-wider text-[11px] px-4 py-3 hidden sm:table-cell">{t('col_source')}</th>
                         <th className="px-5 py-3" />
                       </tr>
                     </thead>
@@ -150,10 +152,10 @@ export default async function ProductsPage({ params, searchParams }: Props) {
                           <td className="px-5 py-3 text-right whitespace-nowrap">
                             <span className="inline-flex gap-2">
                               <Link href={`/${workspace_slug}/products/${p.id}`}>
-                                <GlassButton size="sm"><Icon name="product" size={14} />Editar</GlassButton>
+                                <GlassButton size="sm"><Icon name="product" size={14} />{t('edit')}</GlassButton>
                               </Link>
                               <Link href={`/${workspace_slug}/generate?product=${p.id}`}>
-                                <GlassButton size="sm" variant="secondary"><Icon name="spark" size={14} />Copy</GlassButton>
+                                <GlassButton size="sm" variant="secondary"><Icon name="spark" size={14} />{t('copy')}</GlassButton>
                               </Link>
                             </span>
                           </td>

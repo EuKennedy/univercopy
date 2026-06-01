@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 
 import { Wordmark } from '@/components/brand/wordmark'
@@ -37,6 +38,7 @@ function writeCookie(name: string, value: string) {
 export function Sidebar({ workspaceSlug, nav, user, workspaces, defaultCollapsed = false }: Props) {
   const pathname = usePathname()
   const router = useRouter()
+  const t = useTranslations('nav')
   const [collapsed, setCollapsed] = useState(defaultCollapsed)
 
   function toggle() {
@@ -47,7 +49,7 @@ export function Sidebar({ workspaceSlug, nav, user, workspaces, defaultCollapsed
     })
   }
 
-  const items = nav ?? defaultNav(workspaceSlug)
+  const items = nav ?? defaultNav(workspaceSlug, t)
 
   return (
     <aside
@@ -76,7 +78,7 @@ export function Sidebar({ workspaceSlug, nav, user, workspaces, defaultCollapsed
         <button
           type="button"
           onClick={toggle}
-          aria-label={collapsed ? 'Expandir sidebar' : 'Recolher sidebar'}
+          aria-label={collapsed ? t('expandSidebar') : t('collapseSidebar')}
           className={cn(
             'ml-auto cursor-pointer uc-transition rounded-lg p-1.5 text-[var(--uc-text-muted)]',
             'hover:bg-[var(--uc-surface-soft)] hover:text-[var(--uc-text)]',
@@ -87,7 +89,7 @@ export function Sidebar({ workspaceSlug, nav, user, workspaces, defaultCollapsed
         </button>
       </div>
 
-      <nav className="flex-1 flex flex-col gap-0.5 mt-1" aria-label="Navegação principal">
+      <nav className="flex-1 flex flex-col gap-0.5 mt-1" aria-label={t('primaryNav')}>
         {items.map((item) => {
           const active = pathname?.startsWith(item.href)
           return (
@@ -129,7 +131,7 @@ export function Sidebar({ workspaceSlug, nav, user, workspaces, defaultCollapsed
 
       {workspaces && workspaces.length > 1 && (
         <div className="uc-rail-content mb-2">
-          <label className="sr-only" htmlFor="ws-switch">Trocar workspace</label>
+          <label className="sr-only" htmlFor="ws-switch">{t('switchWorkspace')}</label>
           <select
             id="ws-switch"
             value={workspaceSlug ?? ''}
@@ -142,7 +144,7 @@ export function Sidebar({ workspaceSlug, nav, user, workspaces, defaultCollapsed
       )}
 
       {user && (
-        <UserMenu user={user} collapsed={collapsed} onLogout={async () => {
+        <UserMenu user={user} collapsed={collapsed} t={t} onLogout={async () => {
           await signOut()
           router.push('/login')
         }} />
@@ -152,11 +154,12 @@ export function Sidebar({ workspaceSlug, nav, user, workspaces, defaultCollapsed
 }
 
 function UserMenu({
-  user, collapsed, onLogout,
+  user, collapsed, onLogout, t,
 }: {
   user: { name?: string; email: string; image?: string | null }
   collapsed: boolean
   onLogout: () => Promise<void>
+  t: (key: string) => string
 }) {
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -172,7 +175,7 @@ function UserMenu({
             className="w-full flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium text-[var(--uc-text-soft)] hover:text-[var(--uc-danger)] hover:bg-[var(--uc-surface-soft)] uc-transition-fast cursor-pointer"
           >
             <Icon name="logout" size={16} />
-            {busy ? 'Saindo…' : 'Sair da conta'}
+            {busy ? t('loggingOut') : t('logout')}
           </button>
         </div>
       )}
@@ -207,16 +210,16 @@ function Avatar({ name, image }: { name: string; image?: string }) {
   )
 }
 
-function defaultNav(workspaceSlug?: string): NavItem[] {
+function defaultNav(workspaceSlug: string | undefined, t: (key: string) => string): NavItem[] {
   const base = workspaceSlug ? `/${workspaceSlug}` : ''
   return [
-    { href: `${base || '/'}`,           label: 'Visão geral',     icon: 'dashboard' },
-    { href: `${base}/copy`,             label: 'Acervo de Copy',  icon: 'copy' },
-    { href: `${base}/generate`,         label: 'Gerador',         icon: 'spark', badge: 'AI' },
-    { href: `${base}/campaigns`,        label: 'Campanhas',       icon: 'campaign' },
-    { href: `${base}/products`,         label: 'Produtos',        icon: 'product' },
-    { href: `${base}/audit`,            label: 'Análise de página', icon: 'audit' },
-    { href: `${base}/intelligence`,     label: 'Inteligência',    icon: 'intelligence' },
-    { href: `${base}/settings`,         label: 'Configurações',   icon: 'settings' },
+    { href: `${base || '/'}`,           label: t('overview'),     icon: 'dashboard' },
+    { href: `${base}/copy`,             label: t('copy'),         icon: 'copy' },
+    { href: `${base}/generate`,         label: t('generate'),     icon: 'spark', badge: 'AI' },
+    { href: `${base}/campaigns`,        label: t('campaigns'),    icon: 'campaign' },
+    { href: `${base}/products`,         label: t('products'),     icon: 'product' },
+    { href: `${base}/audit`,            label: t('audit'),        icon: 'audit' },
+    { href: `${base}/intelligence`,     label: t('intelligence'), icon: 'intelligence' },
+    { href: `${base}/settings`,         label: t('settings'),     icon: 'settings' },
   ]
 }

@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { getTranslations } from 'next-intl/server'
 
 import { Icon, Topbar } from '@/components/shell'
 import { GlassButton, GlassCard } from '@/components/ui'
@@ -10,37 +11,38 @@ type Props = {
   searchParams: Promise<{ status?: string }>
 }
 
-const STATUS_META: Record<CopyStatus, { label: string; cls: string }> = {
-  rascunho:   { label: 'Rascunho',  cls: 'bg-[var(--uc-surface-soft)] text-[var(--uc-text-soft)]' },
-  revisao:    { label: 'Revisão',   cls: 'bg-amber-500/15 text-amber-300' },
-  aprovado:   { label: 'Aprovado',  cls: 'bg-emerald-500/15 text-emerald-300' },
-  publicado:  { label: 'Publicado', cls: 'bg-[var(--uc-accent-soft-2)] text-[var(--uc-accent)]' },
-  arquivado:  { label: 'Arquivado', cls: 'bg-[var(--uc-surface-soft)] text-[var(--uc-text-faint)]' },
-}
-
-const FILTERS: { key: string; label: string }[] = [
-  { key: '', label: 'Tudo' },
-  { key: 'rascunho', label: 'Rascunhos' },
-  { key: 'revisao', label: 'Em revisão' },
-  { key: 'aprovado', label: 'Aprovados' },
-  { key: 'publicado', label: 'Publicados' },
-]
-
 export default async function CopyListPage({ params, searchParams }: Props) {
   const { workspace_slug } = await params
   const { status } = await searchParams
+  const t = await getTranslations('copy')
+
+  const STATUS_META: Record<CopyStatus, { label: string; cls: string }> = {
+    rascunho:   { label: t('status_rascunho'),  cls: 'bg-[var(--uc-surface-soft)] text-[var(--uc-text-soft)]' },
+    revisao:    { label: t('status_revisao'),   cls: 'bg-amber-500/15 text-amber-300' },
+    aprovado:   { label: t('status_aprovado'),  cls: 'bg-emerald-500/15 text-emerald-300' },
+    publicado:  { label: t('status_publicado'), cls: 'bg-[var(--uc-accent-soft-2)] text-[var(--uc-accent)]' },
+    arquivado:  { label: t('status_arquivado'), cls: 'bg-[var(--uc-surface-soft)] text-[var(--uc-text-faint)]' },
+  }
+
+  const FILTERS: { key: string; label: string }[] = [
+    { key: '', label: t('filter_all') },
+    { key: 'rascunho', label: t('filter_drafts') },
+    { key: 'revisao', label: t('filter_in_review') },
+    { key: 'aprovado', label: t('filter_approved') },
+    { key: 'publicado', label: t('filter_published') },
+  ]
 
   const copies = await listCopies(workspace_slug, status ? { status } : undefined)
 
   return (
     <>
       <Topbar
-        eyebrow="ACERVO"
-        title="Acervo de Copy"
-        description="Versões com histórico, status e ângulos. Tudo que a IA gerou e você aprovou."
+        eyebrow={t('eyebrow')}
+        title={t('title')}
+        description={t('description')}
         actions={
           <Link href={`/${workspace_slug}/generate`}>
-            <GlassButton size="sm"><Icon name="spark" size={16} />Gerar copy</GlassButton>
+            <GlassButton size="sm"><Icon name="spark" size={16} />{t('generateCopy')}</GlassButton>
           </Link>
         }
       />
@@ -73,13 +75,13 @@ export default async function CopyListPage({ params, searchParams }: Props) {
               <Icon name="copy" size={26} />
             </span>
             <div className="space-y-1.5 max-w-sm">
-              <h3 className="text-xl font-bold text-[var(--uc-text)]">Nenhuma copy aqui ainda</h3>
+              <h3 className="text-xl font-bold text-[var(--uc-text)]">{t('empty_title')}</h3>
               <p className="text-sm leading-6 text-[var(--uc-text-soft)]">
-                Gere a primeira peça no gerador. Cada variação salva vira uma copy com histórico de versões.
+                {t('empty_description')}
               </p>
             </div>
             <Link href={`/${workspace_slug}/generate`}>
-              <GlassButton size="lg"><Icon name="spark" size={18} />Abrir o gerador</GlassButton>
+              <GlassButton size="lg"><Icon name="spark" size={18} />{t('open_generator')}</GlassButton>
             </Link>
           </GlassCard>
         ) : (

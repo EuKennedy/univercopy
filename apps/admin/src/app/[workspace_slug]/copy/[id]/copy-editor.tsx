@@ -2,20 +2,13 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 
 import { GlassButton, GlassCard } from '@/components/ui'
 import { Icon } from '@/components/shell/icon'
 import { cn } from '@/lib/cn'
 import { createCopyVersion, deleteCopy, updateCopy } from '@/lib/api/mutations'
 import type { CopyDetail, CopyStatus, CopyVersion } from '@/lib/api/types'
-
-const STATUSES: { value: CopyStatus; label: string }[] = [
-  { value: 'rascunho', label: 'Rascunho' },
-  { value: 'revisao', label: 'Em revisão' },
-  { value: 'aprovado', label: 'Aprovado' },
-  { value: 'publicado', label: 'Publicado' },
-  { value: 'arquivado', label: 'Arquivado' },
-]
 
 const fieldCls =
   'w-full px-4 rounded-2xl uc-glass uc-transition text-[15px] text-[var(--uc-text)] outline-none ' +
@@ -29,6 +22,15 @@ export function CopyEditor({
   versions: CopyVersion[]
 }) {
   const router = useRouter()
+  const t = useTranslations('copy')
+  const tc = useTranslations('common')
+  const STATUSES: { value: CopyStatus; label: string }[] = [
+    { value: 'rascunho', label: t('status_rascunho') },
+    { value: 'revisao', label: t('status_revisao') },
+    { value: 'aprovado', label: t('status_aprovado') },
+    { value: 'publicado', label: t('status_publicado') },
+    { value: 'arquivado', label: t('status_arquivado') },
+  ]
   const [content, setContent] = useState(copy.current_version?.content ?? '')
   const [status, setStatus] = useState<CopyStatus>(copy.status)
   const [busy, setBusy] = useState<string | null>(null)
@@ -38,10 +40,10 @@ export function CopyEditor({
 
   async function saveVersion() {
     setBusy('version'); setMsg(null)
-    const res = await createCopyVersion(slug, copy.id, content, 'Edição manual')
+    const res = await createCopyVersion(slug, copy.id, content, t('manual_edit'))
     setBusy(null)
     if (!res.ok) { setMsg(res.message); return }
-    setMsg('Nova versão salva.')
+    setMsg(t('version_saved'))
     router.refresh()
   }
 
@@ -55,7 +57,7 @@ export function CopyEditor({
   }
 
   async function remove() {
-    if (!confirm('Excluir esta copy e todo o histórico de versões? Esta ação não pode ser desfeita.')) return
+    if (!confirm(t('delete_confirm'))) return
     setBusy('delete')
     const res = await deleteCopy(slug, copy.id)
     setBusy(null)
@@ -69,12 +71,12 @@ export function CopyEditor({
         <GlassCard className="p-6 space-y-4">
           <div className="flex items-center justify-between gap-3">
             <p className="text-xs font-semibold tracking-wide uppercase text-[var(--uc-text-muted)]">
-              Conteúdo {copy.current_version ? `· v${copy.current_version.n}` : ''}
+              {t('content')} {copy.current_version ? `· v${copy.current_version.n}` : ''}
             </p>
             <div className="flex gap-2">
-              <GlassButton size="sm" variant="ghost" onClick={() => navigator.clipboard.writeText(content)}>Copiar</GlassButton>
+              <GlassButton size="sm" variant="ghost" onClick={() => navigator.clipboard.writeText(content)}>{tc('copy')}</GlassButton>
               <GlassButton size="sm" loading={busy === 'version'} disabled={!dirty} onClick={saveVersion}>
-                Salvar versão
+                {t('save_version')}
               </GlassButton>
             </div>
           </div>
@@ -89,7 +91,7 @@ export function CopyEditor({
 
         {versions.length > 1 && (
           <GlassCard className="p-6 space-y-3">
-            <p className="text-xs font-semibold tracking-wide uppercase text-[var(--uc-text-muted)]">Histórico de versões</p>
+            <p className="text-xs font-semibold tracking-wide uppercase text-[var(--uc-text-muted)]">{t('version_history')}</p>
             <div className="space-y-2">
               {versions.map((v) => (
                 <div key={v.id} className={cn(
@@ -98,7 +100,7 @@ export function CopyEditor({
                 )}>
                   <div className="flex items-center justify-between gap-3">
                     <span className="text-sm font-semibold text-[var(--uc-text)]">
-                      v{v.n} {v.is_current && <span className="text-[var(--uc-accent)]">· atual</span>}
+                      v{v.n} {v.is_current && <span className="text-[var(--uc-accent)]">· {t('current')}</span>}
                     </span>
                     <span className="text-xs text-[var(--uc-text-faint)]">
                       {v.note}{v.ai_model ? ` · ${v.ai_model}` : ''}
@@ -114,7 +116,7 @@ export function CopyEditor({
       <div className="space-y-4">
         <GlassCard className="p-6 space-y-4 h-fit">
           <div>
-            <label className="text-xs font-semibold tracking-wide uppercase text-[var(--uc-text-muted)] mb-1.5 block">Status</label>
+            <label className="text-xs font-semibold tracking-wide uppercase text-[var(--uc-text-muted)] mb-1.5 block">{t('status')}</label>
             <select
               className={cn(fieldCls, 'h-12')}
               value={status}
@@ -126,15 +128,15 @@ export function CopyEditor({
           </div>
 
           <dl className="space-y-2 text-sm">
-            <Row label="Peça" value={copy.piece_type_key} />
-            <Row label="Estilo" value={copy.style_key} />
-            <Row label="Framework" value={copy.framework_key} />
-            <Row label="Categoria" value={copy.category_key} />
+            <Row label={t('field_piece')} value={copy.piece_type_key} />
+            <Row label={t('field_style')} value={copy.style_key} />
+            <Row label={t('field_framework')} value={copy.framework_key} />
+            <Row label={t('field_category')} value={copy.category_key} />
           </dl>
         </GlassCard>
 
         <GlassButton variant="ghost" className="w-full text-[var(--uc-danger)]" loading={busy === 'delete'} onClick={remove}>
-          <Icon name="logout" size={16} />Excluir copy
+          <Icon name="logout" size={16} />{t('delete_copy')}
         </GlassButton>
       </div>
     </div>

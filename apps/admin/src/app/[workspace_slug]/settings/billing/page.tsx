@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { getTranslations } from 'next-intl/server'
 
 import { Icon, Topbar } from '@/components/shell'
 import { GlassCard } from '@/components/ui'
@@ -7,38 +8,40 @@ import { brl } from '@/lib/money'
 
 type Props = { params: Promise<{ workspace_slug: string }> }
 
-const FEATURE_LABEL: Record<string, string> = {
-  ai_generate: 'Gerador de copy',
-  ai_dna_extract: 'Extrair DNA',
-  ai_dna_improve: 'Melhorar DNA',
-  ai_name_generator: 'Gerador de nomes',
-  ai_seo_geo: 'SEO/GEO',
-  ai_page_audit: 'Análise de página',
-  ai_intelligence: 'Inteligência competitiva',
-  campaigns: 'Campanhas',
-  connector_woo: 'WooCommerce',
-  connector_csv: 'CSV',
-  connector_shopify: 'Shopify',
-  connector_nuvemshop: 'Nuvemshop',
-  connector_tray: 'Tray',
-  multi_user: 'Multiusuário',
-  audit_log_api: 'Log de auditoria',
-  priority_support: 'Suporte prioritário',
-}
-
 export default async function BillingPage({ params }: Props) {
   const { workspace_slug } = await params
   const { snapshot, cost, usage } = await getPlan(workspace_slug)
+  const t = await getTranslations('billing')
+  const ts = await getTranslations('settings')
+
+  const FEATURE_LABEL: Record<string, string> = {
+    ai_generate: t('feat_ai_generate'),
+    ai_dna_extract: t('feat_ai_dna_extract'),
+    ai_dna_improve: t('feat_ai_dna_improve'),
+    ai_name_generator: t('feat_ai_name_generator'),
+    ai_seo_geo: t('feat_ai_seo_geo'),
+    ai_page_audit: t('feat_ai_page_audit'),
+    ai_intelligence: t('feat_ai_intelligence'),
+    campaigns: t('feat_campaigns'),
+    connector_woo: t('feat_connector_woo'),
+    connector_csv: t('feat_connector_csv'),
+    connector_shopify: t('feat_connector_shopify'),
+    connector_nuvemshop: t('feat_connector_nuvemshop'),
+    connector_tray: t('feat_connector_tray'),
+    multi_user: t('feat_multi_user'),
+    audit_log_api: t('feat_audit_log_api'),
+    priority_support: t('feat_priority_support'),
+  }
 
   return (
     <>
       <Topbar
-        eyebrow="PLANO"
-        title="Plano & uso"
-        description="Plano atual, recursos liberados e consumo de IA no mês."
+        eyebrow={t('eyebrow')}
+        title={t('title')}
+        description={t('description')}
         actions={
           <Link href={`/${workspace_slug}/settings`} className="text-sm text-[var(--uc-text-soft)] hover:text-[var(--uc-text)] inline-flex items-center gap-1.5">
-            <Icon name="chevron-left" size={16} />Configurações
+            <Icon name="chevron-left" size={16} />{ts('back')}
           </Link>
         }
       />
@@ -47,7 +50,7 @@ export default async function BillingPage({ params }: Props) {
           {/* Recursos */}
           <GlassCard className="p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-semibold text-[var(--uc-text)]">Recursos do plano</h3>
+              <h3 className="text-base font-semibold text-[var(--uc-text)]">{t('plan_features')}</h3>
               <span className="text-[11px] font-bold uppercase tracking-wider rounded-full px-3 py-1 bg-[var(--uc-accent-soft)] text-[var(--uc-accent)] capitalize">
                 {snapshot.plan}
               </span>
@@ -69,7 +72,7 @@ export default async function BillingPage({ params }: Props) {
           {/* Custo + uso */}
           <div className="space-y-4">
             <GlassCard className="p-6 space-y-3">
-              <p className="text-xs font-semibold tracking-wide uppercase text-[var(--uc-text-muted)]">Custo de IA no mês</p>
+              <p className="text-xs font-semibold tracking-wide uppercase text-[var(--uc-text-muted)]">{t('ai_cost_month')}</p>
               <p className="text-2xl font-bold text-[var(--uc-text)]">
                 {brl(cost.used_usd)}
                 {cost.limit_usd != null && <span className="text-sm font-normal text-[var(--uc-text-muted)]"> / {brl(cost.limit_usd)}</span>}
@@ -81,16 +84,16 @@ export default async function BillingPage({ params }: Props) {
               )}
             </GlassCard>
             <GlassCard className="p-6 space-y-2.5 text-sm">
-              <Row label="Gerações no mês" value={usage.generations_month} />
-              <Row label="Copies" value={usage.copies} />
-              <Row label="Produtos" value={usage.products} />
-              <Row label="Membros" value={usage.members} />
+              <Row label={t('row_generations')} value={usage.generations_month} />
+              <Row label={t('row_copies')} value={usage.copies} />
+              <Row label={t('row_products')} value={usage.products} />
+              <Row label={t('row_members')} value={usage.members} />
             </GlassCard>
           </div>
         </div>
 
         <p className="text-xs text-[var(--uc-text-muted)] leading-5">
-          Mudança de plano e cobrança são processadas pelo gateway externo. Fale com o suporte para upgrade.
+          {t('footnote')}
         </p>
       </div>
     </>

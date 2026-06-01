@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { getTranslations } from 'next-intl/server'
 
 import { Icon, Topbar } from '@/components/shell'
 import { GlassButton, GlassCard } from '@/components/ui'
@@ -10,6 +11,7 @@ type Props = { params: Promise<{ workspace_slug: string; id: string }> }
 
 export default async function CampaignDetailPage({ params }: Props) {
   const { workspace_slug, id } = await params
+  const t = await getTranslations('campaigns')
 
   let data
   try {
@@ -20,25 +22,27 @@ export default async function CampaignDetailPage({ params }: Props) {
   }
 
   const { campaign, copies } = data
+  const statusKeys = ['planejada', 'ativa', 'concluida', 'arquivada']
+  const statusLabel = statusKeys.includes(campaign.status) ? t(`status_${campaign.status}`) : campaign.status
 
   return (
     <>
       <Topbar
-        eyebrow="CAMPANHA"
+        eyebrow={t('detail_eyebrow')}
         title={campaign.name}
-        description={campaign.objective ?? 'Sem objetivo definido.'}
+        description={campaign.objective ?? t('no_objective')}
         actions={
           <Link href={`/${workspace_slug}/generate`}>
-            <GlassButton size="sm"><Icon name="spark" size={16} />Gerar peça</GlassButton>
+            <GlassButton size="sm"><Icon name="spark" size={16} />{t('generate_piece')}</GlassButton>
           </Link>
         }
       />
       <div className="px-8 py-8 max-w-6xl mx-auto w-full grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6">
         <div className="space-y-4 min-w-0">
-          <p className="text-xs font-semibold tracking-wide uppercase text-[var(--uc-text-muted)]">Peças da campanha</p>
+          <p className="text-xs font-semibold tracking-wide uppercase text-[var(--uc-text-muted)]">{t('campaign_pieces')}</p>
           {copies.length === 0 ? (
             <GlassCard className="p-8 text-center text-sm text-[var(--uc-text-soft)]">
-              Nenhuma peça vinculada ainda. Gere uma copy e selecione esta campanha.
+              {t('no_pieces')}
             </GlassCard>
           ) : (
             <div className="space-y-3">
@@ -58,13 +62,13 @@ export default async function CampaignDetailPage({ params }: Props) {
         </div>
 
         <GlassCard className="p-6 space-y-3 h-fit">
-          <Field label="Status" value={campaign.status} />
-          <Field label="Audiência" value={campaign.audience} />
-          <Field label="Início" value={campaign.starts_at} />
-          <Field label="Fim" value={campaign.ends_at} />
+          <Field label={t('field_status')} value={statusLabel} />
+          <Field label={t('field_audience')} value={campaign.audience} />
+          <Field label={t('field_starts')} value={campaign.starts_at} />
+          <Field label={t('field_ends')} value={campaign.ends_at} />
           {campaign.context && (
             <div className="pt-2">
-              <p className="text-xs font-semibold tracking-wide uppercase text-[var(--uc-text-muted)] mb-1.5">Contexto</p>
+              <p className="text-xs font-semibold tracking-wide uppercase text-[var(--uc-text-muted)] mb-1.5">{t('field_context')}</p>
               <p className="text-sm leading-6 text-[var(--uc-text-soft)] whitespace-pre-wrap">{campaign.context}</p>
             </div>
           )}

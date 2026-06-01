@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { useTranslations } from 'next-intl'
 
 import { cn } from '@/lib/cn'
 
@@ -27,6 +28,7 @@ const tabBtn = (active: boolean) =>
   )
 
 export function RichTextField({ value, onChange, rows = 8 }: Props) {
+  const t = useTranslations('products')
   const [mode, setMode] = useState<'visual' | 'html'>('visual')
   const ref = useRef<HTMLDivElement>(null)
   const last = useRef(value)
@@ -63,7 +65,7 @@ export function RichTextField({ value, onChange, rows = 8 }: Props) {
   }
 
   function link() {
-    const url = window.prompt('URL do link:')
+    const url = window.prompt(t('rich_link_prompt'))
     if (url) cmd('createLink', url)
   }
 
@@ -73,20 +75,20 @@ export function RichTextField({ value, onChange, rows = 8 }: Props) {
       <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-[var(--uc-border)]">
         {mode === 'visual' ? (
           <div className="flex items-center gap-0.5">
-            <button type="button" className={cn(toolBtn, 'font-bold')} onMouseDown={(e) => e.preventDefault()} onClick={() => cmd('bold')} title="Negrito">B</button>
-            <button type="button" className={cn(toolBtn, 'italic')} onMouseDown={(e) => e.preventDefault()} onClick={() => cmd('italic')} title="Itálico">I</button>
-            <button type="button" className={cn(toolBtn, 'underline')} onMouseDown={(e) => e.preventDefault()} onClick={() => cmd('underline')} title="Sublinhado">U</button>
+            <button type="button" className={cn(toolBtn, 'font-bold')} onMouseDown={(e) => e.preventDefault()} onClick={() => cmd('bold')} title={t('rich_bold')}>B</button>
+            <button type="button" className={cn(toolBtn, 'italic')} onMouseDown={(e) => e.preventDefault()} onClick={() => cmd('italic')} title={t('rich_italic')}>I</button>
+            <button type="button" className={cn(toolBtn, 'underline')} onMouseDown={(e) => e.preventDefault()} onClick={() => cmd('underline')} title={t('rich_underline')}>U</button>
             <span className="w-px h-5 bg-[var(--uc-border)] mx-1" />
-            <button type="button" className={toolBtn} onMouseDown={(e) => e.preventDefault()} onClick={() => cmd('insertUnorderedList')} title="Lista">• Lista</button>
-            <button type="button" className={toolBtn} onMouseDown={(e) => e.preventDefault()} onClick={() => cmd('insertOrderedList')} title="Lista numerada">1. Lista</button>
-            <button type="button" className={toolBtn} onMouseDown={(e) => e.preventDefault()} onClick={link} title="Link">Link</button>
+            <button type="button" className={toolBtn} onMouseDown={(e) => e.preventDefault()} onClick={() => cmd('insertUnorderedList')} title={t('rich_list_label')}>{t('rich_list')}</button>
+            <button type="button" className={toolBtn} onMouseDown={(e) => e.preventDefault()} onClick={() => cmd('insertOrderedList')} title={t('rich_ordered_label')}>{t('rich_ordered')}</button>
+            <button type="button" className={toolBtn} onMouseDown={(e) => e.preventDefault()} onClick={link} title={t('rich_link')}>{t('rich_link')}</button>
           </div>
         ) : (
           <span className="text-xs text-[var(--uc-text-faint)] px-1">HTML</span>
         )}
         <div className="flex items-center gap-1 shrink-0">
-          <button type="button" className={tabBtn(mode === 'visual')} onClick={() => setMode('visual')}>Visual</button>
-          <button type="button" className={tabBtn(mode === 'html')} onClick={() => setMode('html')}>Texto</button>
+          <button type="button" className={tabBtn(mode === 'visual')} onClick={() => setMode('visual')}>{t('rich_visual')}</button>
+          <button type="button" className={tabBtn(mode === 'html')} onClick={() => setMode('html')}>{t('rich_text')}</button>
         </div>
       </div>
 

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 
 import { GlassButton, GlassCard } from '@/components/ui'
 import { Icon } from '@/components/shell/icon'
@@ -9,23 +10,8 @@ import { cn } from '@/lib/cn'
 import { improveDna, saveDnaKind, useDnaKind as setDnaInUse } from '@/lib/api/mutations'
 import type { Dna, DnaBundle } from '@/lib/api/types'
 
-const TEXT_FIELDS: { key: keyof Dna; label: string }[] = [
-  { key: 'marca', label: 'Marca' },
-  { key: 'missao', label: 'Missão' },
-  { key: 'posicionamento', label: 'Posicionamento' },
-  { key: 'tom', label: 'Tom de voz' },
-  { key: 'publico', label: 'Público' },
-  { key: 'consciencia', label: 'Nível de consciência' },
-]
-
-const LIST_FIELDS: { key: keyof Dna; label: string }[] = [
-  { key: 'valores', label: 'Valores' },
-  { key: 'produtos', label: 'Produtos' },
-  { key: 'ofertas', label: 'Ofertas' },
-  { key: 'provas', label: 'Provas' },
-  { key: 'objecoes', label: 'Objeções' },
-  { key: 'evitar', label: 'Evitar' },
-]
+const TEXT_FIELD_KEYS: (keyof Dna)[] = ['marca', 'missao', 'posicionamento', 'tom', 'publico', 'consciencia']
+const LIST_FIELD_KEYS: (keyof Dna)[] = ['valores', 'produtos', 'ofertas', 'provas', 'objecoes', 'evitar']
 
 const fieldCls =
   'w-full px-4 py-2.5 rounded-xl uc-glass uc-transition text-[15px] text-[var(--uc-text)] outline-none leading-6 ' +
@@ -41,6 +27,9 @@ function emptyDna(kind: 'atual' | 'proposto'): Dna {
 
 export function DnaClient({ slug, bundle }: { slug: string; bundle: DnaBundle }) {
   const router = useRouter()
+  const t = useTranslations('settingsDna')
+  const TEXT_FIELDS = TEXT_FIELD_KEYS.map((key) => ({ key, label: t(`field_${key}`) }))
+  const LIST_FIELDS = LIST_FIELD_KEYS.map((key) => ({ key, label: t(`field_${key}`) }))
   const [tab, setTab] = useState<'atual' | 'proposto'>('atual')
   const [inUse, setInUse] = useState(bundle.dna_in_use)
   const [dna, setDna] = useState<Dna>(bundle[tab] ?? emptyDna(tab))
@@ -71,7 +60,7 @@ export function DnaClient({ slug, bundle }: { slug: string; bundle: DnaBundle })
     })
     setBusy(null)
     if (!res.ok) { setMsg({ kind: 'err', text: res.message }); return }
-    setMsg({ kind: 'ok', text: 'DNA salvo.' })
+    setMsg({ kind: 'ok', text: t('saved') })
     router.refresh()
   }
 
@@ -87,7 +76,7 @@ export function DnaClient({ slug, bundle }: { slug: string; bundle: DnaBundle })
     const res = await improveDna(slug, { direction: direction.trim() || undefined })
     setBusy(null)
     if (!res.ok) { setMsg({ kind: res.error === 'feature_locked' || res.error === 'cap_reached' ? 'paywall' : 'err', text: res.message }); return }
-    setMsg({ kind: 'ok', text: 'DNA proposto gerado pela IA. Veja a aba Proposto.' })
+    setMsg({ kind: 'ok', text: t('improve_done') })
     setTab('proposto')
     setDna(res.data)
     router.refresh()
@@ -104,17 +93,17 @@ export function DnaClient({ slug, bundle }: { slug: string; bundle: DnaBundle })
               type="button"
               onClick={() => switchTab(k)}
               className={cn(
-                'px-4 h-9 rounded-xl text-sm font-semibold uc-transition-fast cursor-pointer capitalize',
+                'px-4 h-9 rounded-xl text-sm font-semibold uc-transition-fast cursor-pointer',
                 tab === k ? 'bg-[var(--uc-accent-soft)] text-[var(--uc-accent)]' : 'text-[var(--uc-text-soft)] hover:text-[var(--uc-text)]',
               )}
             >
-              {k}{inUse === k && ' · em uso'}
+              {t(`tab_${k}`)}{inUse === k && ` · ${t('in_use')}`}
             </button>
           ))}
         </div>
         {inUse !== tab && (
           <GlassButton size="sm" variant="secondary" loading={busy === 'use'} onClick={() => setActive(tab)}>
-            Usar “{tab}” no gerador
+            {t('use_in_generator', { tab: t(`tab_${tab}`) })}
           </GlassButton>
         )}
       </div>
@@ -136,19 +125,19 @@ export function DnaClient({ slug, bundle }: { slug: string; bundle: DnaBundle })
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
           {LIST_FIELDS.map((f) => (
             <div key={f.key}>
-              <label className="text-xs font-semibold tracking-wide uppercase text-[var(--uc-text-muted)] mb-1.5 block">{f.label} <span className="normal-case text-[var(--uc-text-faint)]">(um por linha)</span></label>
+              <label className="text-xs font-semibold tracking-wide uppercase text-[var(--uc-text-muted)] mb-1.5 block">{f.label} <span className="normal-case text-[var(--uc-text-faint)]">{t('one_per_line')}</span></label>
               <textarea rows={3} className={cn(fieldCls, 'resize-y')} value={(dna[f.key] as string[]).join('\n')} onChange={(e) => setList(f.key, e.target.value)} />
             </div>
           ))}
         </div>
 
         <div className="flex flex-wrap gap-2 pt-2">
-          <GlassButton loading={busy === 'save'} onClick={save}>Salvar DNA {tab}</GlassButton>
+          <GlassButton loading={busy === 'save'} onClick={save}>{t('save_dna', { tab: t(`tab_${tab}`) })}</GlassButton>
         </div>
 
         {msg && (
           <p className={cn('text-sm', msg.kind === 'ok' && 'text-emerald-400', msg.kind === 'err' && 'text-[var(--uc-danger)]', msg.kind === 'paywall' && 'text-[var(--uc-accent-strong)]')}>
-            {msg.kind === 'paywall' ? 'Recurso fora do plano. ' : ''}{msg.text}
+            {msg.kind === 'paywall' ? t('out_of_plan') : ''}{msg.text}
           </p>
         )}
       </GlassCard>
@@ -157,19 +146,19 @@ export function DnaClient({ slug, bundle }: { slug: string; bundle: DnaBundle })
       <GlassCard variant="strong" iridescent className="p-6 space-y-3">
         <div className="flex items-center gap-2">
           <Icon name="sparkle" size={18} className="text-[var(--uc-accent)]" />
-          <h3 className="text-base font-semibold text-[var(--uc-text)]">Melhorar com IA</h3>
+          <h3 className="text-base font-semibold text-[var(--uc-text)]">{t('improve_title')}</h3>
         </div>
         <p className="text-sm leading-6 text-[var(--uc-text-soft)]">
-          A IA pega o DNA <strong>atual</strong> e gera uma versão <strong>proposta</strong> mais forte — sem inventar fatos. Opcionalmente dê uma direção.
+          {t('improve_description')}
         </p>
         <input
           className={fieldCls}
-          placeholder="Direção (opcional): ex. mais premium, foco em urgência, tom mais técnico…"
+          placeholder={t('improve_placeholder')}
           value={direction}
           onChange={(e) => setDirection(e.target.value)}
         />
         <GlassButton variant="secondary" loading={busy === 'improve'} onClick={improve}>
-          <Icon name="wand" size={16} />Gerar DNA proposto
+          <Icon name="wand" size={16} />{t('improve_cta')}
         </GlassButton>
       </GlassCard>
     </div>
