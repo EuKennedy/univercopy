@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { Icon, Topbar } from '@/components/shell'
 import { GlassCard } from '@/components/ui'
 import { getPlan } from '@/lib/api/queries'
+import { brl } from '@/lib/money'
 
 type Props = { params: Promise<{ workspace_slug: string }> }
 
@@ -70,8 +71,8 @@ export default async function BillingPage({ params }: Props) {
             <GlassCard className="p-6 space-y-3">
               <p className="text-xs font-semibold tracking-wide uppercase text-[var(--uc-text-muted)]">Custo de IA no mês</p>
               <p className="text-2xl font-bold text-[var(--uc-text)]">
-                US$ {cost.used_usd.toFixed(2)}
-                {cost.limit_usd != null && <span className="text-sm font-normal text-[var(--uc-text-muted)]"> / {cost.limit_usd.toFixed(0)}</span>}
+                {brl(cost.used_usd)}
+                {cost.limit_usd != null && <span className="text-sm font-normal text-[var(--uc-text-muted)]"> / {brl(cost.limit_usd)}</span>}
               </p>
               {cost.percent != null && (
                 <div className="h-2 rounded-full bg-[var(--uc-bg-mute)] overflow-hidden">
