@@ -85,7 +85,6 @@ module Api
       # GET /api/v1/workspaces/:workspace_slug/copies/:id/versions
       def versions
         copy = current_workspace.copies.find(params[:id])
-        list = copy.rag_chunks if false # placeholder pra autoload
         list = CopyVersion.where(copy_id: copy.id).order(n: :desc).map { |v| version_payload(v) }
         render json: { versions: list }
       end
