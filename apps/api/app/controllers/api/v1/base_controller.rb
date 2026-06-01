@@ -7,6 +7,11 @@ module Api
       before_action :authenticate!
       around_action :set_app_user_session
 
+      # ORDEM IMPORTA: Rails avalia rescue_from na ordem REVERSA de declaração
+      # (o último declarado é checado primeiro). O catch-all StandardError vem
+      # PRIMEIRO para ser o último a ser checado — senão ele sombreia todos os
+      # handlers específicos (404/402/422 virariam 500).
+      rescue_from StandardError,                        with: :render_internal_error
       rescue_from ActiveRecord::RecordNotFound,         with: :render_not_found
       rescue_from ActiveRecord::RecordInvalid,          with: :render_unprocessable
       rescue_from ActionController::ParameterMissing,   with: :render_bad_request
@@ -14,10 +19,6 @@ module Api
       rescue_from Ai::CallFailed,                       with: :render_ai_failed
       rescue_from FeatureLocked,                        with: :render_feature_locked
       rescue_from CapReached,                           with: :render_cap_reached
-      # Catch-all: garante body JSON com detalhe + log estruturado.
-      # Sem isso, Rails default returns 500 com body vazio em prod → admin
-      # vê `body: null` e não tem como diagnosticar.
-      rescue_from StandardError,                        with: :render_internal_error
 
       private
 
