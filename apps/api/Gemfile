@@ -47,7 +47,7 @@ gem "neighbor", "~> 0.6"             # pgvector ORM (RAG retrieval)
 # -----------------------------------------------------------------------
 gem "anthropic", "~> 1.10"           # SDK oficial Anthropic
 gem "aws-sdk-s3", "~> 1.187", require: false   # S3 / MinIO
-gem "resend", "~> 0.21"              # email transacional
+gem "resend", "~> 1.3"               # email transacional
 gem "stripe", "~> 13.4", require: false        # opcional, billing externo principal
 
 # -----------------------------------------------------------------------
