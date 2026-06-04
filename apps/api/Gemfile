@@ -29,7 +29,7 @@ gem "solid_cache"
 gem "faraday", "~> 2.12"
 gem "faraday-retry", "~> 2.2"
 gem "oj", "~> 3.16"            # JSON parser mais rápido
-gem "rack-cors", "~> 2.0"      # CORS allowlist explícito
+gem "rack-cors", "~> 3.0"      # CORS allowlist explícito
 gem "rack-attack", "~> 6.7"    # rate limit + safelist
 
 # -----------------------------------------------------------------------
