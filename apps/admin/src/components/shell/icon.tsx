@@ -25,6 +25,17 @@ export type IconName =
   | 'cube'
   | 'menu'
   | 'x'
+  | 'mail'
+  | 'message-circle'
+  | 'smartphone'
+  | 'megaphone'
+  | 'search'
+  | 'hash'
+  | 'file-text'
+  | 'shopping-cart'
+  | 'landmark'
+  | 'plus'
+  | 'trash'
 
 export function Icon({ name, className, size = 18 }: IconProps) {
   const paths = ICON_PATHS[name]
@@ -148,4 +159,15 @@ const ICON_PATHS: Record<IconName, React.ReactNode> = {
   ),
   menu: (<><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" /></>),
   x: (<><path d="M18 6 6 18" /><path d="m6 6 12 12" /></>),
+  mail: (<><rect x="2" y="4" width="20" height="16" rx="2" /><path d="m2 7 10 6 10-6" /></>),
+  'message-circle': <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z" />,
+  smartphone: (<><rect x="5" y="2" width="14" height="20" rx="2" /><path d="M12 18h.01" /></>),
+  megaphone: (<><path d="m3 11 18-5v12L3 14v-3z" /><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6" /></>),
+  search: (<><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></>),
+  hash: (<><line x1="4" y1="9" x2="20" y2="9" /><line x1="4" y1="15" x2="20" y2="15" /><line x1="10" y1="3" x2="8" y2="21" /><line x1="16" y1="3" x2="14" y2="21" /></>),
+  'file-text': (<><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6" /><path d="M9 13h6" /><path d="M9 17h6" /></>),
+  'shopping-cart': (<><circle cx="8" cy="21" r="1" /><circle cx="19" cy="21" r="1" /><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" /></>),
+  landmark: (<><line x1="3" y1="22" x2="21" y2="22" /><line x1="6" y1="18" x2="6" y2="11" /><line x1="10" y1="18" x2="10" y2="11" /><line x1="14" y1="18" x2="14" y2="11" /><line x1="18" y1="18" x2="18" y2="11" /><path d="m12 2 9 4H3z" /></>),
+  plus: (<><path d="M12 5v14" /><path d="M5 12h14" /></>),
+  trash: (<><path d="M3 6h18" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></>),
 }

@@ -5,17 +5,17 @@ import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 
 import { GlassButton, GlassCard } from '@/components/ui'
-import { Icon } from '@/components/shell/icon'
+import { Icon, type IconName } from '@/components/shell/icon'
 import { cn } from '@/lib/cn'
 import { generateCopy, saveCopy } from '@/lib/api/mutations'
-import type { Category, Framework, PieceType, Style, Variation } from '@/lib/api/types'
+import type { Channel, Framework, PieceType, Style, Variation } from '@/lib/api/types'
 
 type Props = {
   slug: string
   pieceTypes: PieceType[]
   styles: Style[]
   frameworks: Framework[]
-  categories: Category[]
+  channels: Channel[]
   products: { id: string; name: string }[]
   campaigns: { id: string; name: string }[]
   initialProductId?: string
@@ -43,13 +43,15 @@ function friendlyError(t: TFn, code: string, raw: string): string {
   }
 }
 
-export function GeneratorForm({ slug, pieceTypes, styles, frameworks, categories, products, campaigns, initialProductId = '' }: Props) {
+export function GeneratorForm({ slug, pieceTypes, styles, frameworks, channels, products, campaigns, initialProductId = '' }: Props) {
   const router = useRouter()
   const t = useTranslations('generate')
+  const tcamp = useTranslations('campaigns')
   const tc = useTranslations('common')
   const STEPS = [t('step_content'), t('step_style'), t('step_context')] as const
 
   const [step, setStep] = useState(0)
+  const [channelKey, setChannelKey] = useState<string>(initialProductId ? 'ecommerce' : '')
   const [pieceTypeKey, setPieceTypeKey] = useState(
     initialProductId ? (pieceTypes.find((p) => p.key === 'ecom:desc-prod-longa')?.key ?? '') : '',
   )
@@ -68,16 +70,7 @@ export function GeneratorForm({ slug, pieceTypes, styles, frameworks, categories
   const [resolved, setResolved] = useState<Record<string, string | null>>({})
   const [done, setDone] = useState(false)
 
-  const catLabel = useMemo(() => {
-    const m = new Map(categories.map((c) => [c.key, c.name]))
-    return (k: string) => m.get(k) ?? k
-  }, [categories])
-
-  const pieceGroups = useMemo(() => {
-    const g = new Map<string, PieceType[]>()
-    for (const pt of pieceTypes) { const a = g.get(pt.category_key) ?? []; a.push(pt); g.set(pt.category_key, a) }
-    return [...g.entries()]
-  }, [pieceTypes])
+  const activeChannel = channels.find((c) => c.key === channelKey)
 
   const styleGroups = useMemo(() => {
     const g = new Map<string, Style[]>()
@@ -162,28 +155,54 @@ export function GeneratorForm({ slug, pieceTypes, styles, frameworks, categories
         ))}
       </div>
 
-      {/* STEP 1 — Conteúdo */}
+      {/* STEP 1 — Canal + formato (channel-first, sem lista gigante) */}
       {step === 0 && (
         <GlassCard className="p-6 space-y-5">
           <Header title={t('step1_title')} sub={t('step1_sub')} />
-          <div className="space-y-5 max-h-[52vh] overflow-y-auto pr-1">
-            {pieceGroups.map(([catKey, items]) => (
-              <div key={catKey}>
-                <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--uc-text-muted)] mb-2">{catLabel(catKey)}</p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  {items.map((pt) => (
-                    <SelectCard
-                      key={pt.key}
-                      active={pieceTypeKey === pt.key}
-                      title={pt.name}
-                      sub={pt.length_hint ?? pt.description ?? undefined}
-                      onClick={() => { setPieceTypeKey(pt.key); setStep(1) }}
-                    />
-                  ))}
-                </div>
-              </div>
-            ))}
+
+          <div className="space-y-2.5">
+            <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--uc-text-muted)]">{tcamp('pick_channel')}</p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
+              {channels.map((c) => {
+                const active = channelKey === c.key
+                return (
+                  <button
+                    key={c.key}
+                    type="button"
+                    onClick={() => { setChannelKey(c.key); setPieceTypeKey('') }}
+                    className={cn(
+                      'flex flex-col items-start gap-2 rounded-2xl p-3.5 border text-left uc-transition-fast cursor-pointer',
+                      active
+                        ? 'border-[var(--uc-accent-ring)] bg-[var(--uc-accent-soft)] shadow-[0_0_0_3px_var(--uc-accent-soft-2)]'
+                        : 'border-[var(--uc-border)] bg-[var(--uc-bg-mute)] hover:border-[var(--uc-border-strong)] hover:-translate-y-0.5',
+                    )}
+                  >
+                    <span className="grid size-9 place-items-center rounded-xl text-white shrink-0" style={{ background: c.color }}>
+                      <Icon name={c.icon as IconName} size={18} />
+                    </span>
+                    <span className="text-sm font-semibold text-[var(--uc-text)] leading-tight">{c.name}</span>
+                  </button>
+                )
+              })}
+            </div>
           </div>
+
+          {activeChannel && (
+            <div className="space-y-2">
+              <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--uc-text-muted)]">{tcamp('pick_format')}</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-[44vh] overflow-y-auto pr-1">
+                {activeChannel.piece_types.map((pt) => (
+                  <SelectCard
+                    key={pt.key}
+                    active={pieceTypeKey === pt.key}
+                    title={pt.name}
+                    sub={pt.length_hint ?? pt.description ?? undefined}
+                    onClick={() => { setPieceTypeKey(pt.key); setStep(1) }}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
         </GlassCard>
       )}
 
@@ -388,6 +407,7 @@ function VariationCard({
       piece_type_key: resolved.piece_type_key,
       style_key: resolved.style_key,
       framework_key: resolved.framework_key,
+      channel: resolved.channel,
       product_id: resolved.product_id,
       campaign_id: resolved.campaign_id,
     })

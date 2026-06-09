@@ -13,6 +13,7 @@ import type {
   GenerateResult,
   PageAudit,
   ProductDetail,
+  SequenceResult,
 } from './types'
 
 const ws = (slug: string) => `/api/v1/workspaces/${encodeURIComponent(slug)}`
@@ -71,6 +72,7 @@ export async function saveCopy(
     framework_key?: string | null
     product_id?: string | null
     campaign_id?: string | null
+    channel?: string | null
     tags?: string[]
   },
 ): Promise<ActionResult<CopyDetail>> {
@@ -81,6 +83,31 @@ export async function saveCopy(
     }),
   )
   if (result.ok) revalidatePath(`/${slug}/copy`)
+  return result
+}
+
+// Gera uma sequência multi-canal e salva direto na campanha.
+export async function generateSequence(
+  slug: string,
+  campaignId: string,
+  input: {
+    channel: string
+    piece_type_key?: string
+    style_key?: string
+    framework_key?: string
+    product_id?: string
+    brief?: string
+    steps?: number
+    model?: string
+  },
+): Promise<ActionResult<SequenceResult>> {
+  const result = await run(() =>
+    apiFetch<SequenceResult>(`${ws(slug)}/campaigns/${campaignId}/sequence`, {
+      method: 'POST',
+      body: JSON.stringify(input),
+    }),
+  )
+  if (result.ok) revalidatePath(`/${slug}/campaigns/${campaignId}`)
   return result
 }
 

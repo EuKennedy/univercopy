@@ -93,7 +93,9 @@ ActiveRecord::Base.connection.execute(<<~SQL)
   (NULL,'email','E-mail','mail','#10b981',now(),now()),
   (NULL,'social','Redes Sociais','smartphone','#8b5cf6',now(),now()),
   (NULL,'marca','Institucional / Marca','landmark','#14b8a6',now(),now()),
-  (NULL,'seo','SEO / Blog','search','#0ea5e9',now(),now())
+  (NULL,'seo','SEO / Blog','search','#0ea5e9',now(),now()),
+  (NULL,'whatsapp','WhatsApp','message-circle','#22c55e',now(),now()),
+  (NULL,'sms','SMS','smartphone','#06b6d4',now(),now())
   ON CONFLICT (workspace_id, key) DO NOTHING;
 SQL
 
@@ -160,8 +162,41 @@ ActiveRecord::Base.connection.execute(<<~SQL)
   ('seo:outline','seo','Pauta / estrutura do artigo','O esqueleto de tópicos (H2/H3).','Tópicos por intenção de busca + perguntas','AIDA','wiebe','lista',now(),now()),
   ('seo:artigo','seo','Artigo otimizado (corpo)','Conteúdo longo, útil e ranqueável.','Intro → seções (H2) → conclusão → CTA','AIDA','ogilvy','longo',now(),now()),
   ('seo:cta-blog','seo','CTA de conteúdo (lead magnet)','Conversão dentro do artigo.','Benefício do material → CTA','AIDCA (AIDA + Convicção)','kern','curto',now(),now()),
-  ('seo:faq-seo','seo','FAQ (rich snippet)','Perguntas para featured snippets.','Pergunta → resposta direta e concisa','ACCA','bird','5-8 perguntas',now(),now())
+  ('seo:faq-seo','seo','FAQ (rich snippet)','Perguntas para featured snippets.','Pergunta → resposta direta e concisa','ACCA','bird','5-8 perguntas',now(),now()),
+  ('whatsapp:promo','whatsapp','Mensagem promocional','Disparo de oferta no WhatsApp.','Abertura pessoal → oferta → CTA + link','AIDA','kennedy','2-4 linhas',now(),now()),
+  ('whatsapp:sequencia','whatsapp','Sequência de mensagens (passo)','Passo de uma cadência de WhatsApp.','Continuidade do contexto → valor/lembrete → CTA','PAS (Problema-Agitação-Solução)','collier','2-4 linhas',now(),now()),
+  ('whatsapp:carrinho','whatsapp','Recuperação de carrinho','Recupera quem não finalizou no WhatsApp.','Lembrete amigável → remover atrito → CTA + link','PAS (Problema-Agitação-Solução)','collier','2-3 linhas',now(),now()),
+  ('whatsapp:boas-vindas','whatsapp','Boas-vindas','Primeiro contato após opt-in.','Acolhimento → o que esperar → CTA','BAB (Antes-Depois-Ponte)','collier','2-3 linhas',now(),now()),
+  ('sms:promo','sms','SMS promocional','Mensagem curta de oferta.','Oferta direta → CTA + link curto','AIDA','kennedy','até 160 caracteres',now(),now()),
+  ('sms:lembrete','sms','SMS de lembrete','Lembrete de prazo/evento.','Lembrete → prazo → ação','PAS (Problema-Agitação-Solução)','collier','até 160 caracteres',now(),now())
   ON CONFLICT (key) DO NOTHING;
+SQL
+
+# ---------------------------------------------------------------------
+# CANAIS (channel) — taxonomia de distribuição para campanhas multi-canal.
+# Mapeia cada piece_type ao seu canal. `ads` é dividido em meta_ads/google_ads.
+# ---------------------------------------------------------------------
+ActiveRecord::Base.connection.execute(<<~SQL)
+  UPDATE piece_types SET channel = CASE
+    WHEN key LIKE 'ecom:%'     THEN 'ecommerce'
+    WHEN key LIKE 'pv:%'       THEN 'landing'
+    WHEN key LIKE 'email:%'    THEN 'email'
+    WHEN key LIKE 'social:%'   THEN 'social'
+    WHEN key LIKE 'marca:%'    THEN 'brand'
+    WHEN key LIKE 'seo:%'      THEN 'seo'
+    WHEN key LIKE 'whatsapp:%' THEN 'whatsapp'
+    WHEN key LIKE 'sms:%'      THEN 'sms'
+    WHEN key = 'ads:google-search' THEN 'google_ads'
+    WHEN key LIKE 'ads:%'      THEN 'meta_ads'
+    ELSE channel
+  END;
+SQL
+
+# Backfill de copies existentes: channel herdado do piece_type.
+ActiveRecord::Base.connection.execute(<<~SQL)
+  UPDATE copies c SET channel = pt.channel
+  FROM piece_types pt
+  WHERE c.piece_type_key = pt.key AND c.channel IS NULL;
 SQL
 
 styles_count  = Style.count

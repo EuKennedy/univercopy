@@ -33,6 +33,7 @@ module Api
           piece_type_key: b[:piece_type_key],
           style_key:      b[:style_key],
           framework_key:  b[:framework_key],
+          channel:        b[:channel],
           title:          b[:title],
           tags:           b[:tags] || [],
           created_by:     current_app_user.id,
@@ -101,7 +102,7 @@ module Api
       def create_params
         params.permit(
           :title, :content, :category_key, :piece_type_key,
-          :style_key, :framework_key, :product_id, :campaign_id,
+          :style_key, :framework_key, :product_id, :campaign_id, :channel,
           tags: [],
         ).to_h.with_indifferent_access
       end

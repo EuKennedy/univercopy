@@ -217,7 +217,21 @@
     "field_audience": "Audiencia",
     "field_starts": "Inicio",
     "field_ends": "Fin",
-    "field_context": "Contexto"
+    "field_context": "Contexto",
+    "sequences_title": "Secuencias",
+    "add_sequence": "Agregar secuencia",
+    "empty_seq_title": "Armá tu primera secuencia",
+    "empty_seq_desc": "Elegí un canal y generá el copy acá mismo — email, WhatsApp, SMS, anuncios y más.",
+    "steps_count": "{count, plural, one {# paso} other {# pasos}}",
+    "new_sequence": "Nueva secuencia",
+    "pick_channel": "Elegí el canal",
+    "pick_format": "Elegí el formato",
+    "steps_label": "Pasos",
+    "seq_model": "Modelo",
+    "seq_brief": "Brief",
+    "seq_brief_ph": "Oferta, contexto, fechas, tono de voz...",
+    "generate_sequence": "Generar secuencia",
+    "generating_sequence": "Generando..."
   },
   "products": {
     "eyebrow": "CATÁLOGO",

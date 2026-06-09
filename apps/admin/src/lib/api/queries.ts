@@ -5,9 +5,10 @@ import { apiFetch } from '@/lib/api-client'
 import type {
   Account,
   AuditLogEntry,
-  CampaignDetail,
+  CampaignBundle,
   CampaignListItem,
   Category,
+  Channel,
   CopyDetail,
   CopyListItem,
   CopyVersion,
@@ -41,6 +42,9 @@ export async function getPieceTypes() {
 }
 export async function getCategories() {
   return (await apiFetch<{ categories: Category[] }>('/api/v1/categories')).categories
+}
+export async function getChannels() {
+  return (await apiFetch<{ channels: Channel[] }>('/api/v1/channels')).channels
 }
 
 // --- Workspace ---
@@ -78,9 +82,7 @@ export async function listCampaigns(slug: string) {
   return (await apiFetch<{ campaigns: CampaignListItem[] }>(`${ws(slug)}/campaigns`)).campaigns
 }
 export async function getCampaign(slug: string, id: string) {
-  return apiFetch<{ campaign: CampaignDetail; copies: { id: string; title: string; status: string; piece_type_key: string | null; updated_at: string }[] }>(
-    `${ws(slug)}/campaigns/${id}`,
-  )
+  return apiFetch<CampaignBundle>(`${ws(slug)}/campaigns/${id}`)
 }
 
 // --- Products ---

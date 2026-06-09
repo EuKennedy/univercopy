@@ -1,30 +1,29 @@
-# Orquestra a geração de copy (Fase 5). Resolve bibliotecas (estilo,
-# framework, tipo de peça), DNA em uso, produto/campanha opcionais; monta
-# prompt via PromptBuilder; chama AnthropicClient (task :generate_copy);
-# parseia N variações. NÃO persiste — devolve variações pro usuário escolher
-# e salvar como Copy depois. NÃO checa plano/cap (controller faz isso antes).
+# Gera uma SEQUÊNCIA (cadência ordenada) de copy para um canal de uma campanha.
+# Diferente do CopyGenerator (N variações da mesma peça), aqui são N passos
+# distintos que se complementam (ex: e-mail 1, 2, 3 de uma sequência).
+# NÃO persiste — devolve os passos pro controller salvar como Copies ordenadas.
 #
 # Roda dentro do RLS scope do workspace (controller garante).
-
 module Ai
-  class CopyGenerator
-    MAX_TOKENS = 3000
+  class SequenceGenerator
+    MAX_TOKENS = 4000
 
-    Result = Struct.new(:variations, :ai_result, :resolved, keyword_init: true)
+    Result = Struct.new(:steps, :ai_result, :resolved, keyword_init: true)
 
     def self.call(**kwargs)
       new(**kwargs).call
     end
 
-    def initialize(workspace:, piece_type_key:, style_key: nil, framework_key: nil, product_id: nil, campaign_id: nil, brief: nil, n: 2, model: :auto)
+    def initialize(workspace:, campaign:, channel:, piece_type_key: nil, style_key: nil, framework_key: nil, product_id: nil, brief: nil, steps: 3, model: :auto)
       @workspace      = workspace
+      @campaign       = campaign
+      @channel        = channel.to_s
       @piece_type_key = piece_type_key
       @style_key      = style_key
       @framework_key  = framework_key
       @product_id     = product_id
-      @campaign_id    = campaign_id
       @brief          = brief
-      @n              = n
+      @steps          = steps.to_i.clamp(1, 10)
       @model          = (model.presence || :auto).to_sym
     end
 
@@ -32,8 +31,7 @@ module Ai
       piece_type = @piece_type_key.present? ? PieceType.find_by(key: @piece_type_key) : nil
       style      = resolve(Style,     @style_key,     piece_type&.default_style)
       framework  = resolve(Framework, @framework_key, piece_type&.default_framework)
-      product    = @product_id.present?  ? @workspace.products.find_by(id: @product_id)   : nil
-      campaign   = @campaign_id.present? ? @workspace.campaigns.find_by(id: @campaign_id) : nil
+      product    = @product_id.present? ? @workspace.products.find_by(id: @product_id) : nil
       dna        = @workspace.active_brand_dna
 
       prompt = Ai::PromptBuilder.call(
@@ -43,10 +41,12 @@ module Ai
         style:      style,
         framework:  framework,
         product:    product,
-        campaign:   campaign,
+        campaign:   @campaign,
         brief:      @brief,
-        n:          @n,
+        n:          @steps,
         locale:     @workspace.default_locale,
+        mode:       :sequence,
+        channel:    @channel,
       )
 
       ai = Ai::AnthropicClient.call(
@@ -59,16 +59,16 @@ module Ai
       )
 
       Result.new(
-        variations: parse_variations(ai.text),
-        ai_result:  ai,
+        steps:     parse_steps(ai.text),
+        ai_result: ai,
         resolved: {
+          channel:        @channel,
           piece_type_key: piece_type&.key,
           style_key:      style&.key,
           framework_key:  framework&.key,
           category_key:   piece_type&.category_key,
-          channel:        piece_type&.channel,
           product_id:     product&.id,
-          campaign_id:    campaign&.id,
+          campaign_id:    @campaign.id,
         },
       )
     end
@@ -80,33 +80,31 @@ module Ai
       key && klass.find_by(key: key)
     end
 
-    def parse_variations(text)
+    # Mesma tolerância do CopyGenerator: JSON {variations:[...]} ou prosa.
+    def parse_steps(text)
       return [] if text.to_s.strip.empty?
 
       begin
         parsed = Ai::JsonExtractor.parse(text)
       rescue ArgumentError, JSON::ParserError
-        # Modelo respondeu em prosa (sem JSON). Salva como 1 variação em vez
-        # de explodir — usuário recebe algo utilizável.
-        return [{ title: "Variação", angle: "", content: text.to_s.strip }]
+        return [{ title: "Passo 1", angle: "", content: text.to_s.strip }]
       end
 
-      raw = parsed.is_a?(Hash) ? (parsed["variations"] || parsed[:variations]) : parsed
-      vars = Array(raw).filter_map do |v|
+      raw = parsed.is_a?(Hash) ? (parsed["variations"] || parsed[:variations] || parsed["steps"] || parsed[:steps]) : parsed
+      steps = Array(raw).filter_map do |v|
         next unless v.is_a?(Hash)
 
         content = (v["content"] || v[:content]).to_s.strip
         next if content.empty?
 
         {
-          title:   (v["title"]  || v[:title]).to_s.strip.presence || "Variação",
-          angle:   (v["angle"]  || v[:angle]).to_s.strip,
+          title:   (v["title"] || v[:title]).to_s.strip.presence || "Passo",
+          angle:   (v["angle"] || v[:angle]).to_s.strip,
           content: content,
         }
       end
 
-      # JSON veio mas sem variações utilizáveis → salva o texto cru.
-      vars.presence || [{ title: "Variação", angle: "", content: text.to_s.strip }]
+      steps.presence || [{ title: "Passo 1", angle: "", content: text.to_s.strip }]
     end
   end
 end

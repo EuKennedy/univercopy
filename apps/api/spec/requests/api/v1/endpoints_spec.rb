@@ -124,6 +124,56 @@ RSpec.describe "API v1 endpoints", type: :request do
     end
   end
 
+  describe "canais (channels)" do
+    before { auth_as(user) }
+
+    it "GET /channels lista canais com peças" do
+      get "/api/v1/channels", headers: json
+      expect(response).to have_http_status(:ok)
+      keys = body["channels"].map { |c| c["key"] }
+      expect(keys).to include("email", "whatsapp", "sms", "meta_ads", "google_ads")
+      whatsapp = body["channels"].find { |c| c["key"] == "whatsapp" }
+      expect(whatsapp).to include("name", "icon", "color", "piece_types")
+    end
+  end
+
+  describe "campanha: sequências multi-canal" do
+    before { auth_as(user) }
+
+    it "show agrupa copies por canal, ordenado por sequence_index" do
+      campaign = workspace.campaigns.create!(name: "Black Friday", created_by: user.id)
+      # passos fora de ordem pra provar o sort
+      [["email", 2, "Email 2"], ["email", 1, "Email 1"], ["whatsapp", 1, "Zap 1"]].each do |ch, idx, title|
+        copy = workspace.copies.create!(campaign_id: campaign.id, channel: ch, sequence_index: idx, title: title, created_by: user.id)
+        CopyVersion.create!(copy_id: copy.id, n: 1, content: "#{title} corpo", is_current: true, author_id: user.id)
+      end
+
+      get "/api/v1/workspaces/#{workspace.slug}/campaigns/#{campaign.id}", headers: json
+      expect(response).to have_http_status(:ok)
+      seqs = body["sequences"]
+      email = seqs.find { |s| s["channel"] == "email" }
+      expect(email["steps"].map { |c| c["sequence_index"] }).to eq([1, 2])
+      expect(email["steps"].first["current_content_preview"]).to eq("Email 1 corpo")
+      expect(seqs.map { |s| s["channel"] }).to include("whatsapp")
+    end
+
+    it "generate_sequence rejeita canal inválido com 422" do
+      campaign = workspace.campaigns.create!(name: "C", created_by: user.id)
+      post "/api/v1/workspaces/#{workspace.slug}/campaigns/#{campaign.id}/sequence",
+           params: { channel: "bogus", steps: 2 }.to_json, headers: json
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(body["error"]).to eq("invalid_channel")
+    end
+
+    it "copy create persiste channel" do
+      post "/api/v1/workspaces/#{workspace.slug}/copies",
+           params: { title: "Zap", content: "oi", channel: "whatsapp" }.to_json, headers: json
+      expect(response).to have_http_status(:created)
+      id = body["id"]
+      expect(Copy.find(id).channel).to eq("whatsapp")
+    end
+  end
+
   describe "produtos" do
     before { auth_as(user) }
 

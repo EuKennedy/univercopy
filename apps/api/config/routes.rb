@@ -15,6 +15,7 @@ Rails.application.routes.draw do
       get "/piece-types",  to: "libraries#piece_types"
       get "/piece_types",  to: "libraries#piece_types"
       get "/categories",   to: "libraries#categories"
+      get "/channels",     to: "libraries#channels"
 
       # ---------------------------------------------------------------
       # Conta do usuário (preferências — nível conta, não workspace).
@@ -54,8 +55,9 @@ Rails.application.routes.draw do
         get    "/copies/:id/versions", to: "copies#versions"
         post   "/copies/:id/versions", to: "copies#create_version"
 
-        # Campaigns
+        # Campaigns + geração de sequência multi-canal direto na campanha
         resources :campaigns, only: %i[index show create update destroy]
+        post "/campaigns/:id/sequence", to: "campaigns#generate_sequence"
 
         # Gerador (Fase 5)
         post "/generate",     to: "generations#create"

@@ -3,7 +3,7 @@ import { getTranslations } from 'next-intl/server'
 import { Topbar } from '@/components/shell'
 
 import {
-  getCategories,
+  getChannels,
   getFrameworks,
   getPieceTypes,
   getStyles,
@@ -23,11 +23,11 @@ export default async function GeneratorPage({ params, searchParams }: Props) {
   const { product } = await searchParams
   const t = await getTranslations('generate')
 
-  const [pieceTypes, styles, frameworks, categories, products, campaigns] = await Promise.all([
+  const [pieceTypes, styles, frameworks, channels, products, campaigns] = await Promise.all([
     getPieceTypes(),
     getStyles(),
     getFrameworks(),
-    getCategories(),
+    getChannels().catch(() => []),
     listProducts(workspace_slug).then((r) => r.products).catch(() => []),
     listCampaigns(workspace_slug).catch(() => []),
   ])
@@ -45,7 +45,7 @@ export default async function GeneratorPage({ params, searchParams }: Props) {
           pieceTypes={pieceTypes}
           styles={styles}
           frameworks={frameworks}
-          categories={categories}
+          channels={channels}
           products={products.map((p) => ({ id: p.id, name: p.name }))}
           campaigns={campaigns.map((c) => ({ id: c.id, name: c.name }))}
           initialProductId={product ?? ''}

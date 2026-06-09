@@ -40,6 +40,21 @@ export type Category = {
   color: string | null
 }
 
+// Canal de distribuição (campanhas multi-canal).
+export type ChannelKey =
+  | 'email' | 'whatsapp' | 'sms' | 'meta_ads' | 'google_ads'
+  | 'social' | 'landing' | 'ecommerce' | 'brand' | 'seo'
+
+export type Channel = {
+  key: ChannelKey
+  name: string
+  icon: string
+  color: string
+  sequence: boolean
+  description: string
+  piece_types: PieceType[]
+}
+
 export type Dna = {
   kind: 'atual' | 'proposto'
   marca: string | null
@@ -125,6 +140,38 @@ export type CampaignListItem = {
 
 export type CampaignDetail = CampaignListItem & { context: string | null }
 
+// Passo de uma sequência dentro de uma campanha (copy enxuta + preview).
+export type CampaignStep = {
+  id: string
+  title: string
+  status: CopyStatus
+  channel: ChannelKey | null
+  sequence_index: number | null
+  piece_type_key: string | null
+  category_key: string | null
+  current_content_preview: string | null
+  updated_at: string
+}
+
+export type CampaignSequence = {
+  channel: ChannelKey | null
+  steps: CampaignStep[]
+}
+
+export type CampaignBundle = {
+  campaign: CampaignDetail
+  copies: CampaignStep[]
+  sequences: CampaignSequence[]
+}
+
+export type SequenceResult = {
+  channel: ChannelKey
+  copies: CampaignStep[]
+  resolved: Record<string, string | null>
+  model: string
+  cost_usd: number | null
+}
+
 export type ProductListItem = {
   id: string
   name: string
@@ -200,6 +247,7 @@ export type GenerateResult = {
     style_key: string | null
     framework_key: string | null
     category_key: string | null
+    channel: string | null
     product_id: string | null
     campaign_id: string | null
   }

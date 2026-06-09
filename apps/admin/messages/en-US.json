@@ -217,7 +217,21 @@
     "field_audience": "Audience",
     "field_starts": "Start",
     "field_ends": "End",
-    "field_context": "Context"
+    "field_context": "Context",
+    "sequences_title": "Sequences",
+    "add_sequence": "Add sequence",
+    "empty_seq_title": "Build your first sequence",
+    "empty_seq_desc": "Pick a channel and generate copy right here — email, WhatsApp, SMS, ads and more.",
+    "steps_count": "{count, plural, one {# step} other {# steps}}",
+    "new_sequence": "New sequence",
+    "pick_channel": "Pick the channel",
+    "pick_format": "Pick the format",
+    "steps_label": "Steps",
+    "seq_model": "Model",
+    "seq_brief": "Brief",
+    "seq_brief_ph": "Offer, context, dates, tone of voice...",
+    "generate_sequence": "Generate sequence",
+    "generating_sequence": "Generating..."
   },
   "products": {
     "eyebrow": "CATALOG",

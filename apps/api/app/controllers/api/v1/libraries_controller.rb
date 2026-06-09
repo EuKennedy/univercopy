@@ -27,6 +27,11 @@ module Api
         list = Category.global.order(:name).map { |c| c.slice(:key, :name, :icon, :color) }
         render json: { categories: list }
       end
+
+      # Canais de distribuição (campanhas multi-canal) + peças de cada canal.
+      def channels
+        render json: { channels: Catalog::Channels.with_piece_types }
+      end
     end
   end
 end

@@ -13,13 +13,29 @@ module Ai
       "pt-BR" => "Português do Brasil",
       "en-US" => "Inglês (Estados Unidos)",
       "es-AR" => "Espanhol",
+      "fr-FR" => "Francês",
+    }.freeze
+
+    CHANNEL_LABEL = {
+      "email"      => "e-mail",
+      "whatsapp"   => "WhatsApp",
+      "sms"        => "SMS",
+      "meta_ads"   => "anúncio Meta (Facebook/Instagram)",
+      "google_ads" => "anúncio Google",
+      "social"     => "rede social",
+      "landing"    => "página de vendas",
+      "ecommerce"  => "e-commerce",
+      "brand"      => "institucional",
+      "seo"        => "SEO/blog",
     }.freeze
 
     def self.call(**kwargs)
       new(**kwargs).call
     end
 
-    def initialize(workspace:, dna:, piece_type:, style:, framework:, product: nil, campaign: nil, brief: nil, n: 2, locale: "pt-BR")
+    # mode: :variations (default) gera N variações da MESMA peça.
+    #       :sequence gera N passos ORDENADOS de uma cadência (channel).
+    def initialize(workspace:, dna:, piece_type:, style:, framework:, product: nil, campaign: nil, brief: nil, n: 2, locale: "pt-BR", mode: :variations, channel: nil)
       @workspace  = workspace
       @dna        = dna
       @piece_type = piece_type
@@ -28,8 +44,10 @@ module Ai
       @product    = product
       @campaign   = campaign
       @brief      = brief.to_s.strip
-      @n          = n.to_i.clamp(1, 5)
+      @n          = n.to_i.clamp(1, 10)
       @locale     = locale.presence || "pt-BR"
+      @mode       = mode.to_sym
+      @channel    = channel
     end
 
     def call
@@ -38,12 +56,17 @@ module Ai
 
     private
 
-    attr_reader :workspace, :dna, :piece_type, :style, :framework, :product, :campaign, :brief, :n, :locale
+    attr_reader :workspace, :dna, :piece_type, :style, :framework, :product, :campaign, :brief, :n, :locale, :mode, :channel
+
+    def sequence? = mode == :sequence
+
+    def channel_label = CHANNEL_LABEL.fetch(channel.to_s, "campanha")
 
     def system_prompt
       parts = []
+      cadence = sequence? ? " Você está escrevendo uma CADÊNCIA de #{channel_label}: passos ordenados que se complementam, sem repetir o mesmo argumento, com progressão lógica até a conversão." : ""
       parts << <<~TXT.strip
-        Você é um copywriter de elite escrevendo em #{LOCALE_LABEL.fetch(locale, 'Português do Brasil')}.
+        Você é um copywriter de elite escrevendo em #{LOCALE_LABEL.fetch(locale, 'Português do Brasil')}.#{cadence}
         Sua copy é específica, concreta e persuasiva — sem clichê, sem encheção,
         sem promessa vazia. Você respeita RIGOROSAMENTE o DNA da marca abaixo:
         nunca inventa fatos, números, garantias ou benefícios que não estejam
@@ -68,16 +91,31 @@ module Ai
     end
 
     def output_spec
-      <<~TXT.strip
-        SAÍDA: responda APENAS com JSON válido, sem markdown, sem texto antes ou
-        depois. Gere EXATAMENTE #{n} #{n == 1 ? 'variação' : 'variações'} distintas
-        (ângulos diferentes), neste formato:
-        {
-          "variations": [
-            { "title": "título curto da variação", "angle": "ângulo/abordagem em 1 frase", "content": "a copy completa" }
-          ]
-        }
-      TXT
+      if sequence?
+        <<~TXT.strip
+          SAÍDA: responda APENAS com JSON válido, sem markdown, sem texto antes ou
+          depois. Gere EXATAMENTE #{n} #{n == 1 ? 'passo' : 'passos'} EM SEQUÊNCIA
+          (cadência ordenada de #{channel_label}), onde cada passo dá continuidade
+          ao anterior sem repetir, neste formato:
+          {
+            "variations": [
+              { "title": "título/assunto do passo", "angle": "papel deste passo na cadência (1 frase)", "content": "a mensagem completa do passo" }
+            ]
+          }
+          A ORDEM do array é a ordem de envio (passo 1, 2, 3...).
+        TXT
+      else
+        <<~TXT.strip
+          SAÍDA: responda APENAS com JSON válido, sem markdown, sem texto antes ou
+          depois. Gere EXATAMENTE #{n} #{n == 1 ? 'variação' : 'variações'} distintas
+          (ângulos diferentes), neste formato:
+          {
+            "variations": [
+              { "title": "título curto da variação", "angle": "ângulo/abordagem em 1 frase", "content": "a copy completa" }
+            ]
+          }
+        TXT
+      end
     end
 
     def user_prompt
@@ -87,7 +125,12 @@ module Ai
       sections << "CAMPANHA:\n#{campaign_block}" if campaign
       sections << piece_block
       sections << "BRIEF DO USUÁRIO:\n#{brief}" if brief.present?
-      sections << "Gere as #{n} variações agora, em #{LOCALE_LABEL.fetch(locale, 'Português do Brasil')}."
+      final = if sequence?
+        "Gere os #{n} passos da sequência agora, em ordem, em #{LOCALE_LABEL.fetch(locale, 'Português do Brasil')}."
+      else
+        "Gere as #{n} variações agora, em #{LOCALE_LABEL.fetch(locale, 'Português do Brasil')}."
+      end
+      sections << final
       sections.join("\n\n")
     end
 
