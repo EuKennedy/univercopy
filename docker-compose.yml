@@ -56,6 +56,11 @@ services:
       context: .
       dockerfile: apps/api/Dockerfile
     restart: unless-stopped
+    # Roda migrations a cada deploy ANTES de subir o puma. db:prepare é
+    # idempotente (migra o que falta; semeia só se o banco for novo). Sem isso
+    # o entrypoint só migra quando o comando é `rails server` — e aqui é puma,
+    # então migrations nunca aplicavam no deploy.
+    command: ["sh", "-c", "bundle exec rails db:prepare && exec bundle exec puma -C config/puma.rb"]
     environment:
       RAILS_ENV: production
       DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
