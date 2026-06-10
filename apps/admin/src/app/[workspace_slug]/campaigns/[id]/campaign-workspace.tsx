@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl'
 import { useMemo, useState } from 'react'
 
 import { Icon, type IconName } from '@/components/shell/icon'
-import { GlassButton, GlassCard } from '@/components/ui'
+import { GlassButton, GlassCard, fieldCls } from '@/components/ui'
 import { cn } from '@/lib/cn'
 import { generateSequence } from '@/lib/api/mutations'
 import type { Channel, CampaignSequence, PieceType } from '@/lib/api/types'
@@ -17,10 +17,6 @@ type Props = {
   channels: Channel[]
   sequences: CampaignSequence[]
 }
-
-const fieldCls =
-  'w-full px-4 rounded-2xl uc-glass uc-transition text-[15px] text-[var(--uc-text)] outline-none ' +
-  'focus:border-[var(--uc-accent-ring)] focus:shadow-[0_0_0_4px_var(--uc-accent-soft-2)]'
 
 export function CampaignWorkspace({ slug, campaignId, channels, sequences }: Props) {
   const t = useTranslations('campaigns')

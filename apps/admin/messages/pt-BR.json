@@ -81,7 +81,10 @@
     "expandSidebar": "Expandir sidebar",
     "collapseSidebar": "Recolher sidebar",
     "logout": "Sair da conta",
-    "loggingOut": "Saindo…"
+    "loggingOut": "Saindo…",
+    "group_create": "Criar",
+    "group_catalog": "Catálogo",
+    "group_insights": "Insights"
   },
   "dashboard": {
     "eyebrow": "Visão geral",

@@ -18,11 +18,13 @@ type NavItem = {
   badge?: string
 }
 
+type NavGroup = { label?: string; items: NavItem[] }
+
 type WorkspaceOption = { slug: string; name: string }
 
 type Props = {
   workspaceSlug?: string
-  nav?: NavItem[]
+  nav?: NavGroup[]
   user?: { name?: string; email: string; image?: string | null } | null
   workspaces?: WorkspaceOption[]
   collapsed: boolean
@@ -39,6 +41,7 @@ export function Sidebar({
   const router = useRouter()
   const t = useTranslations('nav')
 
+  const base = workspaceSlug ? `/${workspaceSlug}` : ''
   const items = nav ?? defaultNav(workspaceSlug, t)
 
   return (
@@ -92,44 +95,56 @@ export function Sidebar({
       </div>
 
       <nav className="flex-1 flex flex-col gap-0.5 mt-1 overflow-y-auto" aria-label={t('primaryNav')}>
-        {items.map((item) => {
-          const active = pathname?.startsWith(item.href)
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={onCloseMobile}
-              data-active={active || undefined}
-              className={cn(
-                'group flex items-center gap-3 rounded-xl px-2.5 py-2.5 cursor-pointer uc-transition-fast',
-                'text-[var(--uc-text-soft)] hover:text-[var(--uc-text)]',
-                'hover:bg-[var(--uc-surface-soft)]',
-                active && 'text-[var(--uc-text)] bg-[var(--uc-accent-soft)] shadow-[inset_0_0_0_1px_var(--uc-accent-soft-2)]',
-              )}
-            >
-              <span
-                className={cn(
-                  'flex items-center justify-center size-9 rounded-lg uc-transition-fast shrink-0',
-                  active
-                    ? 'text-white shadow-[0_6px_16px_-6px_rgba(139,92,246,0.5)]'
-                    : 'text-[var(--uc-text-muted)] group-hover:text-[var(--uc-text)] bg-[var(--uc-bg-mute)]',
-                )}
-                style={active ? { background: 'linear-gradient(135deg, var(--uc-brand-purple) 0%, var(--uc-brand-blue) 100%)' } : undefined}
-                aria-hidden
-              >
-                <Icon name={item.icon} />
-              </span>
-              <span className="uc-rail-content text-sm font-medium tracking-tight whitespace-nowrap">
-                {item.label}
-              </span>
-              {item.badge && (
-                <span className="uc-rail-content ml-auto text-xs font-semibold rounded-full px-2 py-0.5 bg-[var(--uc-accent-soft-2)] text-[var(--uc-accent)]">
-                  {item.badge}
-                </span>
-              )}
-            </Link>
-          )
-        })}
+        {items.map((group, gi) => (
+          <div key={group.label ?? `g${gi}`} className={cn(gi > 0 && 'mt-3')}>
+            {group.label && (
+              <p className="uc-rail-content px-2.5 mb-1 text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--uc-text-faint)]">
+                {group.label}
+              </p>
+            )}
+            <div className="flex flex-col gap-0.5">
+              {group.items.map((item) => {
+                const active = isNavActive(pathname, item.href, base)
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={onCloseMobile}
+                    data-active={active || undefined}
+                    title={item.label}
+                    className={cn(
+                      'group flex items-center gap-3 rounded-xl px-2.5 py-2.5 cursor-pointer uc-transition-fast',
+                      'text-[var(--uc-text-soft)] hover:text-[var(--uc-text)]',
+                      'hover:bg-[var(--uc-surface-soft)]',
+                      active && 'text-[var(--uc-text)] bg-[var(--uc-accent-soft)] shadow-[inset_0_0_0_1px_var(--uc-accent-soft-2)]',
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        'flex items-center justify-center size-9 rounded-lg uc-transition-fast shrink-0',
+                        active
+                          ? 'text-white shadow-[0_6px_16px_-6px_rgba(139,92,246,0.5)]'
+                          : 'text-[var(--uc-text-muted)] group-hover:text-[var(--uc-text)] bg-[var(--uc-bg-mute)]',
+                      )}
+                      style={active ? { background: 'linear-gradient(135deg, var(--uc-brand-purple) 0%, var(--uc-brand-blue) 100%)' } : undefined}
+                      aria-hidden
+                    >
+                      <Icon name={item.icon} />
+                    </span>
+                    <span className="uc-rail-content text-sm font-medium tracking-tight whitespace-nowrap">
+                      {item.label}
+                    </span>
+                    {item.badge && (
+                      <span className="uc-rail-content ml-auto text-xs font-semibold rounded-full px-2 py-0.5 bg-[var(--uc-accent-soft-2)] text-[var(--uc-accent)]">
+                        {item.badge}
+                      </span>
+                    )}
+                  </Link>
+                )
+              })}
+            </div>
+          </div>
+        ))}
       </nav>
 
       {workspaces && workspaces.length > 1 && (
@@ -213,16 +228,36 @@ function Avatar({ name, image }: { name: string; image?: string }) {
   )
 }
 
-function defaultNav(workspaceSlug: string | undefined, t: (key: string) => string): NavItem[] {
+// Item ativo: overview (base) só ativa em match exato; resto por prefixo.
+function isNavActive(pathname: string | null | undefined, href: string, base: string): boolean {
+  if (!pathname) return false
+  const home = base || '/'
+  if (href === home) return pathname === home
+  return pathname === href || pathname.startsWith(`${href}/`)
+}
+
+// Nav agrupada: Visão geral solta no topo, depois Criar / Catálogo / Insights,
+// e Configurações no fim. Inteligência fica em Insights (rotulada "em breve").
+function defaultNav(workspaceSlug: string | undefined, t: (key: string) => string): NavGroup[] {
   const base = workspaceSlug ? `/${workspaceSlug}` : ''
   return [
-    { href: `${base || '/'}`,        label: t('overview'),     icon: 'dashboard' },
-    { href: `${base}/copy`,          label: t('copy'),         icon: 'copy' },
-    { href: `${base}/generate`,      label: t('generate'),     icon: 'spark', badge: 'AI' },
-    { href: `${base}/campaigns`,     label: t('campaigns'),    icon: 'campaign' },
-    { href: `${base}/products`,      label: t('products'),     icon: 'product' },
-    { href: `${base}/audit`,         label: t('audit'),        icon: 'audit' },
-    { href: `${base}/intelligence`,  label: t('intelligence'), icon: 'intelligence' },
-    { href: `${base}/settings`,      label: t('settings'),     icon: 'settings' },
+    { items: [
+      { href: `${base || '/'}`, label: t('overview'), icon: 'dashboard' },
+    ] },
+    { label: t('group_create'), items: [
+      { href: `${base}/generate`,  label: t('generate'),  icon: 'spark', badge: 'AI' },
+      { href: `${base}/campaigns`, label: t('campaigns'), icon: 'campaign' },
+      { href: `${base}/copy`,      label: t('copy'),      icon: 'copy' },
+    ] },
+    { label: t('group_catalog'), items: [
+      { href: `${base}/products`, label: t('products'), icon: 'product' },
+    ] },
+    { label: t('group_insights'), items: [
+      { href: `${base}/audit`,        label: t('audit'),        icon: 'audit' },
+      { href: `${base}/intelligence`, label: t('intelligence'), icon: 'intelligence' },
+    ] },
+    { items: [
+      { href: `${base}/settings`, label: t('settings'), icon: 'settings' },
+    ] },
   ]
 }

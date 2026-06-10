@@ -81,7 +81,10 @@
     "expandSidebar": "Déployer la barre latérale",
     "collapseSidebar": "Réduire la barre latérale",
     "logout": "Se déconnecter",
-    "loggingOut": "Déconnexion…"
+    "loggingOut": "Déconnexion…",
+    "group_create": "Créer",
+    "group_catalog": "Catalogue",
+    "group_insights": "Insights"
   },
   "dashboard": {
     "eyebrow": "Vue d'ensemble",

@@ -4,15 +4,11 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 
-import { GlassButton, GlassCard } from '@/components/ui'
+import { GlassButton, GlassCard, fieldCls } from '@/components/ui'
 import { Icon } from '@/components/shell/icon'
 import { cn } from '@/lib/cn'
 import { createCopyVersion, deleteCopy, updateCopy } from '@/lib/api/mutations'
 import type { CopyDetail, CopyStatus, CopyVersion } from '@/lib/api/types'
-
-const fieldCls =
-  'w-full px-4 rounded-2xl uc-glass uc-transition text-[15px] text-[var(--uc-text)] outline-none ' +
-  'focus:border-[var(--uc-accent-ring)] focus:shadow-[0_0_0_4px_var(--uc-accent-soft-2)]'
 
 export function CopyEditor({
   slug, copy, versions,

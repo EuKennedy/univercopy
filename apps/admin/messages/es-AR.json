@@ -81,7 +81,10 @@
     "expandSidebar": "Expandir barra lateral",
     "collapseSidebar": "Contraer barra lateral",
     "logout": "Cerrar sesión",
-    "loggingOut": "Cerrando sesión…"
+    "loggingOut": "Cerrando sesión…",
+    "group_create": "Crear",
+    "group_catalog": "Catálogo",
+    "group_insights": "Insights"
   },
   "dashboard": {
     "eyebrow": "Vista general",

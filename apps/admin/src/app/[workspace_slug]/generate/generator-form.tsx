@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 
-import { GlassButton, GlassCard } from '@/components/ui'
+import { GlassButton, GlassCard, fieldCls } from '@/components/ui'
 import { Icon, type IconName } from '@/components/shell/icon'
 import { cn } from '@/lib/cn'
 import { generateCopy, saveCopy } from '@/lib/api/mutations'
@@ -27,10 +27,6 @@ const MODELS = [
   { value: 'sonnet', label: 'Sonnet' },
   { value: 'opus', label: 'Opus' },
 ]
-
-const fieldCls =
-  'w-full px-4 rounded-2xl uc-glass uc-transition text-[15px] text-[var(--uc-text)] outline-none ' +
-  'focus:border-[var(--uc-accent-ring)] focus:shadow-[0_0_0_4px_var(--uc-accent-soft-2)]'
 
 type TFn = ReturnType<typeof useTranslations>
 

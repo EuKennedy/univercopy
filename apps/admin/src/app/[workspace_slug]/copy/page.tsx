@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { getTranslations } from 'next-intl/server'
 
 import { Icon, Topbar } from '@/components/shell'
-import { GlassButton, GlassCard } from '@/components/ui'
+import { GlassButton, GlassCard, PageContainer, StatusBadge, type StatusTone } from '@/components/ui'
 import { listCopies } from '@/lib/api/queries'
 import type { CopyStatus } from '@/lib/api/types'
 
@@ -16,12 +16,12 @@ export default async function CopyListPage({ params, searchParams }: Props) {
   const { status } = await searchParams
   const t = await getTranslations('copy')
 
-  const STATUS_META: Record<CopyStatus, { label: string; cls: string }> = {
-    rascunho:   { label: t('status_rascunho'),  cls: 'bg-[var(--uc-surface-soft)] text-[var(--uc-text-soft)]' },
-    revisao:    { label: t('status_revisao'),   cls: 'bg-amber-500/15 text-amber-300' },
-    aprovado:   { label: t('status_aprovado'),  cls: 'bg-emerald-500/15 text-emerald-300' },
-    publicado:  { label: t('status_publicado'), cls: 'bg-[var(--uc-accent-soft-2)] text-[var(--uc-accent)]' },
-    arquivado:  { label: t('status_arquivado'), cls: 'bg-[var(--uc-surface-soft)] text-[var(--uc-text-faint)]' },
+  const STATUS_META: Record<CopyStatus, { label: string; tone: StatusTone }> = {
+    rascunho:   { label: t('status_rascunho'),  tone: 'neutral' },
+    revisao:    { label: t('status_revisao'),   tone: 'warning' },
+    aprovado:   { label: t('status_aprovado'),  tone: 'success' },
+    publicado:  { label: t('status_publicado'), tone: 'accent' },
+    arquivado:  { label: t('status_arquivado'), tone: 'neutral' },
   }
 
   const FILTERS: { key: string; label: string }[] = [
@@ -46,7 +46,7 @@ export default async function CopyListPage({ params, searchParams }: Props) {
           </Link>
         }
       />
-      <div className="px-4 sm:px-6 lg:px-8 py-8 max-w-6xl mx-auto w-full space-y-6">
+      <PageContainer>
         <div className="flex flex-wrap gap-2">
           {FILTERS.map((f) => {
             const active = (status ?? '') === f.key
@@ -95,7 +95,7 @@ export default async function CopyListPage({ params, searchParams }: Props) {
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2.5">
                           <h3 className="text-base font-semibold text-[var(--uc-text)] truncate">{c.title}</h3>
-                          <span className={`shrink-0 text-[11px] font-semibold rounded-full px-2 py-0.5 ${meta.cls}`}>{meta.label}</span>
+                          <StatusBadge label={meta.label} tone={meta.tone} className="shrink-0" />
                         </div>
                         {c.current_content_preview && (
                           <p className="text-sm leading-6 text-[var(--uc-text-soft)] mt-1.5 line-clamp-2">
@@ -118,7 +118,7 @@ export default async function CopyListPage({ params, searchParams }: Props) {
             })}
           </div>
         )}
-      </div>
+      </PageContainer>
     </>
   )
 }

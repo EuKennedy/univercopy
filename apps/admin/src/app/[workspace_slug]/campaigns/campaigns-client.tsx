@@ -5,25 +5,21 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 
-import { GlassButton, GlassCard, GlassInput } from '@/components/ui'
+import { GlassButton, GlassCard, GlassInput, StatusBadge, type StatusTone, fieldCls, labelCls } from '@/components/ui'
 import { Icon } from '@/components/shell/icon'
 import { cn } from '@/lib/cn'
 import { createCampaign } from '@/lib/api/mutations'
 import type { CampaignListItem } from '@/lib/api/types'
 
-const fieldCls =
-  'w-full px-4 py-3 rounded-2xl uc-glass uc-transition text-[15px] text-[var(--uc-text)] outline-none leading-6 ' +
-  'focus:border-[var(--uc-accent-ring)] focus:shadow-[0_0_0_4px_var(--uc-accent-soft-2)]'
-
 export function CampaignsClient({ slug, campaigns }: { slug: string; campaigns: CampaignListItem[] }) {
   const router = useRouter()
   const t = useTranslations('campaigns')
   const tc = useTranslations('common')
-  const STATUS_META: Record<string, { label: string; cls: string }> = {
-    planejada: { label: t('status_planejada'), cls: 'bg-[var(--uc-surface-soft)] text-[var(--uc-text-soft)]' },
-    ativa:     { label: t('status_ativa'),     cls: 'bg-emerald-500/15 text-emerald-300' },
-    concluida: { label: t('status_concluida'), cls: 'bg-[var(--uc-accent-soft-2)] text-[var(--uc-accent)]' },
-    arquivada: { label: t('status_arquivada'), cls: 'bg-[var(--uc-surface-soft)] text-[var(--uc-text-faint)]' },
+  const STATUS_META: Record<string, { label: string; tone: StatusTone }> = {
+    planejada: { label: t('status_planejada'), tone: 'neutral' },
+    ativa:     { label: t('status_ativa'),     tone: 'success' },
+    concluida: { label: t('status_concluida'), tone: 'accent' },
+    arquivada: { label: t('status_arquivada'), tone: 'neutral' },
   }
   const [open, setOpen] = useState(false)
   const [name, setName] = useState('')
@@ -67,8 +63,8 @@ export function CampaignsClient({ slug, campaigns }: { slug: string; campaigns: 
           <GlassInput label={t('objective')} placeholder={t('objective_placeholder')} value={objective} onChange={(e) => setObjective(e.target.value)} />
           <GlassInput label={t('audience')} placeholder={t('audience_placeholder')} value={audience} onChange={(e) => setAudience(e.target.value)} />
           <div>
-            <label className="text-xs font-semibold tracking-wide uppercase text-[var(--uc-text-muted)] mb-1.5 block">{t('context')}</label>
-            <textarea rows={4} className={cn(fieldCls, 'resize-y')} placeholder={t('context_placeholder')} value={context} onChange={(e) => setContext(e.target.value)} />
+            <label className={labelCls}>{t('context')}</label>
+            <textarea rows={4} className={cn(fieldCls, 'py-3 resize-y')} placeholder={t('context_placeholder')} value={context} onChange={(e) => setContext(e.target.value)} />
           </div>
           {error && (
             <p className={cn('text-sm', paywall ? 'text-[var(--uc-accent-strong)]' : 'text-[var(--uc-danger)]')}>
@@ -93,13 +89,13 @@ export function CampaignsClient({ slug, campaigns }: { slug: string; campaigns: 
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {campaigns.map((c) => {
-            const meta = STATUS_META[c.status] ?? { label: c.status, cls: 'bg-[var(--uc-surface-soft)] text-[var(--uc-text-soft)]' }
+            const meta = STATUS_META[c.status] ?? { label: c.status, tone: 'neutral' as StatusTone }
             return (
               <Link key={c.id} href={`/${slug}/campaigns/${c.id}`} className="group cursor-pointer">
                 <GlassCard className="p-5 h-full uc-transition-fast hover:translate-y-[-2px] hover:shadow-[var(--uc-shadow-prisma)]">
                   <div className="flex items-center gap-2.5 mb-2">
                     <h3 className="text-base font-semibold text-[var(--uc-text)] truncate flex-1">{c.name}</h3>
-                    <span className={`shrink-0 text-[11px] font-semibold rounded-full px-2 py-0.5 ${meta.cls}`}>{meta.label}</span>
+                    <StatusBadge label={meta.label} tone={meta.tone} className="shrink-0" />
                   </div>
                   {c.objective && <p className="text-sm leading-6 text-[var(--uc-text-soft)] line-clamp-2">{c.objective}</p>}
                   <p className="text-xs text-[var(--uc-text-faint)] mt-3">{t('pieces', { count: c.pieces })}</p>
