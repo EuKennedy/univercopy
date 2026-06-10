@@ -152,7 +152,10 @@
     "error_ai_failed": "La IA no respondió ahora. Probá de nuevo en un momento.",
     "error_feature_locked": "Esta función no está en tu plan actual.",
     "error_cap_reached": "Alcanzaste el límite de uso de IA del mes.",
-    "error_generic": "No se pudo generar ahora. Probá de nuevo."
+    "error_generic": "No se pudo generar ahora. Probá de nuevo.",
+    "search_format": "Buscar formato...",
+    "search_style": "Buscar estilo...",
+    "no_results": "Nada encontrado."
   },
   "copy": {
     "eyebrow": "BIBLIOTECA",
@@ -234,7 +237,16 @@
     "seq_brief": "Brief",
     "seq_brief_ph": "Oferta, contexto, fechas, tono de voz...",
     "generate_sequence": "Generar secuencia",
-    "generating_sequence": "Generando..."
+    "generating_sequence": "Generando...",
+    "angle_label": "Ángulo",
+    "angle_none": "Libre",
+    "angle_urgencia": "Urgencia",
+    "angle_escassez": "Escasez",
+    "angle_prova": "Prueba social",
+    "angle_beneficio": "Beneficio",
+    "angle_story": "Storytelling",
+    "angle_objecao": "Manejo de objeción",
+    "angle_oferta": "Oferta"
   },
   "products": {
     "eyebrow": "CATÁLOGO",

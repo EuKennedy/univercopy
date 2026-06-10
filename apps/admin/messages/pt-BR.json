@@ -152,7 +152,10 @@
     "error_ai_failed": "A IA não respondeu agora. Tente de novo em instantes.",
     "error_feature_locked": "Esse recurso não está no seu plano atual.",
     "error_cap_reached": "Você atingiu o limite de uso de IA do mês.",
-    "error_generic": "Não foi possível gerar agora. Tente novamente."
+    "error_generic": "Não foi possível gerar agora. Tente novamente.",
+    "search_format": "Buscar formato...",
+    "search_style": "Buscar estilo...",
+    "no_results": "Nada encontrado."
   },
   "copy": {
     "eyebrow": "ACERVO",
@@ -234,7 +237,16 @@
     "seq_brief": "Briefing",
     "seq_brief_ph": "Oferta, contexto, datas, tom de voz...",
     "generate_sequence": "Gerar sequência",
-    "generating_sequence": "Gerando..."
+    "generating_sequence": "Gerando...",
+    "angle_label": "Ângulo",
+    "angle_none": "Livre",
+    "angle_urgencia": "Urgência",
+    "angle_escassez": "Escassez",
+    "angle_prova": "Prova social",
+    "angle_beneficio": "Benefício",
+    "angle_story": "Storytelling",
+    "angle_objecao": "Quebra de objeção",
+    "angle_oferta": "Oferta"
   },
   "products": {
     "eyebrow": "CATÁLOGO",

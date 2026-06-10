@@ -36,6 +36,10 @@ export type IconName =
   | 'landmark'
   | 'plus'
   | 'trash'
+  | 'sliders'
+  | 'target'
+  | 'layers'
+  | 'check'
 
 export function Icon({ name, className, size = 18 }: IconProps) {
   const paths = ICON_PATHS[name]
@@ -105,9 +109,11 @@ const ICON_PATHS: Record<IconName, React.ReactNode> = {
   ),
   intelligence: (
     <>
-      <path d="M9 18V5l12-2v13" />
-      <circle cx="6" cy="18" r="3" />
-      <circle cx="18" cy="16" r="3" />
+      <path d="M12 5a3 3 0 1 0-5.997.142 4 4 0 0 0-2.526 5.77 4 4 0 0 0 .556 6.588A4 4 0 1 0 12 18Z" />
+      <path d="M12 5a3 3 0 1 1 5.997.142 4 4 0 0 1 2.526 5.77 4 4 0 0 1-.556 6.588A4 4 0 1 1 12 18Z" />
+      <path d="M15 13a4.5 4.5 0 0 1-3-4 4.5 4.5 0 0 1-3 4" />
+      <path d="M17.6 6.5a4 4 0 0 1 .8 1.7" />
+      <path d="M6.4 6.5a4 4 0 0 0-.8 1.7" />
     </>
   ),
   settings: (
@@ -170,4 +176,8 @@ const ICON_PATHS: Record<IconName, React.ReactNode> = {
   landmark: (<><line x1="3" y1="22" x2="21" y2="22" /><line x1="6" y1="18" x2="6" y2="11" /><line x1="10" y1="18" x2="10" y2="11" /><line x1="14" y1="18" x2="14" y2="11" /><line x1="18" y1="18" x2="18" y2="11" /><path d="m12 2 9 4H3z" /></>),
   plus: (<><path d="M12 5v14" /><path d="M5 12h14" /></>),
   trash: (<><path d="M3 6h18" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></>),
+  sliders: (<><line x1="4" y1="21" x2="4" y2="14" /><line x1="4" y1="10" x2="4" y2="3" /><line x1="12" y1="21" x2="12" y2="12" /><line x1="12" y1="8" x2="12" y2="3" /><line x1="20" y1="21" x2="20" y2="16" /><line x1="20" y1="12" x2="20" y2="3" /><line x1="1" y1="14" x2="7" y2="14" /><line x1="9" y1="8" x2="15" y2="8" /><line x1="17" y1="16" x2="23" y2="16" /></>),
+  target: (<><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5" /><circle cx="12" cy="12" r="1.5" /></>),
+  layers: (<><path d="m12 2 9 5-9 5-9-5 9-5z" /><path d="m3 12 9 5 9-5" /><path d="m3 17 9 5 9-5" /></>),
+  check: <path d="M20 6 9 17l-5-5" />,
 }

@@ -133,10 +133,13 @@ function SequenceBuilder({
   const [channelKey, setChannelKey] = useState<string>('')
   const [pieceKey, setPieceKey] = useState<string>('')
   const [steps, setSteps] = useState(3)
+  const [angle, setAngle] = useState('')
   const [brief, setBrief] = useState('')
   const [model, setModel] = useState('auto')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const ANGLES = ['urgencia', 'escassez', 'prova', 'beneficio', 'story', 'objecao', 'oferta'] as const
 
   const channel = channels.find((c) => c.key === channelKey)
   const pieces: PieceType[] = channel?.piece_types ?? []
@@ -150,11 +153,13 @@ function SequenceBuilder({
 
   async function run() {
     setLoading(true); setError(null)
+    const angleHint = angle ? `${t('angle_label')}: ${t(`angle_${angle}`)}. ` : ''
+    const fullBrief = `${angleHint}${brief.trim()}`.trim()
     const res = await generateSequence(slug, campaignId, {
       channel: channelKey,
       piece_type_key: pieceKey || undefined,
       steps,
-      brief: brief.trim() || undefined,
+      brief: fullBrief || undefined,
       model,
     })
     setLoading(false)
@@ -228,7 +233,34 @@ function SequenceBuilder({
             </div>
           </div>
 
-          {/* 3 — Passos + brief + modelo */}
+          {/* 3 — Ângulo (massa) */}
+          <div className="space-y-2">
+            <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--uc-text-muted)] flex items-center gap-1.5">
+              <Icon name="target" size={13} />{t('angle_label')}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {(['', ...ANGLES] as string[]).map((a) => {
+                const active = angle === a
+                return (
+                  <button
+                    key={a || 'none'}
+                    type="button"
+                    onClick={() => setAngle(a)}
+                    className={cn(
+                      'px-3 h-8 rounded-full text-xs font-semibold uc-transition-fast cursor-pointer border',
+                      active
+                        ? 'border-[var(--uc-accent-ring)] bg-[var(--uc-accent-soft)] text-[var(--uc-accent)]'
+                        : 'border-[var(--uc-border)] text-[var(--uc-text-soft)] hover:text-[var(--uc-text)] hover:border-[var(--uc-border-strong)]',
+                    )}
+                  >
+                    {a ? t(`angle_${a}`) : t('angle_none')}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* 4 — Passos + brief + modelo */}
           <div className="grid grid-cols-1 sm:grid-cols-[120px_1fr] gap-4">
             <div>
               <label className="text-xs font-semibold tracking-wide uppercase text-[var(--uc-text-muted)] mb-1.5 block">{t('steps_label')}</label>

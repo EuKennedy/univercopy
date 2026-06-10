@@ -152,7 +152,10 @@
     "error_ai_failed": "The AI didn't respond just now. Try again in a moment.",
     "error_feature_locked": "This feature isn't in your current plan.",
     "error_cap_reached": "You've reached your monthly AI usage limit.",
-    "error_generic": "Couldn't generate right now. Please try again."
+    "error_generic": "Couldn't generate right now. Please try again.",
+    "search_format": "Search format...",
+    "search_style": "Search style...",
+    "no_results": "Nothing found."
   },
   "copy": {
     "eyebrow": "LIBRARY",
@@ -234,7 +237,16 @@
     "seq_brief": "Brief",
     "seq_brief_ph": "Offer, context, dates, tone of voice...",
     "generate_sequence": "Generate sequence",
-    "generating_sequence": "Generating..."
+    "generating_sequence": "Generating...",
+    "angle_label": "Angle",
+    "angle_none": "Free",
+    "angle_urgencia": "Urgency",
+    "angle_escassez": "Scarcity",
+    "angle_prova": "Social proof",
+    "angle_beneficio": "Benefit",
+    "angle_story": "Storytelling",
+    "angle_objecao": "Objection handling",
+    "angle_oferta": "Offer"
   },
   "products": {
     "eyebrow": "CATALOG",

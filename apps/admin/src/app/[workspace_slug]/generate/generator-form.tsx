@@ -58,6 +58,8 @@ export function GeneratorForm({ slug, pieceTypes, styles, frameworks, channels, 
   const [brief, setBrief] = useState('')
   const [n, setN] = useState(2)
   const [model, setModel] = useState('auto')
+  const [pieceSearch, setPieceSearch] = useState('')
+  const [styleSearch, setStyleSearch] = useState('')
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -183,49 +185,71 @@ export function GeneratorForm({ slug, pieceTypes, styles, frameworks, channels, 
             </div>
           </div>
 
-          {activeChannel && (
-            <div className="space-y-2">
-              <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--uc-text-muted)]">{tcamp('pick_format')}</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-[44vh] overflow-y-auto pr-1">
-                {activeChannel.piece_types.map((pt) => (
-                  <SelectCard
-                    key={pt.key}
-                    active={pieceTypeKey === pt.key}
-                    title={pt.name}
-                    sub={pt.length_hint ?? pt.description ?? undefined}
-                    onClick={() => { setPieceTypeKey(pt.key); setStep(1) }}
-                  />
-                ))}
+          {activeChannel && (() => {
+            const q = pieceSearch.trim().toLowerCase()
+            const pieces = q
+              ? activeChannel.piece_types.filter((p) => `${p.name} ${p.description ?? ''}`.toLowerCase().includes(q))
+              : activeChannel.piece_types
+            return (
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--uc-text-muted)]">{tcamp('pick_format')}</p>
+                  <SearchInput value={pieceSearch} onChange={setPieceSearch} placeholder={t('search_format')} />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-[44vh] overflow-y-auto pr-1">
+                  {pieces.map((pt) => (
+                    <SelectCard
+                      key={pt.key}
+                      active={pieceTypeKey === pt.key}
+                      title={pt.name}
+                      sub={pt.length_hint ?? pt.description ?? undefined}
+                      onClick={() => { setPieceTypeKey(pt.key); setStep(1) }}
+                    />
+                  ))}
+                  {pieces.length === 0 && (
+                    <p className="text-sm text-[var(--uc-text-muted)] col-span-full py-4 text-center">{t('no_results')}</p>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            )
+          })()}
         </GlassCard>
       )}
 
       {/* STEP 2 — Estilo */}
       {step === 1 && (
         <GlassCard className="p-6 space-y-5">
-          <Header title={t('step2_title')} sub={t('step2_sub')} />
+          <div className="flex items-start justify-between gap-3 flex-wrap">
+            <Header title={t('step2_title')} sub={t('step2_sub')} />
+            <SearchInput value={styleSearch} onChange={setStyleSearch} placeholder={t('search_style')} />
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             <SelectCard active={styleKey === ''} title={t('let_ai_choose')} sub={t('let_ai_choose_sub')} onClick={() => setStyleKey('')} />
           </div>
           <div className="space-y-5 max-h-[40vh] overflow-y-auto pr-1">
-            {styleGroups.map(([grp, items]) => (
-              <div key={grp}>
-                <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--uc-text-muted)] mb-2">{grp}</p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  {items.map((s) => (
-                    <SelectCard
-                      key={s.key}
-                      active={styleKey === s.key}
-                      title={`${s.name}${s.era ? ` · ${s.era}` : ''}`}
-                      sub={s.when_to_use ?? s.description ?? undefined}
-                      onClick={() => setStyleKey(s.key)}
-                    />
-                  ))}
+            {styleGroups.map(([grp, items]) => {
+              const q = styleSearch.trim().toLowerCase()
+              const list = q
+                ? items.filter((s) => `${s.name} ${s.era ?? ''} ${s.when_to_use ?? ''} ${s.description ?? ''}`.toLowerCase().includes(q))
+                : items
+              if (list.length === 0) return null
+              return (
+                <div key={grp}>
+                  <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-[var(--uc-text-muted)] mb-2">{grp}</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    {list.map((s) => (
+                      <SelectCard
+                        key={s.key}
+                        active={styleKey === s.key}
+                        title={`${s.name}${s.era ? ` · ${s.era}` : ''}`}
+                        sub={s.when_to_use ?? s.description ?? undefined}
+                        onClick={() => setStyleKey(s.key)}
+                      />
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
           {/* Framework é jargão de copy — escondido em "Avançado". Auto cobre 99%. */}
           <details className="rounded-2xl uc-glass px-4 py-3 group">
@@ -323,6 +347,24 @@ function Header({ title, sub }: { title: string; sub: string }) {
     <div>
       <h2 className="text-2xl font-bold text-[var(--uc-text)] tracking-tight">{title}</h2>
       <p className="text-sm text-[var(--uc-text-soft)] mt-1">{sub}</p>
+    </div>
+  )
+}
+
+function SearchInput({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder: string }) {
+  return (
+    <div className="relative w-full sm:w-64">
+      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--uc-text-faint)] pointer-events-none">
+        <Icon name="search" size={16} />
+      </span>
+      <input
+        type="search"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        aria-label={placeholder}
+        className="w-full h-10 pl-9 pr-3 rounded-xl uc-glass text-sm text-[var(--uc-text)] outline-none placeholder:text-[var(--uc-text-faint)] focus:border-[var(--uc-accent-ring)] focus:shadow-[0_0_0_3px_var(--uc-accent-soft-2)]"
+      />
     </div>
   )
 }
