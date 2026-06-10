@@ -102,7 +102,10 @@
     "ai_cost_month": "AI cost this month",
     "plan": "{plan} plan",
     "dna_in_use": "DNA in use: {kind}",
-    "edit_or_switch": "Edit or switch →"
+    "edit_or_switch": "Edit or switch →",
+    "hero_title": "What are we creating today?",
+    "hero_sub": "Generate copy with your brand DNA in seconds — pick a channel and AI writes it.",
+    "cta_campaign": "New campaign"
   },
   "status": {
     "rascunho": "Draft",

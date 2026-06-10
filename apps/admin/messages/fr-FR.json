@@ -102,7 +102,10 @@
     "ai_cost_month": "Coût d'IA ce mois-ci",
     "plan": "Forfait {plan}",
     "dna_in_use": "ADN utilisé : {kind}",
-    "edit_or_switch": "Modifier ou changer →"
+    "edit_or_switch": "Modifier ou changer →",
+    "hero_title": "On crée quoi aujourd hui ?",
+    "hero_sub": "Générez du copy avec le DNA de votre marque en quelques secondes — choisissez un canal et l IA écrit.",
+    "cta_campaign": "Nouvelle campagne"
   },
   "status": {
     "rascunho": "Brouillon",

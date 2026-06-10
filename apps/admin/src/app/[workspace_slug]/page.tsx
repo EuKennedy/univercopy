@@ -1,13 +1,17 @@
 import Link from 'next/link'
 import { getTranslations } from 'next-intl/server'
 
-import { Icon, Topbar } from '@/components/shell'
-import { GlassButton, GlassCard } from '@/components/ui'
+import { Icon, Topbar, type IconName } from '@/components/shell'
+import { GlassButton, GlassCard, PageContainer, StatusBadge, type StatusTone } from '@/components/ui'
 import { getOverview } from '@/lib/api/queries'
 import { brl } from '@/lib/money'
 import type { CopyStatus } from '@/lib/api/types'
 
 type Props = { params: Promise<{ workspace_slug: string }> }
+
+const STATUS_TONE: Record<CopyStatus, StatusTone> = {
+  rascunho: 'neutral', revisao: 'warning', aprovado: 'success', publicado: 'accent', arquivado: 'neutral',
+}
 
 export default async function WorkspaceOverviewPage({ params }: Props) {
   const { workspace_slug } = await params
@@ -19,34 +23,60 @@ export default async function WorkspaceOverviewPage({ params }: Props) {
     rascunho: ts('rascunho'), revisao: ts('revisao'), aprovado: ts('aprovado'), publicado: ts('publicado'), arquivado: ts('arquivado'),
   }
 
-  const stats = [
-    { label: t('stat_copies'), value: o.counts.copies, href: `/${workspace_slug}/copy` },
-    { label: t('stat_in_review'), value: o.counts.copies_revisao, href: `/${workspace_slug}/copy?status=revisao` },
-    { label: t('stat_campaigns'), value: o.counts.campaigns, href: `/${workspace_slug}/campaigns` },
-    { label: t('stat_products'), value: o.counts.products, href: `/${workspace_slug}/products` },
-    { label: t('stat_generations_month'), value: o.counts.generations_month, href: `/${workspace_slug}/generate` },
+  const stats: { label: string; value: number; href: string; icon: IconName; color: string }[] = [
+    { label: t('stat_copies'),            value: o.counts.copies,            href: `/${workspace_slug}/copy`,                 icon: 'copy',     color: 'var(--uc-brand-purple)' },
+    { label: t('stat_in_review'),         value: o.counts.copies_revisao,    href: `/${workspace_slug}/copy?status=revisao`,  icon: 'check',    color: 'var(--uc-warn)' },
+    { label: t('stat_campaigns'),         value: o.counts.campaigns,         href: `/${workspace_slug}/campaigns`,            icon: 'campaign', color: 'var(--uc-brand-blue)' },
+    { label: t('stat_products'),          value: o.counts.products,          href: `/${workspace_slug}/products`,             icon: 'product',  color: '#06b6d4' },
+    { label: t('stat_generations_month'), value: o.counts.generations_month, href: `/${workspace_slug}/generate`,             icon: 'spark',    color: 'var(--uc-success)' },
   ]
 
   return (
     <>
-      <Topbar
-        eyebrow={t('eyebrow')}
-        title={o.workspace.name}
-        description={t('description')}
-        actions={
-          <Link href={`/${workspace_slug}/generate`}>
-            <GlassButton size="sm"><Icon name="spark" size={16} />{t('generateCopy')}</GlassButton>
-          </Link>
-        }
-      />
+      <Topbar eyebrow={t('eyebrow')} title={o.workspace.name} description={t('description')} />
 
-      <div className="px-4 sm:px-6 lg:px-8 py-8 space-y-6 max-w-6xl mx-auto w-full">
-        {/* KPIs */}
+      <PageContainer>
+        {/* Hero "criar" */}
+        <GlassCard variant="strong" iridescent glow className="relative overflow-hidden p-6 sm:p-8">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -right-16 -top-16 size-56 rounded-full opacity-30 blur-3xl"
+            style={{ background: 'radial-gradient(circle, var(--uc-brand-purple), transparent 70%)' }}
+          />
+          <div className="relative flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+            <div className="max-w-xl">
+              <span
+                className="mb-3 inline-flex size-11 items-center justify-center rounded-2xl text-white shadow-[0_8px_24px_-8px_rgba(139,92,246,0.6)]"
+                style={{ background: 'linear-gradient(135deg, var(--uc-brand-purple), var(--uc-brand-blue))' }}
+              >
+                <Icon name="spark" size={22} />
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-[var(--uc-text)] leading-tight">{t('hero_title')}</h2>
+              <p className="text-sm sm:text-[15px] leading-6 text-[var(--uc-text-soft)] mt-2">{t('hero_sub')}</p>
+            </div>
+            <div className="flex flex-wrap gap-2.5 shrink-0">
+              <Link href={`/${workspace_slug}/generate`}>
+                <GlassButton size="lg"><Icon name="spark" size={18} />{t('generateCopy')}</GlassButton>
+              </Link>
+              <Link href={`/${workspace_slug}/campaigns`}>
+                <GlassButton size="lg" variant="secondary"><Icon name="campaign" size={18} />{t('cta_campaign')}</GlassButton>
+              </Link>
+            </div>
+          </div>
+        </GlassCard>
+
+        {/* KPIs com ícone + cor */}
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3">
           {stats.map((s) => (
             <Link key={s.label} href={s.href} className="cursor-pointer">
-              <GlassCard className="p-5 uc-transition-fast hover:translate-y-[-2px] hover:shadow-[var(--uc-shadow-prisma)]">
-                <p className="text-3xl font-bold text-[var(--uc-text)] tracking-tight">{s.value}</p>
+              <GlassCard className="p-5 h-full uc-transition-fast hover:translate-y-[-2px] hover:shadow-[var(--uc-shadow-prisma)]">
+                <span
+                  className="mb-3 inline-flex size-9 items-center justify-center rounded-xl"
+                  style={{ background: `color-mix(in srgb, ${s.color} 16%, transparent)`, color: s.color }}
+                >
+                  <Icon name={s.icon} size={18} />
+                </span>
+                <p className="text-3xl font-bold text-[var(--uc-text)] tracking-tight tabular-nums">{s.value}</p>
                 <p className="text-xs text-[var(--uc-text-muted)] mt-1 uppercase tracking-wider">{s.label}</p>
               </GlassCard>
             </Link>
@@ -72,9 +102,12 @@ export default async function WorkspaceOverviewPage({ params }: Props) {
               <div className="space-y-2">
                 {o.recent_copies.map((c) => (
                   <Link key={c.id} href={`/${workspace_slug}/copy/${c.id}`} className="group cursor-pointer block">
-                    <GlassCard className="p-4 flex items-center justify-between gap-3 uc-transition-fast hover:translate-y-[-2px]">
+                    <GlassCard className="p-4 flex items-center justify-between gap-3 uc-transition-fast hover:translate-y-[-2px] hover:shadow-[var(--uc-shadow-prisma)]">
                       <span className="text-sm font-semibold text-[var(--uc-text)] truncate">{c.title}</span>
-                      <span className="text-xs text-[var(--uc-text-muted)] shrink-0">{STATUS_LABEL[c.status]}</span>
+                      <span className="flex items-center gap-2 shrink-0">
+                        <StatusBadge label={STATUS_LABEL[c.status]} tone={STATUS_TONE[c.status]} />
+                        <Icon name="chevron-right" size={16} className="text-[var(--uc-text-faint)] group-hover:text-[var(--uc-text)]" />
+                      </span>
                     </GlassCard>
                   </Link>
                 ))}
@@ -86,7 +119,7 @@ export default async function WorkspaceOverviewPage({ params }: Props) {
           <div className="space-y-4">
             <GlassCard className="p-6 space-y-3">
               <p className="text-xs font-semibold tracking-wide uppercase text-[var(--uc-text-muted)]">{t('ai_cost_month')}</p>
-              <p className="text-2xl font-bold text-[var(--uc-text)]">
+              <p className="text-2xl font-bold text-[var(--uc-text)] tabular-nums">
                 {brl(o.cost.used_usd)}
                 {o.cost.limit_usd != null && <span className="text-sm font-normal text-[var(--uc-text-muted)]"> / {brl(o.cost.limit_usd)}</span>}
               </p>
@@ -99,17 +132,20 @@ export default async function WorkspaceOverviewPage({ params }: Props) {
             </GlassCard>
 
             <Link href={`/${workspace_slug}/settings/dna`}>
-              <GlassCard className="p-5 uc-transition-fast hover:translate-y-[-2px] cursor-pointer flex items-center gap-3">
-                <Icon name="sparkle" size={18} className="text-[var(--uc-accent)]" />
-                <div>
-                  <p className="text-sm font-semibold text-[var(--uc-text)] first-letter:capitalize">{t('dna_in_use', { kind: o.dna_in_use })}</p>
+              <GlassCard className="p-5 uc-transition-fast hover:translate-y-[-2px] hover:shadow-[var(--uc-shadow-prisma)] cursor-pointer flex items-center gap-3">
+                <span className="grid size-10 place-items-center rounded-xl shrink-0" style={{ background: 'var(--uc-accent-soft-2)', color: 'var(--uc-accent)' }}>
+                  <Icon name="sparkle" size={18} />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold text-[var(--uc-text)] first-letter:capitalize truncate">{t('dna_in_use', { kind: o.dna_in_use })}</p>
                   <p className="text-xs text-[var(--uc-text-muted)]">{t('edit_or_switch')}</p>
                 </div>
+                <Icon name="chevron-right" size={16} className="ml-auto text-[var(--uc-text-faint)] shrink-0" />
               </GlassCard>
             </Link>
           </div>
         </div>
-      </div>
+      </PageContainer>
     </>
   )
 }
