@@ -93,6 +93,10 @@ Rails.application.routes.draw do
         post "/blog/cover/generate",   to: "blog_posts#generate_cover"
         post "/blog/cover/upload",     to: "blog_posts#upload_cover"
         post "/blog/publish",          to: "blog_posts#publish"
+        # Agente: conversa até fechar o plano, executa em background com polling.
+        post "/blog/agent/message",    to: "blog_posts#agent_message"
+        post "/blog/agent/run",        to: "blog_posts#agent_run"
+        get  "/blog/agent/run/:id",    to: "blog_posts#agent_run_status"
 
         # Análise de página (page audit).
         get  "/page-audits", to: "page_audits#index"

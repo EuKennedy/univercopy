@@ -353,6 +353,58 @@ export type BlogMedia = {
   url: string | null
 }
 
+// --- Agente de blog ---
+export type AgentMessage = { role: 'user' | 'assistant'; content: string }
+
+export type AgentPlanPost = { topic: string; angle?: string }
+
+export type AgentPlan = {
+  posts: AgentPlanPost[]
+  status: 'draft' | 'publish'
+  generate_cover: boolean
+  category_ids: number[]
+  tag_ids: number[]
+  notes?: string
+}
+
+export type AgentReply = {
+  reply: string
+  plan: AgentPlan
+  /** Plano completo, aguardando confirmação. Nunca significa "pode publicar". */
+  ready: boolean
+  cost: AiCostReport
+}
+
+export type AgentRunPost = {
+  index: number
+  topic: string
+  status: 'pending' | 'running' | 'done' | 'error' | 'skipped'
+  step?: 'title' | 'content' | 'cover' | 'publish'
+  title?: string
+  post_id?: number
+  url?: string
+  error?: string
+}
+
+export type AgentRunResult = {
+  total: number
+  completed: number
+  failed: number
+  cost_usd: number
+  posts: AgentRunPost[]
+}
+
+export type AgentJob = {
+  id: string
+  status: 'queued' | 'running' | 'done' | 'error'
+  task_kind: string
+  cost_usd: number | null
+  error: string | null
+  started_at: string | null
+  finished_at: string | null
+  result: AgentRunResult | null
+}
+
 export type AiCostReport = {
   used_usd: number
   limit_usd: number | null

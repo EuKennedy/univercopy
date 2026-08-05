@@ -21,6 +21,7 @@ import {
 } from '@/lib/api/mutations'
 import type { BlogMedia, BlogPostResult, BlogStatus, BlogTerm } from '@/lib/api/types'
 
+import { AgentModal } from './agent-modal'
 import { GenerationModal, type GenerationKind } from './generation-modal'
 import { TermPicker } from './term-picker'
 
@@ -52,6 +53,7 @@ export function BlogClient({ slug }: { slug: string }) {
   const [pending, setPending] = useState<Pending>(null)
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<BlogPostResult | null>(null)
+  const [agentOpen, setAgentOpen] = useState(false)
 
   // Status, categorias e tags em paralelo — round-trips independentes pro
   // WordPress. A tela abre na hora e vai preenchendo.
@@ -209,6 +211,41 @@ export function BlogClient({ slug }: { slug: string }) {
   return (
     <div className="space-y-5">
       <GenerationModal kind={generating} />
+      {agentOpen && <AgentModal slug={slug} onClose={() => setAgentOpen(false)} />}
+
+      {/* A aba Agentes abre o modal; o formulário fica embaixo como contexto. */}
+      <div role="tablist" aria-label={t('tabs_label')} className="flex gap-1 rounded-2xl uc-glass border border-[var(--uc-border)] p-1 w-fit">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={!agentOpen}
+          onClick={() => setAgentOpen(false)}
+          className={cn(
+            'inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold uc-transition',
+            !agentOpen
+              ? 'bg-[var(--uc-accent)] text-[var(--uc-text-on-accent)]'
+              : 'text-[var(--uc-text-soft)] hover:text-[var(--uc-text)]',
+          )}
+        >
+          <Icon name="blog" size={15} />
+          {t('tab_post')}
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={agentOpen}
+          onClick={() => setAgentOpen(true)}
+          className={cn(
+            'inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold uc-transition',
+            agentOpen
+              ? 'bg-[var(--uc-accent)] text-[var(--uc-text-on-accent)]'
+              : 'text-[var(--uc-text-soft)] hover:text-[var(--uc-text)]',
+          )}
+        >
+          <Icon name="sparkle" size={15} />
+          {t('tab_agent')}
+        </button>
+      </div>
 
       {status?.site && !unreachable && (
         <p className="text-xs text-[var(--uc-text-muted)]">{t('connected', { host: status.site })}</p>

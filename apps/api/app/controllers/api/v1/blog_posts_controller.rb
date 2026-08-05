@@ -141,6 +141,67 @@ module Api
       end
 
       # ---------------------------------------------------------------
+      # Agente — planeja um lote de posts conversando, depois executa
+      # ---------------------------------------------------------------
+
+      # POST /blog/agent/message  body: { messages: [{role, content}] }
+      # Só conversa. Não gera nem publica nada.
+      def agent_message
+        guard_text_generation!
+
+        result = Ai::BlogAgent.call(
+          workspace:  current_workspace,
+          messages:   agent_message_params,
+          categories: wp.categories,
+          tags:       wp.tags,
+          has_openai: openai_integration.present?
+        )
+        record_ai_job!("blog_agent", result.ai_result)
+
+        render json: {
+          reply: result.reply,
+          plan:  result.plan,
+          ready: result.ready,
+          cost:  AiCostCap.report(current_workspace),
+        }
+      end
+
+      # POST /blog/agent/run  body: { plan: {...} }
+      # Confirmação explícita do usuário. Enfileira e devolve o job pra polling.
+      def agent_run
+        guard_text_generation!
+        wp # levanta NotConnected antes de enfileirar, em vez de falhar no worker
+
+        plan = sanitized_plan
+        if plan["posts"].blank?
+          return render json: { error: "empty_plan", message: "O plano não tem nenhum post." },
+                        status: :unprocessable_entity
+        end
+
+        ai_job = AiJob.create!(
+          workspace_id: current_workspace.id,
+          task_kind:    "blog_agent_run",
+          status:       "queued",
+          payload:      { posts: plan["posts"].size, status: plan["status"], cover: plan["generate_cover"] }
+        )
+
+        Blog::AgentRunJob.perform_later(
+          workspace_id: current_workspace.id,
+          ai_job_id:    ai_job.id,
+          user_id:      current_app_user.id,
+          plan:         plan
+        )
+
+        render json: { job: ai_job_payload(ai_job) }, status: :accepted
+      end
+
+      # GET /blog/agent/run/:id — polling do progresso.
+      def agent_run_status
+        job = current_workspace.ai_jobs.find_by!(id: params[:id])
+        render json: { job: ai_job_payload(job) }
+      end
+
+      # ---------------------------------------------------------------
       # Publicação
       # ---------------------------------------------------------------
 
@@ -226,6 +287,51 @@ module Api
 
       def term_params
         params.require(:term).permit(:name)
+      end
+
+      def agent_message_params
+        params.require(:messages).map { |m| m.permit(:role, :content).to_h }
+      end
+
+      # O plano volta do cliente, então NADA nele é confiável. Reconstruímos
+      # campo a campo com tipo, teto e lista branca — o cliente só escolhe
+      # dentro do que o servidor aceita.
+      def sanitized_plan
+        raw = params.require(:plan).permit(
+          :status, :generate_cover, :notes,
+          category_ids: [], tag_ids: [],
+          posts: %i[topic angle]
+        )
+
+        posts = Array(raw[:posts]).filter_map do |p|
+          topic = p[:topic].to_s.strip
+          next if topic.blank?
+
+          { "topic" => topic.slice(0, 500), "angle" => p[:angle].to_s.strip.slice(0, 500).presence }.compact
+        end.first(Ai::BlogAgent::MAX_POSTS)
+
+        {
+          "posts"          => posts,
+          "status"         => %w[draft publish].include?(raw[:status].to_s) ? raw[:status].to_s : "draft",
+          # Capa só se houver chave — o cliente não decide isso sozinho.
+          "generate_cover" => ActiveModel::Type::Boolean.new.cast(raw[:generate_cover]).present? && openai_integration.present?,
+          "category_ids"   => Array(raw[:category_ids]).map(&:to_i).reject(&:zero?).uniq.first(20),
+          "tag_ids"        => Array(raw[:tag_ids]).map(&:to_i).reject(&:zero?).uniq.first(20),
+          "notes"          => raw[:notes].to_s.strip.slice(0, 2_000).presence,
+        }.compact
+      end
+
+      def ai_job_payload(job)
+        {
+          id:          job.id,
+          status:      job.status,
+          task_kind:   job.task_kind,
+          cost_usd:    job.cost_usd_actual || job.cost_usd_estimated,
+          error:       job.error,
+          started_at:  job.started_at,
+          finished_at: job.finished_at,
+          result:      job.result,
+        }
       end
 
       # Base64 do navegador pode vir como data URL. Rejeita o que passar do teto

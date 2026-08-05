@@ -7,6 +7,10 @@ import { ApiError, apiFetch } from '@/lib/api-client'
 import type {
   Account,
   ActionResult,
+  AgentJob,
+  AgentMessage,
+  AgentPlan,
+  AgentReply,
   AiCostReport,
   BlogMedia,
   BlogPostResult,
@@ -478,6 +482,39 @@ export async function publishBlogPost(
         body: JSON.stringify({ post: input }),
       })
     ).post,
+  )
+}
+
+// --- Agente de blog ---
+// A conversa não tem estado no servidor: o cliente devolve o histórico a cada
+// turno. `ready` só significa que o plano fechou — quem dispara a publicação é
+// o clique do usuário em runBlogAgent, nunca o modelo.
+export async function sendBlogAgentMessage(
+  slug: string,
+  messages: AgentMessage[],
+): Promise<ActionResult<AgentReply>> {
+  return run(() =>
+    apiFetch<AgentReply>(`${ws(slug)}/blog/agent/message`, {
+      method: 'POST',
+      body: JSON.stringify({ messages }),
+    }),
+  )
+}
+
+export async function runBlogAgent(slug: string, plan: AgentPlan): Promise<ActionResult<AgentJob>> {
+  return run(async () =>
+    (
+      await apiFetch<{ job: AgentJob }>(`${ws(slug)}/blog/agent/run`, {
+        method: 'POST',
+        body: JSON.stringify({ plan }),
+      })
+    ).job,
+  )
+}
+
+export async function getBlogAgentRun(slug: string, jobId: string): Promise<ActionResult<AgentJob>> {
+  return run(async () =>
+    (await apiFetch<{ job: AgentJob }>(`${ws(slug)}/blog/agent/run/${encodeURIComponent(jobId)}`)).job,
   )
 }
 
