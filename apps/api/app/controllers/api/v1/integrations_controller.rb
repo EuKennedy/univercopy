@@ -28,9 +28,17 @@ module Api
             status:       i&.status || "disconnected",
             last_sync_at: i&.last_sync_at,
             last_error:   i&.last_error,
+            # Só ajustes seguros de expor. Credencial nenhuma sai daqui.
+            settings:     safe_settings(c[:type], i),
           }
         end
-        render json: { connectors: list, products_count: current_workspace.products.count }
+
+        render json: {
+          connectors:      list,
+          products_count:  current_workspace.products.count,
+          openai_models:   Connectors::OpenAi::TEXT_MODELS.map { |id, m| { id: id, label: m[:label], input: m[:input], output: m[:output] } },
+          text_provider:   Ai::TextRouter.provider_for(current_workspace),
+        }
       end
 
       # POST /integrations/woocommerce/test — valida credenciais sem salvar.
@@ -120,6 +128,24 @@ module Api
         render json: { ok: false, error: "connection_failed", message: e.message }, status: :unprocessable_entity
       end
 
+      # PATCH /integrations/openai — troca só o modelo de texto.
+      #
+      # Existe separado do connect porque a chave nunca volta pro cliente:
+      # exigir reenvio dela só pra mudar de modelo seria pedir que o usuário
+      # fosse buscar a chave de novo a cada ajuste.
+      def update_openai_settings
+        PlanFeatures.require!(current_workspace, :connector_openai)
+
+        integration = current_workspace.integrations.find_by!(integration_type: "openai")
+        model       = params.require(:openai).permit(:text_model).to_h["text_model"].to_s.strip
+        model       = "" unless Connectors::OpenAi::TEXT_MODELS.key?(model)
+
+        integration.config = integration.config.merge("text_model" => model)
+        integration.save!
+
+        render json: { ok: true, text_model: model, text_provider: Ai::TextRouter.provider_for(current_workspace) }
+      end
+
       # POST /integrations/:type/sync — re-sincroniza catálogo.
       def sync
         type = params.require(:type)
@@ -146,6 +172,18 @@ module Api
 
       private
 
+      # Lista branca do que pode voltar pro cliente. `config` guarda credencial
+      # cifrada — nada dele sai por padrão, só o que for explicitamente seguro.
+      def safe_settings(type, integration)
+        return {} if integration.blank?
+
+        case type
+        when "openai"    then { text_model: integration.config["text_model"].to_s }
+        when "wordpress" then { base_url: integration.config["base_url"].to_s }
+        else {}
+        end
+      end
+
       def woo_params
         p = params.require(:woocommerce).permit(:base_url, :consumer_key, :consumer_secret).to_h
         {
@@ -164,8 +202,17 @@ module Api
         }
       end
 
+      # text_model vazio = OpenAI só para imagem; o texto continua no Anthropic.
+      # Modelo desconhecido é descartado em vez de salvo — a lista da OpenAI
+      # muda e não queremos gravar lixo que o roteador teria que contornar.
       def openai_params
-        { "api_key" => params.require(:openai).permit(:api_key).to_h["api_key"] }
+        p     = params.require(:openai).permit(:api_key, :text_model).to_h
+        model = p["text_model"].to_s.strip
+
+        {
+          "api_key"    => p["api_key"],
+          "text_model" => Connectors::OpenAi::TEXT_MODELS.key?(model) ? model : "",
+        }
       end
     end
   end

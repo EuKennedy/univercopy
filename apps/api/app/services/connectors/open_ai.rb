@@ -43,6 +43,17 @@ module Connectors
     # em 2026-08-05. Atualizar quando a OpenAI mexer na tabela.
     COST_USD_PER_M = { text_input: 5.0, image_input: 8.0, output: 30.0 }.freeze
 
+    # Modelos de TEXTO oferecidos no painel. Família GPT-5.6 — GPT-4/4o são
+    # legado e a própria OpenAI recomenda não usar mais.
+    # Preço em USD por 1M tokens (entrada/saída), mesma fonte e data acima.
+    TEXT_MODELS = {
+      "gpt-5.6-sol"   => { label: "GPT-5.6 Sol",   input: 5.0,  output: 30.0 },
+      "gpt-5.6-terra" => { label: "GPT-5.6 Terra", input: 2.0,  output: 12.0 },
+      "gpt-5.6-luna"  => { label: "GPT-5.6 Luna",  input: 0.20, output: 1.20 },
+    }.freeze
+
+    DEFAULT_TEXT_MODEL = "gpt-5.6-terra" # equilíbrio entre qualidade e custo
+
     MAX_PROMPT_CHARS = 4_000
 
     def initialize(config)
@@ -60,6 +71,69 @@ module Connectors
       raise ConnectionError, "timeout falando com a OpenAI"
     rescue Faraday::ConnectionFailed => e
       raise ConnectionError, "conexão com a OpenAI falhou: #{e.message}"
+    end
+
+    # Mesmos membros do Ai::AnthropicClient::Result — quem consome não precisa
+    # saber qual provedor respondeu.
+    TextResult = Struct.new(:text, :model, :input_tokens, :output_tokens, :cost_usd, :stop_reason,
+                            keyword_init: true)
+
+    # Geração de texto.
+    #
+    # Usa /v1/chat/completions e não /v1/responses: a família GPT-5.6 suporta os
+    # dois, mas o chat/completions tem formato de resposta e bloco `usage`
+    # estáveis e documentados — e sem `usage` confiável o custo não entra no
+    # AiCostCap, que é o ponto de ter escolhido teto único.
+    #
+    # `temperature` não é enviada de propósito: modelos de raciocínio a recusam.
+    # O parâmetro de teto é `max_completion_tokens`, não `max_tokens`.
+    def complete(prompt:, system: nil, model: DEFAULT_TEXT_MODEL, max_tokens: 4_000)
+      prompt = prompt.to_s
+      raise GenerationError, "prompt obrigatório" if prompt.strip.blank?
+
+      chosen = TEXT_MODELS.key?(model.to_s) ? model.to_s : DEFAULT_TEXT_MODEL
+
+      messages = []
+      messages << { role: "system", content: Ai::TemporalContext.wrap(system) }
+      messages << { role: "user", content: prompt }
+
+      body = { model: chosen, messages: messages, max_completion_tokens: max_tokens.to_i }
+
+      resp = http.post("#{BASE_URL}/chat/completions") { |r| r.body = body.to_json }
+      raise_for_status(resp) unless resp.success?
+
+      parsed = parse_json(resp.body)
+      choice = parsed.dig("choices", 0) || {}
+      text   = choice.dig("message", "content").to_s.strip
+      raise GenerationError, "OpenAI não retornou texto" if text.blank?
+
+      usage   = parsed["usage"] || {}
+      in_tok  = usage["prompt_tokens"].to_i
+      out_tok = usage["completion_tokens"].to_i
+
+      Rails.logger.info({
+        ai: "ok", provider: "openai", model: chosen,
+        input_tokens: in_tok, output_tokens: out_tok,
+      }.to_json)
+
+      TextResult.new(
+        text:          text,
+        model:         chosen,
+        input_tokens:  in_tok,
+        output_tokens: out_tok,
+        cost_usd:      text_cost(chosen, in_tok, out_tok),
+        stop_reason:   choice["finish_reason"]
+      )
+    rescue Faraday::TimeoutError
+      raise ConnectionError, "a OpenAI demorou mais de #{READ_TIMEOUT}s para responder"
+    rescue Faraday::ConnectionFailed => e
+      raise ConnectionError, "conexão com a OpenAI falhou: #{e.message}"
+    end
+
+    def text_cost(model, input_tokens, output_tokens)
+      rates = TEXT_MODELS[model.to_s] or return nil
+
+      ((input_tokens.to_i * rates[:input] + output_tokens.to_i * rates[:output]) / 1_000_000.0).round(5)
     end
 
     # Retorna { data: <bytes binários>, mime:, format:, usage:, cost_usd: }.

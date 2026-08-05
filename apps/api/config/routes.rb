@@ -77,6 +77,7 @@ Rails.application.routes.draw do
         post   "/integrations/wordpress",        to: "integrations#connect_wordpress"
         post   "/integrations/openai/test",      to: "integrations#test_openai"
         post   "/integrations/openai",           to: "integrations#connect_openai"
+        patch  "/integrations/openai",           to: "integrations#update_openai_settings"
         post   "/integrations/:type/sync",       to: "integrations#sync"
         delete "/integrations/:type",            to: "integrations#disconnect"
 

@@ -601,10 +601,15 @@
     "wp_app_password": "Contraseña de aplicación",
     "wp_app_password_hint": "Generala en Usuarios → Perfil → Contraseñas de aplicación, en el panel de WordPress. El usuario necesita permiso para publicar. Los espacios son opcionales.",
     "wp_test_ok": "Credencial válida y con permiso para publicar.",
-    "openai_description": "Se usa para generar la portada de los posts con gpt-image-2. El texto lo sigue generando la IA que mueve el resto del producto.",
+    "openai_description": "Genera la portada de los posts con gpt-image-2 y, si elegís un modelo abajo, también escribe los textos en lugar de la IA por defecto.",
     "openai_api_key": "Clave de API",
     "openai_api_key_hint": "Creala en platform.openai.com → API keys. La clave se valida antes de guardar y queda cifrada — nunca vuelve a mostrarse en pantalla.",
-    "openai_test_ok": "Clave válida."
+    "openai_test_ok": "Clave válida.",
+    "openai_text_model": "Modelo para texto",
+    "openai_text_model_off": "No usar — dejar el texto en la IA por defecto",
+    "openai_text_model_hint": "Vale para título, contenido y el agente del blog. El costo entra en el mismo tope mensual del workspace, sea cual sea el proveedor. La portada sigue en gpt-image-2.",
+    "openai_model_saved": "Modelo guardado. Los textos ahora salen por OpenAI.",
+    "openai_model_off_saved": "Guardado. Los textos vuelven a la IA por defecto."
   },
   "preferences": {
     "eyebrow": "PERSONAL",

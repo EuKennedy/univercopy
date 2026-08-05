@@ -231,6 +231,24 @@ export type ConnectorState = {
   status: 'connected' | 'disconnected' | 'error'
   last_sync_at: string | null
   last_error: string | null
+  /** Ajustes seguros de expor. Credencial nunca vem daqui. */
+  settings?: { text_model?: string; base_url?: string }
+}
+
+/** Modelo de texto da OpenAI oferecido no painel. Preço em USD por 1M tokens. */
+export type OpenAiModel = {
+  id: string
+  label: string
+  input: number
+  output: number
+}
+
+export type IntegrationsPayload = {
+  connectors: ConnectorState[]
+  products_count: number
+  openai_models: OpenAiModel[]
+  /** Quem gera texto hoje neste workspace. */
+  text_provider: 'anthropic' | 'openai'
 }
 
 export type Variation = {

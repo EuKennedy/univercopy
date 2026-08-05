@@ -10,7 +10,7 @@ type Props = { params: Promise<{ workspace_slug: string }> }
 
 export default async function IntegrationsPage({ params }: Props) {
   const { workspace_slug } = await params
-  const { connectors, products_count } = await listIntegrations(workspace_slug)
+  const { connectors, products_count, openai_models } = await listIntegrations(workspace_slug)
   const t = await getTranslations('integrations')
   const ts = await getTranslations('settings')
 
@@ -27,7 +27,12 @@ export default async function IntegrationsPage({ params }: Props) {
         }
       />
       <div className="px-4 sm:px-6 lg:px-8 py-8 max-w-6xl mx-auto w-full">
-        <IntegrationsClient slug={workspace_slug} connectors={connectors} productsCount={products_count} />
+        <IntegrationsClient
+          slug={workspace_slug}
+          connectors={connectors}
+          productsCount={products_count}
+          openaiModels={openai_models}
+        />
       </div>
     </>
   )

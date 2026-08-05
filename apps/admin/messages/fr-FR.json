@@ -601,10 +601,15 @@
     "wp_app_password": "Mot de passe d'application",
     "wp_app_password_hint": "Générez-le dans Utilisateurs → Profil → Mots de passe d'application, dans l'admin WordPress. L'utilisateur doit avoir le droit de publier. Les espaces sont facultatifs.",
     "wp_test_ok": "Identifiants valides, avec le droit de publier.",
-    "openai_description": "Sert à générer l'image de couverture des articles avec gpt-image-2. Le texte reste généré par l'IA qui anime le reste du produit.",
+    "openai_description": "Génère l'image de couverture des articles avec gpt-image-2 et, si vous choisissez un modèle ci-dessous, rédige aussi les textes à la place de l'IA par défaut.",
     "openai_api_key": "Clé d'API",
     "openai_api_key_hint": "Créez-la sur platform.openai.com → API keys. La clé est validée avant l'enregistrement et stockée chiffrée — elle ne réapparaît jamais à l'écran.",
-    "openai_test_ok": "Clé valide."
+    "openai_test_ok": "Clé valide.",
+    "openai_text_model": "Modèle pour le texte",
+    "openai_text_model_off": "Ne pas utiliser — garder le texte sur l'IA par défaut",
+    "openai_text_model_hint": "S'applique au titre, au contenu et à l'agent du blog. Le coût compte dans le même plafond mensuel de l'espace de travail, quel que soit le fournisseur. La couverture reste sur gpt-image-2.",
+    "openai_model_saved": "Modèle enregistré. Les textes passent par OpenAI.",
+    "openai_model_off_saved": "Enregistré. Les textes reviennent à l'IA par défaut."
   },
   "preferences": {
     "eyebrow": "PERSONNEL",

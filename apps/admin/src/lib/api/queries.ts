@@ -12,7 +12,7 @@ import type {
   CopyDetail,
   CopyListItem,
   CopyVersion,
-  ConnectorState,
+  IntegrationsPayload,
   DnaBundle,
   Framework,
   Member,
@@ -99,7 +99,7 @@ export async function getProduct(slug: string, id: string) {
 
 // --- Integrations ---
 export async function listIntegrations(slug: string) {
-  return apiFetch<{ connectors: ConnectorState[]; products_count: number }>(`${ws(slug)}/integrations`)
+  return apiFetch<IntegrationsPayload>(`${ws(slug)}/integrations`)
 }
 
 // --- Conta + plano + auditoria + page audits ---

@@ -270,6 +270,22 @@ export async function connectWordpress(
   return result
 }
 
+// Troca só o modelo de texto. Separado do connect porque a chave nunca volta
+// pro cliente — pedir reenvio dela a cada ajuste seria hostil.
+export async function updateOpenaiModel(
+  slug: string,
+  text_model: string,
+): Promise<ActionResult<{ ok: boolean; text_model: string; text_provider: string }>> {
+  const result = await run(() =>
+    apiFetch<{ ok: boolean; text_model: string; text_provider: string }>(`${ws(slug)}/integrations/openai`, {
+      method: 'PATCH',
+      body: JSON.stringify({ openai: { text_model } }),
+    }),
+  )
+  if (result.ok) revalidatePath(`/${slug}/settings/integrations`)
+  return result
+}
+
 export async function testWoo(
   slug: string,
   creds: { base_url: string; consumer_key: string; consumer_secret: string },
@@ -529,14 +545,15 @@ export async function testOpenai(slug: string, api_key: string): Promise<ActionR
   )
 }
 
+// text_model vazio = OpenAI só para capa; o texto segue no Anthropic.
 export async function connectOpenai(
   slug: string,
-  api_key: string,
+  input: { api_key: string; text_model: string },
 ): Promise<ActionResult<{ ok: boolean; type: string; status: string }>> {
   const result = await run(() =>
     apiFetch<{ ok: boolean; type: string; status: string }>(`${ws(slug)}/integrations/openai`, {
       method: 'POST',
-      body: JSON.stringify({ openai: { api_key } }),
+      body: JSON.stringify({ openai: input }),
     }),
   )
   if (result.ok) revalidatePath(`/${slug}/settings/integrations`)

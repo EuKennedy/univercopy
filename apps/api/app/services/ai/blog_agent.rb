@@ -45,7 +45,8 @@ module Ai
     def call
       raise ArgumentError, "conversa vazia" if @messages.empty?
 
-      ai = Ai::AnthropicClient.call(
+      ai = Ai::TextRouter.call(
+        workspace:   @workspace,
         prompt:      transcript,
         system:      system_prompt,
         model:       @model,

@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 
-import { GlassButton, GlassCard, GlassInput } from '@/components/ui'
+import { GlassButton, GlassCard, GlassInput, fieldCls, labelCls } from '@/components/ui'
 import { Icon } from '@/components/shell/icon'
 import { cn } from '@/lib/cn'
 import {
@@ -16,8 +16,9 @@ import {
   testOpenai,
   testWoo,
   testWordpress,
+  updateOpenaiModel,
 } from '@/lib/api/mutations'
-import type { ConnectorState } from '@/lib/api/types'
+import type { ConnectorState, OpenAiModel } from '@/lib/api/types'
 
 const STATUS_CLS: Record<string, string> = {
   connected:    'bg-emerald-500/15 text-emerald-300',
@@ -26,11 +27,12 @@ const STATUS_CLS: Record<string, string> = {
 }
 
 export function IntegrationsClient({
-  slug, connectors, productsCount,
+  slug, connectors, productsCount, openaiModels,
 }: {
   slug: string
   connectors: ConnectorState[]
   productsCount: number
+  openaiModels: OpenAiModel[]
 }) {
   const woo = connectors.find((c) => c.type === 'woocommerce')
   const wp = connectors.find((c) => c.type === 'wordpress')
@@ -40,7 +42,7 @@ export function IntegrationsClient({
     <div className="space-y-4">
       {woo && <WooCard slug={slug} state={woo} productsCount={productsCount} />}
       {wp && <WordpressCard slug={slug} state={wp} />}
-      {openai && <OpenAiCard slug={slug} state={openai} />}
+      {openai && <OpenAiCard slug={slug} state={openai} models={openaiModels} />}
 
       {connectors
         .filter((c) => !['woocommerce', 'wordpress', 'openai'].includes(c.type))
@@ -49,14 +51,16 @@ export function IntegrationsClient({
   )
 }
 
-// Chave da OpenAI, usada só pra gerar capa de post. O texto do produto continua
-// no Anthropic. A chave é validada contra a API antes de ser cifrada e salva.
-function OpenAiCard({ slug, state }: { slug: string; state: ConnectorState }) {
+// Chave da OpenAI + escolha do modelo de texto. A chave é validada contra a API
+// antes de ser cifrada e salva, e nunca volta pro cliente — por isso trocar só o
+// modelo usa um endpoint próprio (updateOpenaiModel) em vez do connect.
+function OpenAiCard({ slug, state, models }: { slug: string; state: ConnectorState; models: OpenAiModel[] }) {
   const router = useRouter()
   const t = useTranslations('integrations')
   const connected = state.status === 'connected'
   const [open, setOpen] = useState(false)
   const [apiKey, setApiKey] = useState('')
+  const [textModel, setTextModel] = useState(state.settings?.text_model ?? '')
   const [busy, setBusy] = useState<string | null>(null)
   const [msg, setMsg] = useState<{ kind: 'ok' | 'err' | 'paywall'; text: string } | null>(null)
 
@@ -73,11 +77,28 @@ function OpenAiCard({ slug, state }: { slug: string; state: ConnectorState }) {
 
   async function connect() {
     setBusy('connect'); setMsg(null)
-    const res = await connectOpenai(slug, apiKey.trim())
+    const res = await connectOpenai(slug, { api_key: apiKey.trim(), text_model: textModel })
     setBusy(null)
     if (!res.ok) { setMsg({ kind: res.error === 'feature_locked' ? 'paywall' : 'err', text: res.message }); return }
     setMsg({ kind: 'ok', text: t('connected_ok') })
     setOpen(false); setApiKey('')
+    router.refresh()
+  }
+
+  async function saveModel(next: string) {
+    const previous = textModel
+    setTextModel(next)
+    setBusy('model'); setMsg(null)
+
+    const res = await updateOpenaiModel(slug, next)
+    setBusy(null)
+
+    if (!res.ok) {
+      setTextModel(previous) // devolve o select pro valor real
+      setMsg({ kind: 'err', text: res.message })
+      return
+    }
+    setMsg({ kind: 'ok', text: next ? t('openai_model_saved') : t('openai_model_off_saved') })
     router.refresh()
   }
 
@@ -121,10 +142,35 @@ function OpenAiCard({ slug, state }: { slug: string; state: ConnectorState }) {
         <div className="space-y-3 border-t border-[var(--uc-border)] pt-4">
           <GlassInput label={t('openai_api_key')} placeholder="sk-..." type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} />
           <p className="text-xs text-[var(--uc-text-muted)] leading-5">{t('openai_api_key_hint')}</p>
+
+          <ModelSelect
+            models={models}
+            value={textModel}
+            disabled={busy !== null}
+            onChange={setTextModel}
+            label={t('openai_text_model')}
+            offLabel={t('openai_text_model_off')}
+            hint={t('openai_text_model_hint')}
+          />
+
           <div className="flex gap-2">
             <GlassButton variant="secondary" loading={busy === 'test'} disabled={!apiKey.trim()} onClick={test}>{t('test_connection')}</GlassButton>
             <GlassButton loading={busy === 'connect'} disabled={!apiKey.trim()} onClick={connect}>{t('connect')}</GlassButton>
           </div>
+        </div>
+      )}
+
+      {connected && (
+        <div className="border-t border-[var(--uc-border)] pt-4">
+          <ModelSelect
+            models={models}
+            value={textModel}
+            disabled={busy !== null}
+            onChange={(v) => void saveModel(v)}
+            label={t('openai_text_model')}
+            offLabel={t('openai_text_model_off')}
+            hint={t('openai_text_model_hint')}
+          />
         </div>
       )}
 
@@ -139,6 +185,40 @@ function OpenAiCard({ slug, state }: { slug: string; state: ConnectorState }) {
         </p>
       )}
     </GlassCard>
+  )
+}
+
+// Preço aparece junto do modelo de propósito: a diferença entre Sol e Luna é de
+// 25x na saída, e isso tem que estar visível na hora de escolher.
+function ModelSelect({
+  models, value, disabled, onChange, label, offLabel, hint,
+}: {
+  models: OpenAiModel[]
+  value: string
+  disabled: boolean
+  onChange: (v: string) => void
+  label: string
+  offLabel: string
+  hint: string
+}) {
+  return (
+    <div>
+      <label className={labelCls}>{label}</label>
+      <select
+        value={value}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.value)}
+        className={cn(fieldCls, 'h-12')}
+      >
+        <option value="">{offLabel}</option>
+        {models.map((m) => (
+          <option key={m.id} value={m.id}>
+            {m.label} — ${m.input}/${m.output} por 1M tokens
+          </option>
+        ))}
+      </select>
+      <p className="mt-1.5 text-xs text-[var(--uc-text-muted)] leading-5">{hint}</p>
+    </div>
   )
 }
 

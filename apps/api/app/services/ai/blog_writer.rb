@@ -77,13 +77,16 @@ module Ai
 
       private
 
+      # Vai pelo TextRouter: o workspace decide se o texto sai no Anthropic
+      # (padrão) ou na OpenAI, conforme o modelo escolhido em Integrações.
       def call(workspace:, user:, model:, max_tokens:, task:)
-        Ai::AnthropicClient.call(
-          prompt:     user,
-          system:     system_prompt(workspace),
-          model:      model.presence || :auto,
-          task:       task,
-          max_tokens: max_tokens,
+        Ai::TextRouter.call(
+          workspace:   workspace,
+          prompt:      user,
+          system:      system_prompt(workspace),
+          model:       model.presence || :auto,
+          task:        task,
+          max_tokens:  max_tokens,
           temperature: 0.7
         )
       end

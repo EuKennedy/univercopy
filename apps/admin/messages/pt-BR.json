@@ -601,10 +601,15 @@
     "wp_app_password": "Senha de aplicação",
     "wp_app_password_hint": "Gere em Usuários → Perfil → Senhas de aplicação, no painel do WordPress. O usuário precisa ter permissão de publicar. Os espaços são opcionais.",
     "wp_test_ok": "Credencial válida e com permissão de publicar.",
-    "openai_description": "Usada para gerar a foto de capa dos posts com o gpt-image-2. O texto continua sendo gerado pela IA que já move o resto do produto.",
+    "openai_description": "Gera a foto de capa dos posts com o gpt-image-2 e, se você escolher um modelo abaixo, também escreve os textos no lugar da IA padrão.",
     "openai_api_key": "Chave da API",
     "openai_api_key_hint": "Crie em platform.openai.com → API keys. A chave é validada antes de salvar e fica cifrada — nunca aparece de volta na tela.",
-    "openai_test_ok": "Chave válida."
+    "openai_test_ok": "Chave válida.",
+    "openai_text_model": "Modelo para texto",
+    "openai_text_model_off": "Não usar — manter o texto na IA padrão",
+    "openai_text_model_hint": "Vale para título, conteúdo e o agente do blog. O custo entra no mesmo teto mensal do workspace, seja qual for o provedor. A capa continua no gpt-image-2.",
+    "openai_model_saved": "Modelo salvo. Os textos passam a sair pela OpenAI.",
+    "openai_model_off_saved": "Salvo. Os textos voltam para a IA padrão."
   },
   "preferences": {
     "eyebrow": "PESSOAL",
