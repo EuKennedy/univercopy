@@ -48,7 +48,11 @@ module Ai
         temperature: temperature,
       }
       # API Anthropic exige `system` como array de content blocks (não string).
-      params[:system] = [{ type: "text", text: system.to_s }] if system.present?
+      #
+      # O contexto temporal entra em TODA chamada, com ou sem system próprio.
+      # Sem ele o modelo responde a partir do corte de treino e escreve como se
+      # fosse outro ano — vira "tendências de 2025" em post publicado hoje.
+      params[:system] = [{ type: "text", text: [temporal_preamble, system.presence].compact.join("\n\n") }]
 
       response = anthropic.messages.create(**params)
 
@@ -78,6 +82,22 @@ module Ai
     end
 
     private
+
+    # Data real de hoje, injetada em todo prompt. Em UTC porque é o fuso da
+    # aplicação (config.time_zone) — dizemos qual é para o modelo não supor.
+    #
+    # A última frase importa tanto quanto a data: saber que ano é hoje não faz
+    # o modelo conhecer o que aconteceu depois do treino dele. Sem esse freio,
+    # informar a data só troca "acha que é 2023" por "inventa fato de 2026".
+    def temporal_preamble
+      now = Time.current.utc
+      <<~TXT.strip
+        CONTEXTO TEMPORAL — hoje é #{now.strftime('%d/%m/%Y')} (ISO #{now.strftime('%Y-%m-%d')}, UTC). O ano corrente é #{now.year}.
+        Trate esta como a data real e ignore qualquer data que você suponha a partir do seu treinamento.
+        "Hoje" = #{now.strftime('%d/%m/%Y')}. "Este ano" = #{now.year}. "Ano passado" = #{now.year - 1}. "Ano que vem" = #{now.year + 1}.
+        Saber a data NÃO significa conhecer o que aconteceu recentemente: se algo depender de fato posterior ao seu conhecimento, diga que não sabe em vez de inventar.
+      TXT
+    end
 
     def anthropic
       @anthropic ||= ::Anthropic::Client.new(api_key: ENV.fetch("ANTHROPIC_API_KEY"))
