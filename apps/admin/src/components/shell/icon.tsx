@@ -12,6 +12,7 @@ export type IconName =
   | 'spark'
   | 'copy'
   | 'campaign'
+  | 'blog'
   | 'product'
   | 'audit'
   | 'intelligence'
@@ -92,6 +93,16 @@ const ICON_PATHS: Record<IconName, React.ReactNode> = {
     <>
       <path d="M3 11l18-6v14L3 13z" />
       <path d="M7 14v3a2 2 0 0 0 4 0v-1" />
+    </>
+  ),
+  // Janela de navegador com linhas de texto — "publicar na web", distinto de
+  // 'file-text' (documento) e 'copy' (acervo).
+  blog: (
+    <>
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <path d="M3 9h18" />
+      <path d="M7 13h7" />
+      <path d="M7 16.5h4" />
     </>
   ),
   product: (

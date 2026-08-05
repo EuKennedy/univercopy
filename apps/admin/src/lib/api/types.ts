@@ -322,6 +322,22 @@ export type PageAudit = {
   created_at: string
 }
 
+// --- Blog WordPress (SSH + wp-cli) ---
+export type BlogStatus = {
+  configured: boolean
+  reachable: boolean
+  wp_version?: string
+  host?: string
+}
+
+export type BlogCategory = { id: number; name: string; slug: string; count: number }
+
+export type BlogPostResult = {
+  id: number
+  url: string | null
+  status: 'draft' | 'publish'
+}
+
 // Erro normalizado de paywall/cap pra UI tratar 402.
 export type ActionError = {
   ok: false

@@ -248,6 +248,7 @@ function defaultNav(workspaceSlug: string | undefined, t: (key: string) => strin
       { href: `${base}/generate`,  label: t('generate'),  icon: 'spark', badge: 'AI' },
       { href: `${base}/campaigns`, label: t('campaigns'), icon: 'campaign' },
       { href: `${base}/copy`,      label: t('copy'),      icon: 'copy' },
+      { href: `${base}/blog`,      label: t('blog'),      icon: 'blog' },
     ] },
     { label: t('group_catalog'), items: [
       { href: `${base}/products`, label: t('products'), icon: 'product' },

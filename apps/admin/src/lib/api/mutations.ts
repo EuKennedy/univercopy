@@ -7,6 +7,9 @@ import { ApiError, apiFetch } from '@/lib/api-client'
 import type {
   Account,
   ActionResult,
+  BlogCategory,
+  BlogPostResult,
+  BlogStatus,
   CampaignDetail,
   CopyDetail,
   Dna,
@@ -329,4 +332,39 @@ export async function runPageAudit(
   )
   if (result.ok) revalidatePath(`/${slug}/audit`)
   return result
+}
+
+// ---------------- Blog WordPress ----------------
+// Leituras também vivem aqui (e não em queries.ts) porque o client component
+// as chama depois da montagem. Motivo: um `wp term list` no host da Lizzon leva
+// ~6s (bootstrap do WP com 85 plugins) — bloquear o Server Component nisso
+// deixaria a página 6s no branco. O formulário abre na hora e preenche depois.
+export async function loadBlogStatus(slug: string): Promise<ActionResult<BlogStatus>> {
+  return run(() => apiFetch<BlogStatus>(`${ws(slug)}/blog/status`))
+}
+
+export async function loadBlogCategories(slug: string): Promise<ActionResult<BlogCategory[]>> {
+  return run(async () =>
+    (await apiFetch<{ categories: BlogCategory[] }>(`${ws(slug)}/blog/categories`)).categories,
+  )
+}
+
+export async function publishBlogPost(
+  slug: string,
+  input: {
+    title: string
+    content: string
+    excerpt?: string
+    status: 'draft' | 'publish'
+    category_ids?: number[]
+  },
+): Promise<ActionResult<BlogPostResult>> {
+  return run(async () =>
+    (
+      await apiFetch<{ ok: boolean; post: BlogPostResult }>(`${ws(slug)}/blog/publish`, {
+        method: 'POST',
+        body: JSON.stringify({ post: input }),
+      })
+    ).post,
+  )
 }

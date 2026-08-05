@@ -76,6 +76,11 @@ Rails.application.routes.draw do
         post   "/integrations/:type/sync",       to: "integrations#sync"
         delete "/integrations/:type",            to: "integrations#disconnect"
 
+        # Blog WordPress (SSH + wp-cli). Publica rascunho ou post direto.
+        get  "/blog/status",     to: "blog_posts#status"
+        get  "/blog/categories", to: "blog_posts#categories"
+        post "/blog/publish",    to: "blog_posts#publish"
+
         # Análise de página (page audit).
         get  "/page-audits", to: "page_audits#index"
         post "/page-audits", to: "page_audits#create"
