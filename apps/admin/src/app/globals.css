@@ -370,6 +370,57 @@ html, body {
 }
 
 /* ============================================================
+ * Loader de geração por IA (modal). O bloco global de
+ * prefers-reduced-motion abaixo já neutraliza tudo isto.
+ * ============================================================ */
+.uc-orbit {
+  animation: uc-orbit 2.4s linear infinite;
+  transform-origin: center;
+}
+@keyframes uc-orbit {
+  to { transform: rotate(360deg); }
+}
+
+.uc-breathe {
+  animation: uc-breathe 2.6s var(--ease-in-out-cubic) infinite;
+}
+@keyframes uc-breathe {
+  0%, 100% { transform: scale(1);    opacity: 0.85; }
+  50%      { transform: scale(1.06); opacity: 1; }
+}
+
+.uc-dot {
+  animation: uc-dot 1.3s var(--ease-in-out-cubic) infinite;
+}
+.uc-dot:nth-child(2) { animation-delay: 0.16s; }
+.uc-dot:nth-child(3) { animation-delay: 0.32s; }
+@keyframes uc-dot {
+  0%, 100% { opacity: 0.25; transform: translateY(0); }
+  50%      { opacity: 1;    transform: translateY(-3px); }
+}
+
+/* Barra indeterminada — não mente sobre percentual, só mostra atividade. */
+.uc-indeterminate::after {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  width: 40%;
+  border-radius: inherit;
+  background: var(--uc-prisma);
+  animation: uc-indeterminate 1.6s var(--ease-in-out-cubic) infinite;
+}
+@keyframes uc-indeterminate {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(250%); }
+}
+
+.uc-fade-in { animation: uc-fade-in var(--dur-3) var(--ease-out-quart) both; }
+@keyframes uc-fade-in {
+  from { opacity: 0; transform: translateY(6px) scale(0.985); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ============================================================
  * Transition utilities calibradas pelo motion-design skill.
  * ============================================================ */
 .uc-transition          { transition: all var(--dur-3) var(--ease-apple); }

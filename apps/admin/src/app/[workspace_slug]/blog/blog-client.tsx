@@ -21,6 +21,7 @@ import {
 } from '@/lib/api/mutations'
 import type { BlogMedia, BlogPostResult, BlogStatus, BlogTerm } from '@/lib/api/types'
 
+import { GenerationModal, type GenerationKind } from './generation-modal'
 import { TermPicker } from './term-picker'
 
 type Pending = 'draft' | 'publish' | 'title' | 'content' | 'cover' | 'upload' | null
@@ -81,6 +82,11 @@ export function BlogClient({ slug }: { slug: string }) {
   const hasOpenai = status?.openai === true
   const busy = pending !== null
   const incomplete = !title.trim() || !content.trim()
+
+  // O modal cobre só as três gerações por IA. Salvar/publicar e upload já têm
+  // estado inline no próprio botão.
+  const generating: GenerationKind | null =
+    pending === 'title' || pending === 'content' || pending === 'cover' ? pending : null
 
   function toggle(set: Set<number>, apply: (next: Set<number>) => void, id: number) {
     const next = new Set(set)
@@ -202,6 +208,8 @@ export function BlogClient({ slug }: { slug: string }) {
 
   return (
     <div className="space-y-5">
+      <GenerationModal kind={generating} />
+
       {status?.site && !unreachable && (
         <p className="text-xs text-[var(--uc-text-muted)]">{t('connected', { host: status.site })}</p>
       )}
