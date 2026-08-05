@@ -7,7 +7,7 @@
 # ---------------------------------------------------------------------
 # Stage 1 — Build: instala build tools, compila gems, precompila bootsnap.
 # ---------------------------------------------------------------------
-FROM ruby:3.3.6-slim AS build
+FROM ruby:4.0.5-slim AS build
 
 ENV LANG=C.UTF-8 \
     RAILS_ENV=production \
@@ -42,7 +42,7 @@ RUN SECRET_KEY_BASE=dummy_for_bootsnap_precompile_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 # ---------------------------------------------------------------------
 # Stage 2 — Runtime: imagem enxuta sem build tools.
 # ---------------------------------------------------------------------
-FROM ruby:3.3.6-slim AS runtime
+FROM ruby:4.0.5-slim AS runtime
 
 ENV LANG=C.UTF-8 \
     RAILS_ENV=production \
