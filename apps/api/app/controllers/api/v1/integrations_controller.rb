@@ -4,11 +4,16 @@ module Api
       # Conectores disponíveis + feature flag por plano.
       AVAILABLE = [
         { type: "woocommerce", feature: :connector_woo,       label: "WooCommerce" },
+        { type: "wordpress",   feature: :connector_wordpress, label: "WordPress" },
         { type: "csv_manual",  feature: :connector_csv,       label: "CSV import" },
         { type: "shopify",     feature: :connector_shopify,   label: "Shopify" },
         { type: "nuvemshop",   feature: :connector_nuvemshop, label: "Nuvemshop" },
         { type: "tray",        feature: :connector_tray,      label: "Tray" },
       ].freeze
+
+      # Conectores que alimentam catálogo de produtos. O WordPress fica de fora:
+      # é destino de publicação de conteúdo, não origem de produtos.
+      SYNCABLE = %w[woocommerce shopify nuvemshop tray csv_manual].freeze
 
       # GET /integrations — estado de cada conector (sem vazar credenciais).
       def index
@@ -60,9 +65,42 @@ module Api
         render json: { ok: false, error: "connection_failed", message: e.message }, status: :unprocessable_entity
       end
 
+      # POST /integrations/wordpress/test — valida credenciais sem salvar.
+      def test_wordpress
+        PlanFeatures.require!(current_workspace, :connector_wordpress)
+        render json: Connectors::Wordpress.new(wp_params).test_connection
+      rescue Connectors::Wordpress::ConnectionError => e
+        render json: { ok: false, error: "connection_failed", message: e.message }, status: :unprocessable_entity
+      end
+
+      # POST /integrations/wordpress — testa, cifra e salva.
+      # Sem job de sync: WordPress aqui é destino de publicação, não catálogo.
+      def connect_wordpress
+        PlanFeatures.require!(current_workspace, :connector_wordpress)
+
+        config = wp_params
+        Connectors::Wordpress.new(config).test_connection # valida antes de salvar
+
+        integration = current_workspace.integrations.find_or_initialize_by(integration_type: "wordpress")
+        integration.config     = config
+        integration.status     = "connected"
+        integration.last_error = nil
+        integration.save!
+
+        render json: { ok: true, type: "wordpress", status: "connected" }, status: :created
+      rescue Connectors::Wordpress::ConnectionError => e
+        render json: { ok: false, error: "connection_failed", message: e.message }, status: :unprocessable_entity
+      end
+
       # POST /integrations/:type/sync — re-sincroniza catálogo.
       def sync
-        integration = current_workspace.integrations.find_by!(integration_type: params.require(:type))
+        type = params.require(:type)
+        unless SYNCABLE.include?(type)
+          return render json: { ok: false, error: "not_syncable", message: "#{type} não sincroniza catálogo." },
+                        status: :unprocessable_entity
+        end
+
+        integration = current_workspace.integrations.find_by!(integration_type: type)
         Connectors::SyncProductsJob.perform_later(
           workspace_id:   current_workspace.id,
           user_id:        current_app_user.id,
@@ -86,6 +124,15 @@ module Api
           "base_url"        => p["base_url"],
           "consumer_key"    => p["consumer_key"],
           "consumer_secret" => p["consumer_secret"],
+        }
+      end
+
+      def wp_params
+        p = params.require(:wordpress).permit(:base_url, :username, :application_password).to_h
+        {
+          "base_url"             => p["base_url"],
+          "username"             => p["username"],
+          "application_password" => p["application_password"],
         }
       end
     end

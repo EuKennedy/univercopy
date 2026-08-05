@@ -15,6 +15,7 @@ export type FeatureKey =
   | 'campaigns'             // agrupar copies em campanhas
   | 'connector_woo'
   | 'connector_csv'
+  | 'connector_wordpress'
   | 'connector_shopify'
   | 'connector_nuvemshop'
   | 'connector_tray'
@@ -41,6 +42,7 @@ export const PLAN_FEATURES: Record<Plan, Record<FeatureKey, boolean>> = {
     campaigns: false,
     connector_woo: true,
     connector_csv: true,
+    connector_wordpress: true,
     connector_shopify: false,
     connector_nuvemshop: false,
     connector_tray: false,
@@ -59,6 +61,7 @@ export const PLAN_FEATURES: Record<Plan, Record<FeatureKey, boolean>> = {
     campaigns: true,
     connector_woo: true,
     connector_csv: true,
+    connector_wordpress: true,
     connector_shopify: true,
     connector_nuvemshop: false,
     connector_tray: false,
@@ -77,6 +80,7 @@ export const PLAN_FEATURES: Record<Plan, Record<FeatureKey, boolean>> = {
     campaigns: true,
     connector_woo: true,
     connector_csv: true,
+    connector_wordpress: true,
     connector_shopify: true,
     connector_nuvemshop: true,
     connector_tray: true,

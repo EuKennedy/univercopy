@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { useTranslations } from 'next-intl'
 
 import { Icon } from '@/components/shell/icon'
@@ -32,7 +33,7 @@ export function BlogClient({ slug }: { slug: string }) {
     let alive = true
 
     loadBlogStatus(slug).then((r) => {
-      if (alive) setStatus(r.ok ? r.data : { configured: false, reachable: false })
+      if (alive) setStatus(r.ok ? r.data : { connected: false, reachable: false })
     })
     loadBlogCategories(slug).then((r) => {
       if (!alive) return
@@ -45,8 +46,8 @@ export function BlogClient({ slug }: { slug: string }) {
     }
   }, [slug])
 
-  const unconfigured = status !== null && !status.configured
-  const unreachable = status !== null && status.configured && !status.reachable
+  const notConnected = status !== null && !status.connected
+  const unreachable = status !== null && status.connected && !status.reachable
   const busy = pending !== null
   const incomplete = !title.trim() || !content.trim()
 
@@ -85,19 +86,25 @@ export function BlogClient({ slug }: { slug: string }) {
     setExcerpt('')
   }
 
-  if (unconfigured) {
+  if (notConnected) {
     return (
-      <GlassCard className="p-6 space-y-2">
+      <GlassCard className="p-6 space-y-3">
         <p className="text-[15px] font-semibold text-[var(--uc-text)]">{t('unconfigured_title')}</p>
         <p className="text-sm text-[var(--uc-text-muted)]">{t('unconfigured_description')}</p>
+        <Link
+          href={`/${slug}/settings/integrations`}
+          className="inline-flex items-center gap-2 text-sm font-semibold text-[var(--uc-accent-strong)] hover:underline"
+        >
+          {t('go_to_integrations')} →
+        </Link>
       </GlassCard>
     )
   }
 
   return (
     <div className="space-y-5">
-      {status?.host && !unreachable && (
-        <p className="text-xs text-[var(--uc-text-muted)]">{t('connected', { host: status.host })}</p>
+      {status?.site && !unreachable && (
+        <p className="text-xs text-[var(--uc-text-muted)]">{t('connected', { host: status.site })}</p>
       )}
 
       {unreachable && (

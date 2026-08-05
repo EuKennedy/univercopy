@@ -17,6 +17,7 @@ import type {
   PageAudit,
   ProductDetail,
   SequenceResult,
+  WordpressCredentials,
 } from './types'
 
 const ws = (slug: string) => `/api/v1/workspaces/${encodeURIComponent(slug)}`
@@ -235,6 +236,34 @@ export async function updateCampaign(
 }
 
 // ---------------- Integrations / WooCommerce ----------------
+// WordPress autentica com HTTP Basic (usuário + senha de aplicação). O Rails
+// valida a credencial contra o site antes de cifrar e salvar.
+export async function testWordpress(
+  slug: string,
+  creds: WordpressCredentials,
+): Promise<ActionResult<{ ok: boolean; total: number; site: string }>> {
+  return run(() =>
+    apiFetch<{ ok: boolean; total: number; site: string }>(`${ws(slug)}/integrations/wordpress/test`, {
+      method: 'POST',
+      body: JSON.stringify({ wordpress: creds }),
+    }),
+  )
+}
+
+export async function connectWordpress(
+  slug: string,
+  creds: WordpressCredentials,
+): Promise<ActionResult<{ ok: boolean; type: string; status: string }>> {
+  const result = await run(() =>
+    apiFetch<{ ok: boolean; type: string; status: string }>(`${ws(slug)}/integrations/wordpress`, {
+      method: 'POST',
+      body: JSON.stringify({ wordpress: creds }),
+    }),
+  )
+  if (result.ok) revalidatePath(`/${slug}/settings/integrations`)
+  return result
+}
+
 export async function testWoo(
   slug: string,
   creds: { base_url: string; consumer_key: string; consumer_secret: string },
@@ -336,9 +365,9 @@ export async function runPageAudit(
 
 // ---------------- Blog WordPress ----------------
 // Leituras também vivem aqui (e não em queries.ts) porque o client component
-// as chama depois da montagem. Motivo: um `wp term list` no host da Lizzon leva
-// ~6s (bootstrap do WP com 85 plugins) — bloquear o Server Component nisso
-// deixaria a página 6s no branco. O formulário abre na hora e preenche depois.
+// as chama depois da montagem: são round-trips pra um WordPress externo, e
+// bloquear o Server Component neles deixaria a página no branco. O formulário
+// abre na hora e preenche depois.
 export async function loadBlogStatus(slug: string): Promise<ActionResult<BlogStatus>> {
   return run(() => apiFetch<BlogStatus>(`${ws(slug)}/blog/status`))
 }

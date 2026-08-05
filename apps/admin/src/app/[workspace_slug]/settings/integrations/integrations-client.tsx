@@ -7,7 +7,14 @@ import { useTranslations } from 'next-intl'
 import { GlassButton, GlassCard, GlassInput } from '@/components/ui'
 import { Icon } from '@/components/shell/icon'
 import { cn } from '@/lib/cn'
-import { connectWoo, disconnectConnector, syncConnector, testWoo } from '@/lib/api/mutations'
+import {
+  connectWoo,
+  connectWordpress,
+  disconnectConnector,
+  syncConnector,
+  testWoo,
+  testWordpress,
+} from '@/lib/api/mutations'
 import type { ConnectorState } from '@/lib/api/types'
 
 const STATUS_CLS: Record<string, string> = {
@@ -24,15 +31,123 @@ export function IntegrationsClient({
   productsCount: number
 }) {
   const woo = connectors.find((c) => c.type === 'woocommerce')
+  const wp = connectors.find((c) => c.type === 'wordpress')
 
   return (
     <div className="space-y-4">
       {woo && <WooCard slug={slug} state={woo} productsCount={productsCount} />}
+      {wp && <WordpressCard slug={slug} state={wp} />}
 
       {connectors
-        .filter((c) => c.type !== 'woocommerce')
+        .filter((c) => c.type !== 'woocommerce' && c.type !== 'wordpress')
         .map((c) => <OtherCard key={c.type} state={c} />)}
     </div>
+  )
+}
+
+// WordPress é destino de publicação, não origem de catálogo: por isso não tem
+// botão de sincronizar como o WooCommerce.
+function WordpressCard({ slug, state }: { slug: string; state: ConnectorState }) {
+  const router = useRouter()
+  const t = useTranslations('integrations')
+  const connected = state.status === 'connected'
+  const [open, setOpen] = useState(false)
+  const [baseUrl, setBaseUrl] = useState('')
+  const [username, setUsername] = useState('')
+  const [appPassword, setAppPassword] = useState('')
+  const [busy, setBusy] = useState<string | null>(null)
+  const [msg, setMsg] = useState<{ kind: 'ok' | 'err' | 'paywall'; text: string } | null>(null)
+
+  const statusLabel = ['connected', 'disconnected', 'error'].includes(state.status) ? t(`status_${state.status}`) : state.status
+  const statusCls = STATUS_CLS[state.status] ?? 'bg-[var(--uc-surface-soft)] text-[var(--uc-text-muted)]'
+  const filled = Boolean(baseUrl.trim() && username.trim() && appPassword.trim())
+
+  function creds() {
+    return {
+      base_url: baseUrl.trim(),
+      username: username.trim(),
+      application_password: appPassword.trim(),
+    }
+  }
+
+  async function test() {
+    setBusy('test'); setMsg(null)
+    const res = await testWordpress(slug, creds())
+    setBusy(null)
+    if (!res.ok) { setMsg({ kind: res.error === 'feature_locked' ? 'paywall' : 'err', text: res.message }); return }
+    setMsg({ kind: 'ok', text: t('wp_test_ok') })
+  }
+
+  async function connect() {
+    setBusy('connect'); setMsg(null)
+    const res = await connectWordpress(slug, creds())
+    setBusy(null)
+    if (!res.ok) { setMsg({ kind: res.error === 'feature_locked' ? 'paywall' : 'err', text: res.message }); return }
+    setMsg({ kind: 'ok', text: t('connected_ok') })
+    setOpen(false); setUsername(''); setAppPassword('')
+    router.refresh()
+  }
+
+  async function disconnect() {
+    if (!confirm(t('disconnect_confirm'))) return
+    setBusy('disconnect')
+    const res = await disconnectConnector(slug, 'wordpress')
+    setBusy(null)
+    if (res.ok) router.refresh()
+  }
+
+  return (
+    <GlassCard className="p-6 space-y-4">
+      <div className="flex flex-wrap items-start gap-5 justify-between">
+        <div className="flex items-start gap-4 min-w-0">
+          <span className="size-12 rounded-xl flex items-center justify-center text-white shrink-0 shadow-[0_8px_22px_-8px_var(--uc-accent-glow)]" style={{ background: 'linear-gradient(135deg, var(--uc-brand-purple) 0%, var(--uc-brand-blue) 100%)' }}>
+            <Icon name="blog" size={22} />
+          </span>
+          <div className="space-y-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="text-lg font-semibold tracking-tight text-[var(--uc-text)]">WordPress</h3>
+              <span className={`text-[11px] font-semibold rounded-full px-2 py-0.5 ${statusCls}`}>{statusLabel}</span>
+            </div>
+            <p className="text-sm leading-6 text-[var(--uc-text-soft)] max-w-xl">{t('wp_description')}</p>
+            {state.last_error && <p className="text-xs text-[var(--uc-danger)]">{state.last_error}</p>}
+          </div>
+        </div>
+
+        <div className="flex gap-2 shrink-0">
+          {connected || state.status === 'error' ? (
+            <GlassButton size="sm" variant="ghost" loading={busy === 'disconnect'} onClick={disconnect}>{t('disconnect')}</GlassButton>
+          ) : state.allowed ? (
+            <GlassButton size="sm" onClick={() => setOpen((v) => !v)}>{open ? t('close') : t('connect')}</GlassButton>
+          ) : (
+            <span className="text-xs text-[var(--uc-text-muted)] self-center">{t('out_of_plan')}</span>
+          )}
+        </div>
+      </div>
+
+      {open && !connected && (
+        <div className="space-y-3 border-t border-[var(--uc-border)] pt-4">
+          <GlassInput label={t('wp_site_url')} placeholder={t('wp_site_url_placeholder')} value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} />
+          <GlassInput label={t('wp_username')} placeholder={t('wp_username_placeholder')} value={username} onChange={(e) => setUsername(e.target.value)} />
+          <GlassInput label={t('wp_app_password')} placeholder="xxxx xxxx xxxx xxxx xxxx xxxx" type="password" value={appPassword} onChange={(e) => setAppPassword(e.target.value)} />
+          <p className="text-xs text-[var(--uc-text-muted)] leading-5">{t('wp_app_password_hint')}</p>
+          <div className="flex gap-2">
+            <GlassButton variant="secondary" loading={busy === 'test'} disabled={!filled} onClick={test}>{t('test_connection')}</GlassButton>
+            <GlassButton loading={busy === 'connect'} disabled={!filled} onClick={connect}>{t('connect')}</GlassButton>
+          </div>
+        </div>
+      )}
+
+      {msg && (
+        <p className={cn(
+          'text-sm',
+          msg.kind === 'ok' && 'text-emerald-400',
+          msg.kind === 'err' && 'text-[var(--uc-danger)]',
+          msg.kind === 'paywall' && 'text-[var(--uc-accent-strong)]',
+        )}>
+          {msg.text}
+        </p>
+      )}
+    </GlassCard>
   )
 }
 

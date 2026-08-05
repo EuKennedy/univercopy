@@ -73,10 +73,13 @@ Rails.application.routes.draw do
         get    "/integrations",                  to: "integrations#index"
         post   "/integrations/woocommerce/test", to: "integrations#test_woocommerce"
         post   "/integrations/woocommerce",      to: "integrations#connect_woocommerce"
+        post   "/integrations/wordpress/test",   to: "integrations#test_wordpress"
+        post   "/integrations/wordpress",        to: "integrations#connect_wordpress"
         post   "/integrations/:type/sync",       to: "integrations#sync"
         delete "/integrations/:type",            to: "integrations#disconnect"
 
-        # Blog WordPress (SSH + wp-cli). Publica rascunho ou post direto.
+        # Blog WordPress (REST API v2). Publica rascunho ou post direto.
+        # Credenciais vêm da integration do workspace, não de ENV.
         get  "/blog/status",     to: "blog_posts#status"
         get  "/blog/categories", to: "blog_posts#categories"
         post "/blog/publish",    to: "blog_posts#publish"

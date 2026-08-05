@@ -83,16 +83,6 @@ services:
       SENTRY_DSN: ${SENTRY_DSN}
       RAILS_MAX_THREADS: ${RAILS_MAX_THREADS:-5}
       WEB_CONCURRENCY: ${WEB_CONCURRENCY:-2}
-      # Blog WordPress via SSH + wp-cli. Só o `api` precisa — a publicação é
-      # síncrona no request, não passa por job.
-      WP_SSH_HOST: ${WP_SSH_HOST}
-      WP_SSH_PORT: ${WP_SSH_PORT:-22}
-      WP_SSH_USER: ${WP_SSH_USER}
-      WP_SSH_KEY_B64: ${WP_SSH_KEY_B64}
-      WP_SSH_KNOWN_HOSTS: ${WP_SSH_KNOWN_HOSTS}
-      WP_PATH: ${WP_PATH}
-      WP_CLI_BIN: ${WP_CLI_BIN:-/usr/local/bin/wp}
-      WP_AUTHOR_ID: ${WP_AUTHOR_ID}
     depends_on:
       db: { condition: service_healthy }
       cache: { condition: service_healthy }

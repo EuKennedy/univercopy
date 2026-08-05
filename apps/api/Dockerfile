@@ -51,10 +51,9 @@ ENV LANG=C.UTF-8 \
     BUNDLE_WITHOUT="development:test" \
     RAILS_LOG_TO_STDOUT=1
 
-# openssh-client: o conector Connectors::WordpressSsh chama wp-cli via SSH.
 RUN apt-get update -qq && \
     apt-get install -y --no-install-recommends \
-      libpq5 libyaml-0-2 libjemalloc2 curl tini openssh-client && \
+      libpq5 libyaml-0-2 libjemalloc2 curl tini && \
     rm -rf /var/lib/apt/lists/*
 
 # jemalloc reduz fragmentação de memória do Ruby.

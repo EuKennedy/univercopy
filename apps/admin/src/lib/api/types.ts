@@ -322,12 +322,19 @@ export type PageAudit = {
   created_at: string
 }
 
-// --- Blog WordPress (SSH + wp-cli) ---
+// --- Blog WordPress (REST API v2 + Application Password) ---
+// Credenciais são por workspace, cadastradas em Configurações → Integrações.
 export type BlogStatus = {
-  configured: boolean
+  connected: boolean
   reachable: boolean
-  wp_version?: string
-  host?: string
+  site?: string
+  message?: string
+}
+
+export type WordpressCredentials = {
+  base_url: string
+  username: string
+  application_password: string
 }
 
 export type BlogCategory = { id: number; name: string; slug: string; count: number }
