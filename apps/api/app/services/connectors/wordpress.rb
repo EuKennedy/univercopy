@@ -32,6 +32,8 @@ module Connectors
     ALLOWED_STATUSES = %w[draft publish].freeze
     MAX_TITLE_BYTES  = 500
     MAX_BODY_BYTES   = 300_000
+    MAX_MEDIA_BYTES  = 8 * 1_048_576 # 8MB — alinhado com o teto do upload no admin
+    MAX_TERM_BYTES   = 200
 
     def initialize(config)
       @base_url = config["base_url"].to_s.strip.chomp("/")
@@ -54,29 +56,56 @@ module Connectors
     end
 
     def categories
-      out  = []
-      page = 1
+      terms("categories")
+    end
 
-      loop do
-        resp  = request(:get, "categories", params: { per_page: PER_PAGE, page: page })
-        items = parse_json(resp.body)
-        break if items.blank?
+    def tags
+      terms("tags")
+    end
 
-        out.concat(items.map do |c|
-          { id: c["id"].to_i, name: sanitize_name(c["name"]), slug: c["slug"].to_s, count: c["count"].to_i }
-        end)
+    # Cria categoria/tag. Se o WP recusar por já existir, aproveitamos o ID que
+    # ele devolve no erro (`data.term_id`) em vez de estourar — do ponto de
+    # vista de quem clicou no "+", o termo passou a estar disponível.
+    def create_category(name)
+      create_term("categories", name)
+    end
 
-        total_pages = resp.headers["x-wp-totalpages"].to_i
-        break if page >= total_pages || page >= MAX_PAGES
+    def create_tag(name)
+      create_term("tags", name)
+    end
 
-        page += 1
+    # Sobe a imagem pra biblioteca de mídia e devolve o attachment.
+    # O corpo vai binário puro com Content-Disposition — é como o WP espera.
+    def upload_media(data:, filename:, mime:, alt: nil)
+      raise PublishError, "arquivo vazio" if data.blank?
+      raise PublishError, "imagem excede #{MAX_MEDIA_BYTES / 1_048_576}MB" if data.bytesize > MAX_MEDIA_BYTES
+
+      uri = Security::SsrfGuard.safe!("#{@base_url}/wp-json/wp/v2/media")
+
+      resp = http.post(uri.to_s) do |r|
+        r.headers["Content-Type"]        = mime
+        r.headers["Content-Disposition"] = %(attachment; filename="#{sanitize_filename(filename)}")
+        r.body = data
       end
 
-      out
+      raise_for_status(resp) unless resp.success?
+
+      created = parse_json(resp.body)
+      media   = {
+        id:  created["id"].to_i,
+        url: created.dig("source_url").presence || created.dig("guid", "rendered").presence,
+      }
+
+      set_media_alt(media[:id], alt) if alt.present?
+      media
+    rescue Faraday::TimeoutError
+      raise ConnectionError, "timeout enviando a imagem para o WordPress"
+    rescue Faraday::ConnectionFailed => e
+      raise ConnectionError, "conexão falhou ao enviar a imagem: #{e.message}"
     end
 
     # Cria o post. `status` é draft ou publish — quem decide é a tela.
-    def publish(title:, content:, status: "draft", category_ids: [], excerpt: nil)
+    def publish(title:, content:, status: "draft", category_ids: [], tag_ids: [], excerpt: nil, featured_media: nil)
       title   = title.to_s.strip
       content = content.to_s
       status  = status.to_s.strip
@@ -88,8 +117,10 @@ module Connectors
       raise PublishError, "conteúdo excede #{MAX_BODY_BYTES} bytes" if content.bytesize > MAX_BODY_BYTES
 
       payload = { title: title, content: content, status: status }
-      payload[:excerpt]    = excerpt.to_s.strip if excerpt.to_s.strip.present?
-      payload[:categories] = Array(category_ids).map(&:to_i).reject(&:zero?).presence
+      payload[:excerpt]        = excerpt.to_s.strip if excerpt.to_s.strip.present?
+      payload[:categories]     = Array(category_ids).map(&:to_i).reject(&:zero?).presence
+      payload[:tags]           = Array(tag_ids).map(&:to_i).reject(&:zero?).presence
+      payload[:featured_media] = featured_media.to_i if featured_media.to_i.positive?
 
       created = parse_json(request(:post, "posts", body: payload.compact).body)
 
@@ -101,6 +132,70 @@ module Connectors
     end
 
     private
+
+    def terms(taxonomy)
+      out  = []
+      page = 1
+
+      loop do
+        resp  = request(:get, taxonomy, params: { per_page: PER_PAGE, page: page })
+        items = parse_json(resp.body)
+        break if items.blank?
+
+        out.concat(items.map do |t|
+          { id: t["id"].to_i, name: sanitize_name(t["name"]), slug: t["slug"].to_s, count: t["count"].to_i }
+        end)
+
+        total_pages = resp.headers["x-wp-totalpages"].to_i
+        break if page >= total_pages || page >= MAX_PAGES
+
+        page += 1
+      end
+
+      out
+    end
+
+    def create_term(taxonomy, name)
+      name = name.to_s.strip
+      raise PublishError, "nome obrigatório"                     if name.blank?
+      raise PublishError, "nome excede #{MAX_TERM_BYTES} bytes"  if name.bytesize > MAX_TERM_BYTES
+
+      resp = http.post(Security::SsrfGuard.safe!("#{@base_url}/wp-json/wp/v2/#{taxonomy}").to_s) do |r|
+        r.body = { name: name }.to_json
+      end
+
+      if resp.success?
+        created = parse_json(resp.body)
+        return { id: created["id"].to_i, name: sanitize_name(created["name"]), slug: created["slug"].to_s, count: 0 }
+      end
+
+      # `term_exists`: o WP devolve o ID do termo já existente. Reaproveitamos.
+      parsed = parse_json(resp.body) rescue nil
+      if parsed.is_a?(Hash) && parsed["code"].to_s == "term_exists"
+        existing_id = parsed.dig("data", "term_id").to_i
+        return { id: existing_id, name: name, slug: "", count: 0, existed: true } if existing_id.positive?
+      end
+
+      raise_for_status(resp)
+    rescue Faraday::TimeoutError
+      raise ConnectionError, "timeout criando termo no WordPress"
+    end
+
+    def set_media_alt(media_id, alt)
+      http.post(Security::SsrfGuard.safe!("#{@base_url}/wp-json/wp/v2/media/#{media_id.to_i}").to_s) do |r|
+        r.body = { alt_text: alt.to_s.strip.slice(0, 300) }.to_json
+      end
+    rescue StandardError => e
+      # A imagem já subiu; alt é acessório. Não derruba a operação.
+      Rails.logger.warn("[Wordpress] alt_text falhou p/ media #{media_id}: #{e.message}")
+    end
+
+    # WP recusa nome com caminho. Mantém só o basename e um conjunto seguro.
+    def sanitize_filename(raw)
+      base = File.basename(raw.to_s).gsub(/[^a-zA-Z0-9._-]/, "-").squeeze("-")
+      base = "capa" if base.blank? || base.start_with?(".")
+      base.slice(0, 120)
+    end
 
     def request(method, path, params: {}, body: nil)
       uri = Security::SsrfGuard.safe!("#{@base_url}/wp-json/wp/v2/#{path}")

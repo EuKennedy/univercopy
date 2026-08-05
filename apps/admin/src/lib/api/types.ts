@@ -329,6 +329,8 @@ export type BlogStatus = {
   reachable: boolean
   site?: string
   message?: string
+  /** Se há chave da OpenAI cadastrada — habilita o botão de gerar capa. */
+  openai?: boolean
 }
 
 export type WordpressCredentials = {
@@ -337,7 +339,28 @@ export type WordpressCredentials = {
   application_password: string
 }
 
-export type BlogCategory = { id: number; name: string; slug: string; count: number }
+/** Categoria ou tag do WordPress. `existed` vem quando o "+" reaproveitou um termo já criado. */
+export type BlogTerm = {
+  id: number
+  name: string
+  slug: string
+  count: number
+  existed?: boolean
+}
+
+export type BlogMedia = {
+  id: number
+  url: string | null
+}
+
+export type AiCostReport = {
+  used_usd: number
+  limit_usd: number | null
+  percent: number | null
+  remaining: number | null
+}
+
+export type BlogCategory = BlogTerm
 
 export type BlogPostResult = {
   id: number

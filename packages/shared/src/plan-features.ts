@@ -16,6 +16,9 @@ export type FeatureKey =
   | 'connector_woo'
   | 'connector_csv'
   | 'connector_wordpress'
+  | 'connector_openai'
+  | 'ai_blog_writer'
+  | 'ai_cover_image'
   | 'connector_shopify'
   | 'connector_nuvemshop'
   | 'connector_tray'
@@ -43,6 +46,9 @@ export const PLAN_FEATURES: Record<Plan, Record<FeatureKey, boolean>> = {
     connector_woo: true,
     connector_csv: true,
     connector_wordpress: true,
+    connector_openai: true,
+    ai_blog_writer: true,
+    ai_cover_image: true,
     connector_shopify: false,
     connector_nuvemshop: false,
     connector_tray: false,
@@ -62,6 +68,9 @@ export const PLAN_FEATURES: Record<Plan, Record<FeatureKey, boolean>> = {
     connector_woo: true,
     connector_csv: true,
     connector_wordpress: true,
+    connector_openai: true,
+    ai_blog_writer: true,
+    ai_cover_image: true,
     connector_shopify: true,
     connector_nuvemshop: false,
     connector_tray: false,
@@ -81,6 +90,9 @@ export const PLAN_FEATURES: Record<Plan, Record<FeatureKey, boolean>> = {
     connector_woo: true,
     connector_csv: true,
     connector_wordpress: true,
+    connector_openai: true,
+    ai_blog_writer: true,
+    ai_cover_image: true,
     connector_shopify: true,
     connector_nuvemshop: true,
     connector_tray: true,

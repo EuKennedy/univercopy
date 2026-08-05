@@ -75,14 +75,24 @@ Rails.application.routes.draw do
         post   "/integrations/woocommerce",      to: "integrations#connect_woocommerce"
         post   "/integrations/wordpress/test",   to: "integrations#test_wordpress"
         post   "/integrations/wordpress",        to: "integrations#connect_wordpress"
+        post   "/integrations/openai/test",      to: "integrations#test_openai"
+        post   "/integrations/openai",           to: "integrations#connect_openai"
         post   "/integrations/:type/sync",       to: "integrations#sync"
         delete "/integrations/:type",            to: "integrations#disconnect"
 
         # Blog WordPress (REST API v2). Publica rascunho ou post direto.
-        # Credenciais vêm da integration do workspace, não de ENV.
-        get  "/blog/status",     to: "blog_posts#status"
-        get  "/blog/categories", to: "blog_posts#categories"
-        post "/blog/publish",    to: "blog_posts#publish"
+        # Credenciais (WordPress e OpenAI) vêm da integration do workspace,
+        # nunca de ENV.
+        get  "/blog/status",           to: "blog_posts#status"
+        get  "/blog/categories",       to: "blog_posts#categories"
+        post "/blog/categories",       to: "blog_posts#create_category"
+        get  "/blog/tags",             to: "blog_posts#tags"
+        post "/blog/tags",             to: "blog_posts#create_tag"
+        post "/blog/generate/title",   to: "blog_posts#generate_title"
+        post "/blog/generate/content", to: "blog_posts#generate_content"
+        post "/blog/cover/generate",   to: "blog_posts#generate_cover"
+        post "/blog/cover/upload",     to: "blog_posts#upload_cover"
+        post "/blog/publish",          to: "blog_posts#publish"
 
         # Análise de página (page audit).
         get  "/page-audits", to: "page_audits#index"

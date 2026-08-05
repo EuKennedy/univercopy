@@ -7,9 +7,11 @@ import { ApiError, apiFetch } from '@/lib/api-client'
 import type {
   Account,
   ActionResult,
-  BlogCategory,
+  AiCostReport,
+  BlogMedia,
   BlogPostResult,
   BlogStatus,
+  BlogTerm,
   CampaignDetail,
   CopyDetail,
   Dna,
@@ -372,9 +374,88 @@ export async function loadBlogStatus(slug: string): Promise<ActionResult<BlogSta
   return run(() => apiFetch<BlogStatus>(`${ws(slug)}/blog/status`))
 }
 
-export async function loadBlogCategories(slug: string): Promise<ActionResult<BlogCategory[]>> {
+export async function loadBlogCategories(slug: string): Promise<ActionResult<BlogTerm[]>> {
   return run(async () =>
-    (await apiFetch<{ categories: BlogCategory[] }>(`${ws(slug)}/blog/categories`)).categories,
+    (await apiFetch<{ categories: BlogTerm[] }>(`${ws(slug)}/blog/categories`)).categories,
+  )
+}
+
+export async function loadBlogTags(slug: string): Promise<ActionResult<BlogTerm[]>> {
+  return run(async () => (await apiFetch<{ tags: BlogTerm[] }>(`${ws(slug)}/blog/tags`)).tags)
+}
+
+// Botão "+" da tela. O Rails reaproveita o termo se o WordPress disser que já
+// existe, então isso é idempotente do ponto de vista de quem clicou.
+export async function createBlogCategory(slug: string, name: string): Promise<ActionResult<BlogTerm>> {
+  return run(async () =>
+    (
+      await apiFetch<{ term: BlogTerm }>(`${ws(slug)}/blog/categories`, {
+        method: 'POST',
+        body: JSON.stringify({ term: { name } }),
+      })
+    ).term,
+  )
+}
+
+export async function createBlogTag(slug: string, name: string): Promise<ActionResult<BlogTerm>> {
+  return run(async () =>
+    (
+      await apiFetch<{ term: BlogTerm }>(`${ws(slug)}/blog/tags`, {
+        method: 'POST',
+        body: JSON.stringify({ term: { name } }),
+      })
+    ).term,
+  )
+}
+
+// --- Geração com IA ---
+
+export async function generateBlogTitle(
+  slug: string,
+  input: { brief?: string; model?: string },
+): Promise<ActionResult<{ title: string; cost: AiCostReport }>> {
+  return run(() =>
+    apiFetch<{ title: string; cost: AiCostReport }>(`${ws(slug)}/blog/generate/title`, {
+      method: 'POST',
+      body: JSON.stringify({ generate: input }),
+    }),
+  )
+}
+
+export async function generateBlogContent(
+  slug: string,
+  input: { title?: string; brief?: string; model?: string },
+): Promise<ActionResult<{ content: string; cost: AiCostReport }>> {
+  return run(() =>
+    apiFetch<{ content: string; cost: AiCostReport }>(`${ws(slug)}/blog/generate/content`, {
+      method: 'POST',
+      body: JSON.stringify({ generate: input }),
+    }),
+  )
+}
+
+// Gera na OpenAI e já sobe pro WordPress — volta só a URL, não a imagem.
+export async function generateBlogCover(
+  slug: string,
+  input: { title?: string; brief?: string; prompt?: string; size?: string; quality?: string },
+): Promise<ActionResult<{ media: BlogMedia; prompt: string; cost: AiCostReport }>> {
+  return run(() =>
+    apiFetch<{ media: BlogMedia; prompt: string; cost: AiCostReport }>(`${ws(slug)}/blog/cover/generate`, {
+      method: 'POST',
+      body: JSON.stringify({ cover: input }),
+    }),
+  )
+}
+
+export async function uploadBlogCover(
+  slug: string,
+  input: { filename: string; mime: string; data_base64: string; alt?: string },
+): Promise<ActionResult<{ media: BlogMedia }>> {
+  return run(() =>
+    apiFetch<{ media: BlogMedia }>(`${ws(slug)}/blog/cover/upload`, {
+      method: 'POST',
+      body: JSON.stringify({ cover: input }),
+    }),
   )
 }
 
@@ -386,6 +467,8 @@ export async function publishBlogPost(
     excerpt?: string
     status: 'draft' | 'publish'
     category_ids?: number[]
+    tag_ids?: number[]
+    featured_media?: number
   },
 ): Promise<ActionResult<BlogPostResult>> {
   return run(async () =>
@@ -396,4 +479,29 @@ export async function publishBlogPost(
       })
     ).post,
   )
+}
+
+// --- OpenAI (chave no painel, não em ENV) ---
+
+export async function testOpenai(slug: string, api_key: string): Promise<ActionResult<{ ok: boolean }>> {
+  return run(() =>
+    apiFetch<{ ok: boolean }>(`${ws(slug)}/integrations/openai/test`, {
+      method: 'POST',
+      body: JSON.stringify({ openai: { api_key } }),
+    }),
+  )
+}
+
+export async function connectOpenai(
+  slug: string,
+  api_key: string,
+): Promise<ActionResult<{ ok: boolean; type: string; status: string }>> {
+  const result = await run(() =>
+    apiFetch<{ ok: boolean; type: string; status: string }>(`${ws(slug)}/integrations/openai`, {
+      method: 'POST',
+      body: JSON.stringify({ openai: { api_key } }),
+    }),
+  )
+  if (result.ok) revalidatePath(`/${slug}/settings/integrations`)
+  return result
 }

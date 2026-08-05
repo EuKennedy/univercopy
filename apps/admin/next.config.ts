@@ -16,7 +16,9 @@ const nextConfig: NextConfig = {
   outputFileTracingRoot: monorepoRoot,
 
   experimental: {
-    serverActions: { bodySizeLimit: '2mb' },
+    // 12mb cobre uma capa de post de até 8MB depois do inchaço de ~33% do
+    // base64. O teto de 8MB é aplicado no cliente e revalidado no Rails.
+    serverActions: { bodySizeLimit: '12mb' },
   },
 
   async headers() {

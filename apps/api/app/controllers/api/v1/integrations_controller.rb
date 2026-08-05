@@ -5,6 +5,7 @@ module Api
       AVAILABLE = [
         { type: "woocommerce", feature: :connector_woo,       label: "WooCommerce" },
         { type: "wordpress",   feature: :connector_wordpress, label: "WordPress" },
+        { type: "openai",      feature: :connector_openai,    label: "OpenAI" },
         { type: "csv_manual",  feature: :connector_csv,       label: "CSV import" },
         { type: "shopify",     feature: :connector_shopify,   label: "Shopify" },
         { type: "nuvemshop",   feature: :connector_nuvemshop, label: "Nuvemshop" },
@@ -92,6 +93,33 @@ module Api
         render json: { ok: false, error: "connection_failed", message: e.message }, status: :unprocessable_entity
       end
 
+      # POST /integrations/openai/test — valida a chave sem gastar geração.
+      def test_openai
+        PlanFeatures.require!(current_workspace, :connector_openai)
+        render json: Connectors::OpenAi.new(openai_params).test_connection
+      rescue Connectors::OpenAi::ConnectionError => e
+        render json: { ok: false, error: "connection_failed", message: e.message }, status: :unprocessable_entity
+      end
+
+      # POST /integrations/openai — testa, cifra e salva a chave.
+      # Usada só para gerar capa de post; o texto continua no Anthropic.
+      def connect_openai
+        PlanFeatures.require!(current_workspace, :connector_openai)
+
+        config = openai_params
+        Connectors::OpenAi.new(config).test_connection # valida antes de salvar
+
+        integration = current_workspace.integrations.find_or_initialize_by(integration_type: "openai")
+        integration.config     = config
+        integration.status     = "connected"
+        integration.last_error = nil
+        integration.save!
+
+        render json: { ok: true, type: "openai", status: "connected" }, status: :created
+      rescue Connectors::OpenAi::ConnectionError => e
+        render json: { ok: false, error: "connection_failed", message: e.message }, status: :unprocessable_entity
+      end
+
       # POST /integrations/:type/sync — re-sincroniza catálogo.
       def sync
         type = params.require(:type)
@@ -134,6 +162,10 @@ module Api
           "username"             => p["username"],
           "application_password" => p["application_password"],
         }
+      end
+
+      def openai_params
+        { "api_key" => params.require(:openai).permit(:api_key).to_h["api_key"] }
       end
     end
   end

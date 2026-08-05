@@ -5,7 +5,7 @@ class Integration < ApplicationRecord
 
   # Coluna enum PG `integration_type` mapeada para o atributo `integration_type`.
   enum :integration_type,
-       %w[woocommerce shopify nuvemshop tray csv_manual wordpress].index_with(&:itself),
+       %w[woocommerce shopify nuvemshop tray csv_manual wordpress openai].index_with(&:itself),
        prefix: :type
 
   enum :status,
