@@ -74,7 +74,8 @@ module Blog
     private
 
     def run_one(workspace:, user_id:, wp:, openai:, plan:, post:, index:, ai_job:, state:)
-      brief = [post["topic"], post["angle"], plan["notes"]].compact_blank.join(". ")
+      brief  = [post["topic"], post["angle"], plan["notes"]].compact_blank.join(". ")
+      record = nil
 
       touch(ai_job, state, index, status: "running", step: "title")
       title_result = Ai::BlogWriter.title(workspace: workspace, brief: brief)
@@ -84,11 +85,21 @@ module Blog
       content_result = Ai::BlogWriter.content(workspace: workspace, title: title_result.text, brief: brief)
       add_cost(state, content_result.ai_result.cost_usd)
 
+      # Rascunho local ANTES de falar com o WordPress. Se a publicação falhar
+      # daqui pra frente, o texto gerado (que já custou dinheiro) sobrevive em
+      # "Meus posts" e o usuário republica de lá em vez de gerar tudo de novo.
+      record = archive_draft!(
+        workspace: workspace, user_id: user_id, ai_job: ai_job,
+        title: title_result.text, content: content_result.text,
+        brief: brief, plan: plan
+      )
+
       featured = nil
       if openai
         touch(ai_job, state, index, step: "cover")
         featured = build_cover(workspace: workspace, wp: wp, openai: openai,
                                title: title_result.text, brief: brief, state: state)
+        record&.update_columns(featured_media_id: featured, updated_at: Time.current) if featured
       end
 
       touch(ai_job, state, index, step: "publish")
@@ -101,16 +112,40 @@ module Blog
         featured_media: featured
       )
 
+      record&.mark_published!(published)
+
       state["completed"] += 1
       touch(ai_job, state, index,
-            status: "done", step: nil,
+            status: "done", step: nil, blog_post_id: record&.id,
             post_id: published[:id], url: published[:url], post_status: published[:status])
 
       audit!(workspace: workspace, user_id: user_id, published: published)
     rescue StandardError => e
       Rails.logger.error("[BlogAgentRunJob] post #{index} falhou: #{e.class}: #{e.message}")
       state["failed"] += 1
-      touch(ai_job, state, index, status: "error", step: nil, error: e.message.to_s.slice(0, 300))
+      record&.update_columns(last_error: e.message.to_s.slice(0, 500), updated_at: Time.current)
+      touch(ai_job, state, index,
+            status: "error", step: nil, blog_post_id: record&.id,
+            error: e.message.to_s.slice(0, 300))
+    end
+
+    # O acervo é acessório ao lote: se gravar falhar, o post ainda vai pro
+    # WordPress. Devolve nil e o resto do fluxo segue sem ele.
+    def archive_draft!(workspace:, user_id:, ai_job:, title:, content:, brief:, plan:)
+      workspace.blog_posts.create!(
+        origin:       "univercopy",
+        status:       "draft",
+        title:        title.to_s.strip.slice(0, 500).presence || "Sem título",
+        content:      content,
+        brief:        brief.to_s.strip.slice(0, 2_000).presence,
+        category_ids: Array(plan["category_ids"]).map(&:to_i),
+        tag_ids:      Array(plan["tag_ids"]).map(&:to_i),
+        created_by:   user_id,
+        ai_job_id:    ai_job.id
+      )
+    rescue StandardError => e
+      Rails.logger.error("[BlogAgentRunJob] rascunho local falhou: #{e.class}: #{e.message}")
+      nil
     end
 
     # Capa é acessório: se falhar, o post sai sem capa em vez de perder o texto.

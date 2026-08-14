@@ -202,7 +202,113 @@ module Api
       end
 
       # ---------------------------------------------------------------
-      # Publicação
+      # Acervo local — "Meus posts"
+      # ---------------------------------------------------------------
+
+      # GET /blog/posts?origin=&status=&q=
+      # Lista sem o corpo dos posts: 500 posts com HTML inteiro viram megabytes
+      # numa tela que só mostra título e data. O corpo vem no #post.
+      def posts
+        scope = current_workspace.blog_posts.recent
+        scope = scope.where(origin: params[:origin]) if BlogPost::ORIGINS.include?(params[:origin].to_s)
+        scope = scope.where(status: params[:status]) if BlogPost::STATUSES.include?(params[:status].to_s)
+
+        if (q = params[:q].to_s.strip).present?
+          scope = scope.where("title ILIKE ?", "%#{sanitize_like(q)}%")
+        end
+
+        render json: {
+          posts:  scope.limit(POSTS_PAGE_SIZE).map { |p| post_summary(p) },
+          counts: {
+            total:      current_workspace.blog_posts.count,
+            drafts:     current_workspace.blog_posts.drafts.count,
+            univercopy: current_workspace.blog_posts.univercopy.count,
+            wordpress:  current_workspace.blog_posts.from_wordpress.count,
+          },
+          last_sync_at: wp_integration&.last_sync_at,
+        }
+      end
+
+      # GET /blog/posts/:id — detalhe com corpo, pra abrir no editor.
+      def post
+        render json: { post: post_detail(find_post!) }
+      end
+
+      # POST /blog/posts — salva rascunho local, sem tocar no WordPress.
+      def create_draft
+        record = current_workspace.blog_posts.create!(
+          draft_params.merge(origin: "univercopy", status: "draft", created_by: current_app_user.id)
+        )
+        render json: { post: post_detail(record) }, status: :created
+      end
+
+      # PATCH /blog/posts/:id
+      def update_draft
+        record = find_post!
+        return render_not_editable unless record.editable?
+
+        record.update!(draft_params)
+        render json: { post: post_detail(record) }
+      end
+
+      # DELETE /blog/posts/:id — apaga só a cópia local. Post que já foi pro
+      # WordPress continua lá; remover de lá é decisão que se toma no WordPress.
+      def destroy_draft
+        find_post!.destroy!
+        render json: { ok: true }
+      end
+
+      # POST /blog/posts/:id/publish — manda um rascunho local pro WordPress.
+      # body: { status?: draft|publish }
+      def publish_draft
+        record = find_post!
+        return render_not_editable unless record.editable?
+
+        # O erro é tratado AQUI, sem re-levantar, de propósito. O
+        # `around_action` de RLS envolve a action numa transação: deixar a
+        # exceção subir até o rescue_from faria rollback e apagaria justamente
+        # o `last_error` que acabamos de gravar. Guardar o motivo no rascunho é
+        # o que permite a quem abre "Meus posts" ver por que o post não subiu,
+        # sem ter que caçar log.
+        begin
+          result = wp.publish(
+            title:          record.title,
+            content:        record.content,
+            status:         publish_status_param,
+            excerpt:        record.excerpt,
+            category_ids:   Array(record.category_ids),
+            tag_ids:        Array(record.tag_ids),
+            featured_media: record.featured_media_id
+          )
+        rescue Connectors::Wordpress::ConnectionError => e
+          record.update_columns(last_error: e.message.to_s.slice(0, 500), updated_at: Time.current)
+          return render_blog_unreachable(e)
+        rescue Connectors::Wordpress::PublishError => e
+          record.update_columns(last_error: e.message.to_s.slice(0, 500), updated_at: Time.current)
+          return render_blog_failed(e)
+        end
+
+        record.mark_published!(result)
+        record_audit!(result)
+
+        render json: { ok: true, post: post_detail(record) }, status: :created
+      end
+
+      # POST /blog/sync — re-importa o blog do WordPress sob demanda.
+      def sync
+        raise NotConnected, NOT_CONNECTED_MSG if wp_integration.blank?
+
+        PlanFeatures.require!(current_workspace, :connector_wordpress)
+        Connectors::SyncBlogPostsJob.perform_later(
+          workspace_id:   current_workspace.id,
+          user_id:        current_app_user.id,
+          integration_id: wp_integration.id
+        )
+        render json: { ok: true, sync: "queued" }, status: :accepted
+      end
+
+      # ---------------------------------------------------------------
+      # Publicação direta (editor)
       # ---------------------------------------------------------------
 
       # POST /blog/publish
@@ -220,10 +326,16 @@ module Api
         )
 
         record_audit!(result)
-        render json: { ok: true, post: result }, status: :created
+        # Espelha no acervo local: tudo que sai daqui aparece em "Meus posts",
+        # independente de ter vindo do editor ou do agente.
+        record = archive_published!(p, result)
+
+        render json: { ok: true, post: result, archived: record && post_summary(record) }, status: :created
       end
 
       private
+
+      POSTS_PAGE_SIZE = 200
 
       ALLOWED_IMAGE_MIMES = %w[image/jpeg image/png image/webp].freeze
       # 8MB — mesmo teto do cliente e do bodySizeLimit do server action.
@@ -287,6 +399,116 @@ module Api
 
       def term_params
         params.require(:term).permit(:name)
+      end
+
+      # Só entra no hash o que o cliente REALMENTE mandou. Semântica de PATCH:
+      # campo ausente fica como está, campo enviado vazio é limpeza de verdade
+      # — descartar valor vazio impediria o usuário de tirar todas as
+      # categorias ou apagar o resumo.
+      def draft_params
+        raw = params.require(:post).permit(
+          :title, :content, :excerpt, :brief, :featured_media, :featured_media_url,
+          category_ids: [], tag_ids: []
+        )
+        out = {}
+
+        out[:title]              = raw[:title].to_s.strip.slice(0, 500)             if raw.key?(:title)
+        out[:content]            = raw[:content].to_s                               if raw.key?(:content)
+        out[:excerpt]            = raw[:excerpt].to_s.strip.presence                if raw.key?(:excerpt)
+        out[:brief]              = raw[:brief].to_s.strip.slice(0, 2_000).presence  if raw.key?(:brief)
+        out[:featured_media_url] = raw[:featured_media_url].to_s.strip.presence     if raw.key?(:featured_media_url)
+
+        if raw.key?(:featured_media)
+          media = raw[:featured_media].to_i
+          out[:featured_media_id] = media.positive? ? media : nil
+        end
+
+        %i[category_ids tag_ids].each do |key|
+          next unless raw.key?(key)
+
+          out[key] = Array(raw[key]).map(&:to_i).reject(&:zero?).uniq.first(20)
+        end
+
+        out
+      end
+
+      # Status do WordPress, não o nosso. Só draft ou publish — quem manda é a
+      # tela, e "publish" só sai daqui se o usuário clicou em publicar.
+      def publish_status_param
+        wanted = params[:status].to_s.strip
+        Connectors::Wordpress::ALLOWED_STATUSES.include?(wanted) ? wanted : "draft"
+      end
+
+      def find_post!
+        current_workspace.blog_posts.find(params.require(:id))
+      end
+
+      # `%` e `_` são curingas no ILIKE — sem escapar, buscar por "50%" varre
+      # tudo que começa com 50.
+      def sanitize_like(term)
+        term.gsub(/[\\%_]/) { |c| "\\#{c}" }
+      end
+
+      # Grava no acervo o que acabou de subir pelo editor. Falha aqui não pode
+      # derrubar a resposta: o post JÁ existe no WordPress e um 500 faria o
+      # usuário reenviar e duplicar.
+      def archive_published!(input, result)
+        current_workspace.blog_posts.create!(
+          origin:             "univercopy",
+          status:             "published",
+          title:              input[:title].to_s.strip.slice(0, 500),
+          content:            input[:content].to_s,
+          excerpt:            input[:excerpt].to_s.strip.presence,
+          category_ids:       Array(input[:category_ids]).map(&:to_i),
+          tag_ids:            Array(input[:tag_ids]).map(&:to_i),
+          featured_media_id:  input[:featured_media].to_i.positive? ? input[:featured_media].to_i : nil,
+          wp_post_id:         result[:id],
+          url:                result[:url],
+          wp_status:          result[:status],
+          published_at:       Time.current,
+          created_by:         current_app_user.id
+        )
+      rescue StandardError => e
+        Rails.logger.error("[BlogPosts] arquivar post publicado falhou: #{e.class}: #{e.message}")
+        nil
+      end
+
+      def post_summary(record)
+        {
+          id:                 record.id,
+          origin:             record.origin,
+          title:              record.title,
+          excerpt:            record.excerpt,
+          status:             record.status,
+          wp_status:          record.wp_status,
+          wp_post_id:         record.wp_post_id,
+          url:                record.url,
+          slug:               record.slug,
+          featured_media_url: record.featured_media_url,
+          editable:           record.editable?,
+          last_error:         record.last_error,
+          published_at:       record.published_at,
+          updated_at:         record.updated_at,
+        }
+      end
+
+      def post_detail(record)
+        post_summary(record).merge(
+          content:           record.content,
+          brief:             record.brief,
+          category_ids:      Array(record.category_ids),
+          tag_ids:           Array(record.tag_ids),
+          featured_media_id: record.featured_media_id,
+          synced_at:         record.synced_at,
+          wp_modified_at:    record.wp_modified_at,
+        )
+      end
+
+      def render_not_editable
+        render json: {
+          error:   "not_editable",
+          message: "Este post já está no WordPress. Edite-o por lá.",
+        }, status: :unprocessable_entity
       end
 
       def agent_message_params

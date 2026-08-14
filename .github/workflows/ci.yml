@@ -132,6 +132,11 @@ jobs:
       REDIS_URL: redis://localhost:6379/0
       COVERAGE_FLOOR: '30'
       SECRET_KEY_BASE: dummy_secret_key_base_for_ci_only_64_chars_long_xxxxxxxxxxxxxxxxx
+      # Necessária desde que os specs de integração passaram a cifrar credencial
+      # de conector (WordPress/Woo/OpenAI). Valor fixo e público de propósito:
+      # é só pra MessageEncryptor não levantar KeyError no boot do teste — nada
+      # cifrado com ela sai do container efêmero do CI.
+      TENANT_CREDENTIALS_KEY: ci_only_tenant_credentials_key_not_a_secret_00000000000000000000
 
     steps:
       - uses: actions/checkout@v4

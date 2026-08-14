@@ -12,7 +12,11 @@ import type {
   AgentPlan,
   AgentReply,
   AiCostReport,
+  BlogDraftInput,
   BlogMedia,
+  BlogPostDetail,
+  BlogPostList,
+  BlogPostOrigin,
   BlogPostResult,
   BlogStatus,
   BlogTerm,
@@ -498,6 +502,87 @@ export async function publishBlogPost(
         body: JSON.stringify({ post: input }),
       })
     ).post,
+  )
+}
+
+// --- Acervo local de posts ("Meus posts") ---
+// Junta o que o sync trouxe do WordPress com o que foi gerado aqui. Rascunho
+// local só vira post no WordPress quando publishBlogDraft é chamado.
+
+export async function listBlogPosts(
+  slug: string,
+  query?: { origin?: BlogPostOrigin; status?: 'draft' | 'published'; q?: string },
+): Promise<ActionResult<BlogPostList>> {
+  const qs = new URLSearchParams()
+  if (query?.origin) qs.set('origin', query.origin)
+  if (query?.status) qs.set('status', query.status)
+  if (query?.q) qs.set('q', query.q)
+  const suffix = qs.toString() ? `?${qs.toString()}` : ''
+
+  return run(() => apiFetch<BlogPostList>(`${ws(slug)}/blog/posts${suffix}`))
+}
+
+export async function getBlogPost(slug: string, id: string): Promise<ActionResult<BlogPostDetail>> {
+  return run(async () =>
+    (await apiFetch<{ post: BlogPostDetail }>(`${ws(slug)}/blog/posts/${encodeURIComponent(id)}`)).post,
+  )
+}
+
+export async function saveBlogDraft(
+  slug: string,
+  input: BlogDraftInput,
+): Promise<ActionResult<BlogPostDetail>> {
+  return run(async () =>
+    (
+      await apiFetch<{ post: BlogPostDetail }>(`${ws(slug)}/blog/posts`, {
+        method: 'POST',
+        body: JSON.stringify({ post: input }),
+      })
+    ).post,
+  )
+}
+
+export async function updateBlogDraft(
+  slug: string,
+  id: string,
+  input: BlogDraftInput,
+): Promise<ActionResult<BlogPostDetail>> {
+  return run(async () =>
+    (
+      await apiFetch<{ post: BlogPostDetail }>(`${ws(slug)}/blog/posts/${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ post: input }),
+      })
+    ).post,
+  )
+}
+
+export async function deleteBlogPost(slug: string, id: string): Promise<ActionResult<{ ok: boolean }>> {
+  return run(() =>
+    apiFetch<{ ok: boolean }>(`${ws(slug)}/blog/posts/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+  )
+}
+
+export async function publishBlogDraft(
+  slug: string,
+  id: string,
+  status: 'draft' | 'publish',
+): Promise<ActionResult<BlogPostDetail>> {
+  return run(async () =>
+    (
+      await apiFetch<{ ok: boolean; post: BlogPostDetail }>(
+        `${ws(slug)}/blog/posts/${encodeURIComponent(id)}/publish`,
+        { method: 'POST', body: JSON.stringify({ status }) },
+      )
+    ).post,
+  )
+}
+
+// Re-importa o blog do WordPress. Enfileira e volta na hora — a lista se
+// atualiza no próximo carregamento.
+export async function syncBlogPosts(slug: string): Promise<ActionResult<{ ok: boolean; sync: string }>> {
+  return run(() =>
+    apiFetch<{ ok: boolean; sync: string }>(`${ws(slug)}/blog/sync`, { method: 'POST' }),
   )
 }
 

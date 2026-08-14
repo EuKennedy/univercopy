@@ -438,6 +438,56 @@ export type BlogPostResult = {
   status: 'draft' | 'publish'
 }
 
+// --- Acervo local de posts ("Meus posts") ---
+// `origin` diz de onde o post veio; `status` é o ciclo de vida AQUI (draft =
+// só existe no UniverCopy); `wp_status` é o que o WordPress diz do post.
+export type BlogPostOrigin = 'univercopy' | 'wordpress'
+
+export type BlogPostRecord = {
+  id: string
+  origin: BlogPostOrigin
+  title: string
+  excerpt: string | null
+  status: 'draft' | 'published'
+  wp_status: string | null
+  wp_post_id: number | null
+  url: string | null
+  slug: string | null
+  featured_media_url: string | null
+  /** Só rascunho nascido aqui pode ser editado/publicado pela tela. */
+  editable: boolean
+  last_error: string | null
+  published_at: string | null
+  updated_at: string
+}
+
+export type BlogPostDetail = BlogPostRecord & {
+  content: string | null
+  brief: string | null
+  category_ids: number[]
+  tag_ids: number[]
+  featured_media_id: number | null
+  synced_at: string | null
+  wp_modified_at: string | null
+}
+
+export type BlogPostList = {
+  posts: BlogPostRecord[]
+  counts: { total: number; drafts: number; univercopy: number; wordpress: number }
+  last_sync_at: string | null
+}
+
+export type BlogDraftInput = {
+  title: string
+  content?: string
+  excerpt?: string
+  brief?: string
+  category_ids?: number[]
+  tag_ids?: number[]
+  featured_media?: number
+  featured_media_url?: string
+}
+
 // Erro normalizado de paywall/cap pra UI tratar 402.
 export type ActionError = {
   ok: false

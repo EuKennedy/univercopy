@@ -12,9 +12,13 @@ module Api
         { type: "tray",        feature: :connector_tray,      label: "Tray" },
       ].freeze
 
-      # Conectores que alimentam catálogo de produtos. O WordPress fica de fora:
-      # é destino de publicação de conteúdo, não origem de produtos.
+      # Conectores que alimentam o catálogo de produtos.
       SYNCABLE = %w[woocommerce shopify nuvemshop tray csv_manual].freeze
+
+      # O WordPress também sincroniza, mas traz POSTS, não produtos — job
+      # diferente, tabela diferente. Fica numa lista própria pra não cair no
+      # SyncProductsJob, que não sabe o que fazer com ele.
+      BLOG_SYNCABLE = %w[wordpress].freeze
 
       # GET /integrations — estado de cada conector (sem vazar credenciais).
       def index
@@ -82,8 +86,12 @@ module Api
         render json: { ok: false, error: "connection_failed", message: e.message }, status: :unprocessable_entity
       end
 
-      # POST /integrations/wordpress — testa, cifra e salva.
-      # Sem job de sync: WordPress aqui é destino de publicação, não catálogo.
+      # POST /integrations/wordpress — testa, cifra, salva e importa o blog.
+      #
+      # O sync do acervo de posts entra aqui: conectar o WordPress significa
+      # "esse blog é meu", e o painel precisa mostrar o que já existe lá antes
+      # de o usuário escrever a primeira linha. Vai em background porque um
+      # blog com centenas de posts leva minutos.
       def connect_wordpress
         PlanFeatures.require!(current_workspace, :connector_wordpress)
 
@@ -96,7 +104,13 @@ module Api
         integration.last_error = nil
         integration.save!
 
-        render json: { ok: true, type: "wordpress", status: "connected" }, status: :created
+        Connectors::SyncBlogPostsJob.perform_later(
+          workspace_id:   current_workspace.id,
+          user_id:        current_app_user.id,
+          integration_id: integration.id,
+        )
+
+        render json: { ok: true, type: "wordpress", status: "connected", sync: "queued" }, status: :created
       rescue Connectors::Wordpress::ConnectionError => e
         render json: { ok: false, error: "connection_failed", message: e.message }, status: :unprocessable_entity
       end
@@ -146,16 +160,19 @@ module Api
         render json: { ok: true, text_model: model, text_provider: Ai::TextRouter.provider_for(current_workspace) }
       end
 
-      # POST /integrations/:type/sync — re-sincroniza catálogo.
+      # POST /integrations/:type/sync — re-sincroniza. Catálogo de produtos ou
+      # acervo de posts, conforme o conector.
       def sync
         type = params.require(:type)
-        unless SYNCABLE.include?(type)
-          return render json: { ok: false, error: "not_syncable", message: "#{type} não sincroniza catálogo." },
+        job  = sync_job_for(type)
+
+        if job.nil?
+          return render json: { ok: false, error: "not_syncable", message: "#{type} não sincroniza." },
                         status: :unprocessable_entity
         end
 
         integration = current_workspace.integrations.find_by!(integration_type: type)
-        Connectors::SyncProductsJob.perform_later(
+        job.perform_later(
           workspace_id:   current_workspace.id,
           user_id:        current_app_user.id,
           integration_id: integration.id,
@@ -171,6 +188,13 @@ module Api
       end
 
       private
+
+      def sync_job_for(type)
+        return Connectors::SyncProductsJob  if SYNCABLE.include?(type)
+        return Connectors::SyncBlogPostsJob if BLOG_SYNCABLE.include?(type)
+
+        nil
+      end
 
       # Lista branca do que pode voltar pro cliente. `config` guarda credencial
       # cifrada — nada dele sai por padrão, só o que for explicitamente seguro.

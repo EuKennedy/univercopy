@@ -208,6 +208,7 @@ gate_api() {
     DATABASE_URL="$CI_DATABASE_URL" \
     REDIS_URL="$CI_REDIS_URL" \
     SECRET_KEY_BASE="dummy_secret_key_base_for_ci_local_64_chars_xxxxxxxxxxxxxxxxxxx" \
+    TENANT_CREDENTIALS_KEY="ci_only_tenant_credentials_key_not_a_secret_00000000000000000000" \
     COVERAGE_FLOOR=30 \
     bundle exec rspec --format progress >>"$log" 2>&1
   popd >/dev/null

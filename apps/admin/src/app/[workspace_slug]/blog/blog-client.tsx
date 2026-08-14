@@ -16,16 +16,23 @@ import {
   loadBlogCategories,
   loadBlogStatus,
   loadBlogTags,
+  publishBlogDraft,
   publishBlogPost,
+  saveBlogDraft,
+  updateBlogDraft,
   uploadBlogCover,
 } from '@/lib/api/mutations'
-import type { BlogMedia, BlogPostResult, BlogStatus, BlogTerm } from '@/lib/api/types'
+import type { BlogMedia, BlogPostDetail, BlogPostResult, BlogStatus, BlogTerm } from '@/lib/api/types'
 
 import { AgentModal } from './agent-modal'
 import { GenerationModal, type GenerationKind } from './generation-modal'
+import { PostsClient } from './posts-client'
 import { TermPicker } from './term-picker'
 
-type Pending = 'draft' | 'publish' | 'title' | 'content' | 'cover' | 'upload' | null
+type Pending = 'draft' | 'publish' | 'local' | 'title' | 'content' | 'cover' | 'upload' | null
+
+// 'agent' abre o modal por cima do editor; 'mine' troca o editor pelo acervo.
+type Tab = 'post' | 'agent' | 'mine'
 
 const ACCEPTED_MIMES = ['image/jpeg', 'image/png', 'image/webp']
 // 8MB: casa com MAX_UPLOAD_BYTES no Rails e cabe no bodySizeLimit do server
@@ -53,7 +60,12 @@ export function BlogClient({ slug }: { slug: string }) {
   const [pending, setPending] = useState<Pending>(null)
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<BlogPostResult | null>(null)
-  const [agentOpen, setAgentOpen] = useState(false)
+  const [tab, setTab] = useState<Tab>('post')
+  // Id do rascunho de "Meus posts" aberto no editor. Quando presente, salvar e
+  // publicar atualizam ESSE registro em vez de criar outro.
+  const [editingId, setEditingId] = useState<string | null>(null)
+
+  const agentOpen = tab === 'agent'
 
   // Status, categorias e tags em paralelo — round-trips independentes pro
   // WordPress. A tela abre na hora e vai preenchendo.
@@ -167,6 +179,57 @@ export function BlogClient({ slug }: { slug: string }) {
     setCover(res.data.media)
   }
 
+  // --- acervo local ---
+
+  function resetForm() {
+    setTitle(''); setContent(''); setExcerpt(''); setBrief('')
+    setSelectedCategories(new Set()); setSelectedTags(new Set()); setCover(null)
+    setEditingId(null)
+  }
+
+  // Payload do rascunho local. Mesmo formato pro create e pro update.
+  function draftPayload() {
+    return {
+      title: title.trim(),
+      content,
+      excerpt: excerpt.trim() || undefined,
+      brief: brief.trim() || undefined,
+      category_ids: selectedCategories.size ? [...selectedCategories] : undefined,
+      tag_ids: selectedTags.size ? [...selectedTags] : undefined,
+      featured_media: cover?.id,
+      featured_media_url: cover?.url ?? undefined,
+    }
+  }
+
+  // Guarda em "Meus posts" sem tocar no WordPress.
+  async function saveLocal() {
+    if (!title.trim()) { setError(t('error_title_required')); return }
+
+    setPending('local'); setError(null); setResult(null)
+    const res = editingId
+      ? await updateBlogDraft(slug, editingId, draftPayload())
+      : await saveBlogDraft(slug, draftPayload())
+    setPending(null)
+
+    if (!res.ok) { setError(res.message || t('error_generic')); return }
+    setEditingId(res.data.id)
+    setTab('mine')
+  }
+
+  // Carrega um rascunho de "Meus posts" no editor.
+  function openDraft(post: BlogPostDetail) {
+    setTitle(post.title)
+    setContent(post.content ?? '')
+    setExcerpt(post.excerpt ?? '')
+    setBrief(post.brief ?? '')
+    setSelectedCategories(new Set(post.category_ids))
+    setSelectedTags(new Set(post.tag_ids))
+    setCover(post.featured_media_id ? { id: post.featured_media_id, url: post.featured_media_url } : null)
+    setEditingId(post.id)
+    setError(null); setResult(null)
+    setTab('post')
+  }
+
   // --- publicação ---
 
   async function submit(next: 'draft' | 'publish') {
@@ -174,6 +237,25 @@ export function BlogClient({ slug }: { slug: string }) {
     if (!content.trim()) { setError(t('error_content_required')); return }
 
     setPending(next); setError(null); setResult(null)
+
+    // Rascunho aberto do acervo: sincroniza as edições e publica AQUELE
+    // registro, senão o acervo ficaria com uma cópia órfã do texto antigo.
+    if (editingId) {
+      const saved = await updateBlogDraft(slug, editingId, draftPayload())
+      if (!saved.ok) { setPending(null); setError(saved.message || t('error_generic')); return }
+
+      const published = await publishBlogDraft(slug, editingId, next)
+      setPending(null)
+      if (!published.ok) { setError(published.message || t('error_generic')); return }
+
+      setResult({
+        id: published.data.wp_post_id ?? 0,
+        url: published.data.url,
+        status: next,
+      })
+      resetForm()
+      return
+    }
 
     const res = await publishBlogPost(slug, {
       title: title.trim(),
@@ -189,8 +271,7 @@ export function BlogClient({ slug }: { slug: string }) {
     if (!res.ok) { setError(res.message || t('error_generic')); return }
 
     setResult(res.data)
-    setTitle(''); setContent(''); setExcerpt(''); setBrief('')
-    setSelectedCategories(new Set()); setSelectedTags(new Set()); setCover(null)
+    resetForm()
   }
 
   if (notConnected) {
@@ -211,40 +292,13 @@ export function BlogClient({ slug }: { slug: string }) {
   return (
     <div className="space-y-5">
       <GenerationModal kind={generating} />
-      {agentOpen && <AgentModal slug={slug} onClose={() => setAgentOpen(false)} />}
+      {agentOpen && <AgentModal slug={slug} onClose={() => setTab('post')} />}
 
       {/* A aba Agentes abre o modal; o formulário fica embaixo como contexto. */}
       <div role="tablist" aria-label={t('tabs_label')} className="flex gap-1 rounded-2xl uc-glass border border-[var(--uc-border)] p-1 w-fit">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={!agentOpen}
-          onClick={() => setAgentOpen(false)}
-          className={cn(
-            'inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold uc-transition',
-            !agentOpen
-              ? 'bg-[var(--uc-accent)] text-[var(--uc-text-on-accent)]'
-              : 'text-[var(--uc-text-soft)] hover:text-[var(--uc-text)]',
-          )}
-        >
-          <Icon name="blog" size={15} />
-          {t('tab_post')}
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={agentOpen}
-          onClick={() => setAgentOpen(true)}
-          className={cn(
-            'inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold uc-transition',
-            agentOpen
-              ? 'bg-[var(--uc-accent)] text-[var(--uc-text-on-accent)]'
-              : 'text-[var(--uc-text-soft)] hover:text-[var(--uc-text)]',
-          )}
-        >
-          <Icon name="sparkle" size={15} />
-          {t('tab_agent')}
-        </button>
+        <TabButton active={tab === 'post'} icon="blog" label={t('tab_post')} onClick={() => setTab('post')} />
+        <TabButton active={tab === 'agent'} icon="sparkle" label={t('tab_agent')} onClick={() => setTab('agent')} />
+        <TabButton active={tab === 'mine'} icon="layers" label={t('tab_mine')} onClick={() => setTab('mine')} />
       </div>
 
       {status?.site && !unreachable && (
@@ -254,6 +308,23 @@ export function BlogClient({ slug }: { slug: string }) {
       {unreachable && (
         <GlassCard className="p-4">
           <p className="text-sm text-[var(--uc-danger)]">{t('unreachable_warning')}</p>
+        </GlassCard>
+      )}
+
+      {tab === 'mine' && <PostsClient slug={slug} onEdit={openDraft} />}
+
+      {tab !== 'mine' && (
+        <>
+      {editingId && (
+        <GlassCard className="p-4 flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-[var(--uc-text-soft)]">{t('editing_draft')}</p>
+          <button
+            type="button"
+            onClick={resetForm}
+            className="text-sm font-semibold text-[var(--uc-accent-strong)] hover:underline cursor-pointer"
+          >
+            {t('editing_draft_new')}
+          </button>
         </GlassCard>
       )}
 
@@ -437,6 +508,19 @@ export function BlogClient({ slug }: { slug: string }) {
         </div>
 
         <div className="flex flex-col sm:flex-row gap-2 pt-1">
+          {/* Guarda em "Meus posts" sem mandar nada pro WordPress. Só o título
+              é obrigatório: rascunho serve justamente pra texto pela metade. */}
+          <GlassButton
+            variant="ghost"
+            size="lg"
+            loading={pending === 'local'}
+            disabled={busy || !title.trim()}
+            onClick={saveLocal}
+          >
+            {pending !== 'local' && <Icon name="layers" size={16} />}
+            {pending === 'local' ? t('saving') : t('save_local')}
+          </GlassButton>
+
           <GlassButton
             variant="secondary"
             size="lg"
@@ -479,7 +563,31 @@ export function BlogClient({ slug }: { slug: string }) {
           )}
         </GlassCard>
       )}
+        </>
+      )}
     </div>
+  )
+}
+
+function TabButton({
+  active, icon, label, onClick,
+}: { active: boolean; icon: 'blog' | 'sparkle' | 'layers'; label: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      role="tab"
+      aria-selected={active}
+      onClick={onClick}
+      className={cn(
+        'inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold uc-transition cursor-pointer',
+        active
+          ? 'bg-[var(--uc-accent)] text-[var(--uc-text-on-accent)]'
+          : 'text-[var(--uc-text-soft)] hover:text-[var(--uc-text)]',
+      )}
+    >
+      <Icon name={icon} size={15} />
+      {label}
+    </button>
   )
 }
 

@@ -94,6 +94,16 @@ Rails.application.routes.draw do
         post "/blog/cover/generate",   to: "blog_posts#generate_cover"
         post "/blog/cover/upload",     to: "blog_posts#upload_cover"
         post "/blog/publish",          to: "blog_posts#publish"
+        # Acervo local ("Meus posts"): rascunhos gerados aqui + posts trazidos
+        # do WordPress pelo sync. Declarado ANTES de /blog/posts/:id para que
+        # "sync" não seja capturado como um id.
+        post   "/blog/sync",              to: "blog_posts#sync"
+        get    "/blog/posts",             to: "blog_posts#posts"
+        post   "/blog/posts",             to: "blog_posts#create_draft"
+        get    "/blog/posts/:id",         to: "blog_posts#post"
+        patch  "/blog/posts/:id",         to: "blog_posts#update_draft"
+        delete "/blog/posts/:id",         to: "blog_posts#destroy_draft"
+        post   "/blog/posts/:id/publish", to: "blog_posts#publish_draft"
         # Agente: conversa até fechar o plano, executa em background com polling.
         post "/blog/agent/message",    to: "blog_posts#agent_message"
         post "/blog/agent/run",        to: "blog_posts#agent_run"

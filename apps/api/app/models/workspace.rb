@@ -6,6 +6,7 @@ class Workspace < ApplicationRecord
   has_many :workspace_members, dependent: :destroy
   has_many :members, through: :workspace_members, source: :app_user
   has_many :brand_dnas, dependent: :destroy
+  has_many :blog_posts, dependent: :destroy
   has_many :copies, dependent: :destroy
   has_many :campaigns, dependent: :destroy
   has_many :products, dependent: :destroy

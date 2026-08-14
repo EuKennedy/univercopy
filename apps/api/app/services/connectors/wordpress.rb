@@ -27,7 +27,16 @@ module Connectors
     CONNECT_TIMEOUT = 5
     READ_TIMEOUT    = 30
     PER_PAGE        = 100
-    MAX_PAGES       = 10 # teto: 1000 categorias
+    MAX_PAGES       = 10  # teto: 1000 categorias
+    MAX_POST_PAGES  = 100 # teto: 10.000 posts por sync
+
+    # Campos pedidos no sync. Sem `_fields` o WP devolve ~40 chaves por post
+    # (links, meta, yoast...) e 500 posts viram dezenas de MB à toa.
+    # `_gmt` porque `date`/`modified` vêm no fuso do site e não dizem qual é.
+    POST_FIELDS = %w[
+      id date_gmt modified_gmt slug status link title content excerpt
+      categories tags featured_media
+    ].freeze
 
     ALLOWED_STATUSES = %w[draft publish].freeze
     MAX_TITLE_BYTES  = 500
@@ -61,6 +70,46 @@ module Connectors
 
     def tags
       terms("tags")
+    end
+
+    # Percorre TODOS os posts do site, página a página, entregando um hash já
+    # normalizado por post. Não acumula em memória — 500+ posts com corpo
+    # inteiro não cabem confortavelmente num array só.
+    #
+    # `context=edit` é o que faz o WP devolver `title.raw`/`content.raw` (o
+    # markup original do editor) em vez de só o `rendered` com shortcode já
+    # expandido — é o raw que volta pro nosso editor sem corromper o post.
+    # Exige capability de edição, a mesma que o test_connection já garante.
+    #
+    # `status=any` traz rascunho, privado e agendado junto com o publicado:
+    # o acervo espelha o blog inteiro, não só o que está no ar.
+    #
+    # Ordem por ID ascendente porque paginar por data com post novo entrando
+    # no meio do sync empurra itens para a página seguinte e pula registros.
+    def each_post(per_page: PER_PAGE)
+      page = 1
+
+      loop do
+        resp = request(:get, "posts", params: {
+          context:  "edit",
+          status:   "any",
+          per_page: per_page,
+          page:     page,
+          orderby:  "id",
+          order:    "asc",
+          _fields:  POST_FIELDS.join(","),
+        })
+
+        items = parse_json(resp.body)
+        break if items.blank?
+
+        items.each { |raw| yield normalize_post(raw) }
+
+        total_pages = resp.headers["x-wp-totalpages"].to_i
+        break if page >= total_pages || page >= MAX_POST_PAGES
+
+        page += 1
+      end
     end
 
     # Cria categoria/tag. Se o WP recusar por já existir, aproveitamos o ID que
@@ -132,6 +181,47 @@ module Connectors
     end
 
     private
+
+    def normalize_post(raw)
+      raw = {} unless raw.is_a?(Hash)
+      media_id = raw["featured_media"].to_i
+
+      {
+        wp_post_id:        raw["id"].to_i,
+        title:             pick_text(raw["title"]),
+        content:           pick_text(raw["content"]),
+        excerpt:           pick_text(raw["excerpt"]),
+        slug:              raw["slug"].to_s,
+        wp_status:         raw["status"].to_s,
+        url:               raw["link"].presence,
+        category_ids:      Array(raw["categories"]).map(&:to_i),
+        tag_ids:           Array(raw["tags"]).map(&:to_i),
+        featured_media_id: media_id.positive? ? media_id : nil,
+        published_at:      parse_time(raw["date_gmt"]),
+        wp_modified_at:    parse_time(raw["modified_gmt"]),
+      }
+    end
+
+    # title/content/excerpt vêm como { raw:, rendered:, protected: } em
+    # context=edit e como string crua em alguns hardenings. Prefere o raw;
+    # cai no rendered em vez de devolver vazio.
+    def pick_text(field)
+      return "" if field.blank?
+      return field.to_s unless field.is_a?(Hash)
+
+      (field["raw"].presence || field["rendered"].presence).to_s
+    end
+
+    # `date_gmt` já é UTC mas vem sem sufixo Z — sem forçar, o Rails
+    # interpretaria no fuso da aplicação e deslocaria a data.
+    def parse_time(value)
+      raw = value.to_s.strip
+      return nil if raw.blank?
+
+      Time.find_zone("UTC").parse(raw)
+    rescue ArgumentError
+      nil
+    end
 
     def terms(taxonomy)
       out  = []
