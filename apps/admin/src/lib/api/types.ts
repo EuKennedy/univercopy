@@ -459,6 +459,44 @@ export type BlogPostRecord = {
   last_error: string | null
   published_at: string | null
   updated_at: string
+  /** Está no blog e ainda não foi anunciado na comunidade. */
+  shareable: boolean
+  community_url: string | null
+  community_space: string | null
+}
+
+// --- Fluent Community ---
+// Conector separado do WordPress: na prática a comunidade mora em outro site.
+export type CommunityStatus = {
+  connected: boolean
+  reachable: boolean
+  site?: string
+  message?: string
+  spaces_count?: number
+  default_space?: string | null
+}
+
+/** Só spaces do tipo `community` — course e space_group não recebem post de feed. */
+export type CommunitySpace = {
+  id: number
+  title: string
+  slug: string
+  type: string
+  privacy: string
+}
+
+export type CommunityPublishResult = {
+  id: number
+  url: string | null
+  slug: string
+  space: string
+}
+
+export type CommunityCredentials = {
+  base_url: string
+  username: string
+  application_password: string
+  default_space?: string
 }
 
 export type BlogPostDetail = BlogPostRecord & {

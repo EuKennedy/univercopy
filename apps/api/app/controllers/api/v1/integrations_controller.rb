@@ -6,6 +6,7 @@ module Api
         { type: "woocommerce", feature: :connector_woo,       label: "WooCommerce" },
         { type: "wordpress",   feature: :connector_wordpress, label: "WordPress" },
         { type: "openai",      feature: :connector_openai,    label: "OpenAI" },
+        { type: "fluent_community", feature: :connector_fluent_community, label: "Fluent Community" },
         { type: "csv_manual",  feature: :connector_csv,       label: "CSV import" },
         { type: "shopify",     feature: :connector_shopify,   label: "Shopify" },
         { type: "nuvemshop",   feature: :connector_nuvemshop, label: "Nuvemshop" },
@@ -115,6 +116,50 @@ module Api
         render json: { ok: false, error: "connection_failed", message: e.message }, status: :unprocessable_entity
       end
 
+      # POST /integrations/fluent_community/test — valida credencial E acesso
+      # ao portal. Credencial de admin do WordPress que nunca entrou na
+      # comunidade é recusada pela PortalPolicy do plugin, então testar só
+      # autenticação daria falso positivo.
+      def test_fluent_community
+        PlanFeatures.require!(current_workspace, :connector_fluent_community)
+        render json: Connectors::FluentCommunity.new(community_params).test_connection
+      rescue Connectors::FluentCommunity::ConnectionError => e
+        render json: { ok: false, error: "connection_failed", message: e.message }, status: :unprocessable_entity
+      end
+
+      # POST /integrations/fluent_community — testa, cifra e salva.
+      def connect_fluent_community
+        PlanFeatures.require!(current_workspace, :connector_fluent_community)
+
+        config = community_params
+        Connectors::FluentCommunity.new(config).test_connection # valida antes de salvar
+
+        integration = current_workspace.integrations.find_or_initialize_by(integration_type: "fluent_community")
+        integration.config     = config
+        integration.status     = "connected"
+        integration.last_error = nil
+        integration.save!
+
+        render json: { ok: true, type: "fluent_community", status: "connected" }, status: :created
+      rescue Connectors::FluentCommunity::ConnectionError => e
+        render json: { ok: false, error: "connection_failed", message: e.message }, status: :unprocessable_entity
+      end
+
+      # PATCH /integrations/fluent_community — troca só o space padrão, sem
+      # exigir que o usuário reenvie a senha de aplicação (que nunca volta
+      # pro cliente). Mesmo motivo do update_openai_settings.
+      def update_community_settings
+        PlanFeatures.require!(current_workspace, :connector_fluent_community)
+
+        integration = current_workspace.integrations.find_by!(integration_type: "fluent_community")
+        space       = params.require(:fluent_community).permit(:default_space).to_h["default_space"].to_s.strip
+
+        integration.config = integration.config.merge("default_space" => space)
+        integration.save!
+
+        render json: { ok: true, default_space: space }
+      end
+
       # POST /integrations/openai/test — valida a chave sem gastar geração.
       def test_openai
         PlanFeatures.require!(current_workspace, :connector_openai)
@@ -204,8 +249,21 @@ module Api
         case type
         when "openai"    then { text_model: integration.config["text_model"].to_s }
         when "wordpress" then { base_url: integration.config["base_url"].to_s }
+        when "fluent_community"
+          { base_url: integration.config["base_url"].to_s, default_space: integration.config["default_space"].to_s }
         else {}
         end
+      end
+
+      def community_params
+        p = params.require(:fluent_community).permit(:base_url, :username, :application_password, :default_space).to_h
+
+        {
+          "base_url"             => p["base_url"],
+          "username"             => p["username"],
+          "application_password" => p["application_password"],
+          "default_space"        => p["default_space"].to_s.strip,
+        }
       end
 
       def woo_params

@@ -489,6 +489,11 @@ module Api
           last_error:         record.last_error,
           published_at:       record.published_at,
           updated_at:         record.updated_at,
+          # Anúncio na comunidade: `shareable` é o que decide se a tela mostra
+          # o botão; `community_url` é o que ela mostra quando já saiu.
+          shareable:          record.shareable_to_community?,
+          community_url:      record.community_url,
+          community_space:    record.community_space,
         }
       end
 

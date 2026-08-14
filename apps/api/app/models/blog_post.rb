@@ -25,6 +25,28 @@ class BlogPost < ApplicationRecord
     origin == "univercopy" && status == "draft"
   end
 
+  # Já foi anunciado no feed da comunidade. A tela usa isso pra não oferecer o
+  # botão de novo e gerar post duplicado no feed.
+  def community_published?
+    community_post_id.present?
+  end
+
+  # Só faz sentido anunciar na comunidade um post que existe no blog: o post
+  # da comunidade é uma chamada COM link pro artigo, não o artigo.
+  def shareable_to_community?
+    status == "published" && url.present? && !community_published?
+  end
+
+  def mark_shared_to_community!(result, message:)
+    update!(
+      community_post_id:     result[:id],
+      community_url:         result[:url],
+      community_space:       result[:space],
+      community_message:     message,
+      community_published_at: Time.current,
+    )
+  end
+
   # Marca como publicado a partir do retorno do conector.
   def mark_published!(wp_result)
     update!(

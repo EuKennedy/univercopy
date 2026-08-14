@@ -389,7 +389,26 @@
     "posts_action_view": "Ver en el sitio",
     "posts_action_delete": "Quitar del acervo",
     "posts_published": "Post publicado en WordPress.",
-    "posts_sent_as_draft": "Post enviado a WordPress como borrador."
+    "posts_sent_as_draft": "Post enviado a WordPress como borrador.",
+    "posts_action_share": "Anunciar en la comunidad",
+    "posts_badge_community": "En la comunidad",
+    "community_title": "Anunciar en la comunidad",
+    "community_close": "Cerrar",
+    "community_not_connected": "No hay comunidad conectada en este workspace. Conectá Fluent Community en Configuración → Integraciones.",
+    "community_space": "Dónde publicar",
+    "community_space_hint": "Solo aparecen spaces de comunidad — cursos y grupos no reciben posts de feed.",
+    "community_spaces_loading": "Cargando spaces…",
+    "community_message": "Mensaje del post",
+    "community_message_placeholder": "Escribí el gancho que va al feed…",
+    "community_generating": "La IA está escribiendo el gancho…",
+    "community_regenerate": "Generar de nuevo",
+    "community_chars": "{count} de {max} caracteres",
+    "community_cancel": "Cancelar",
+    "community_publish": "Publicar en la comunidad",
+    "community_publishing": "Publicando…",
+    "community_published": "Post anunciado en la comunidad.",
+    "community_error_empty": "Escribí el mensaje antes de publicar.",
+    "community_error_space": "Elegí dónde publicar."
   },
   "products": {
     "eyebrow": "CATÁLOGO",
@@ -636,7 +655,12 @@
     "openai_text_model_off": "No usar — dejar el texto en la IA por defecto",
     "openai_text_model_hint": "Vale para título, contenido y el agente del blog. El costo entra en el mismo tope mensual del workspace, sea cual sea el proveedor. La portada sigue en gpt-image-2.",
     "openai_model_saved": "Modelo guardado. Los textos ahora salen por OpenAI.",
-    "openai_model_off_saved": "Guardado. Los textos vuelven a la IA por defecto."
+    "openai_model_off_saved": "Guardado. Los textos vuelven a la IA por defecto.",
+    "community_description": "Anunciá tus posts en el feed de la comunidad. Suele estar en un sitio distinto del blog — usá la URL donde está instalado Fluent Community.",
+    "community_site_url": "URL del sitio de la comunidad",
+    "community_site_url_placeholder": "https://comunidad.tusitio.com",
+    "community_user_hint": "El usuario tiene que ser miembro del portal de la comunidad, no solo administrador de WordPress — el plugin rechaza a quien nunca entró.",
+    "community_test_ok": "Conexión válida. {count} space(s) disponibles para publicar."
   },
   "preferences": {
     "eyebrow": "PERSONAL",

@@ -21,6 +21,10 @@ import type {
   BlogStatus,
   BlogTerm,
   CampaignDetail,
+  CommunityCredentials,
+  CommunityPublishResult,
+  CommunitySpace,
+  CommunityStatus,
   CopyDetail,
   Dna,
   GenerateResult,
@@ -584,6 +588,74 @@ export async function syncBlogPosts(slug: string): Promise<ActionResult<{ ok: bo
   return run(() =>
     apiFetch<{ ok: boolean; sync: string }>(`${ws(slug)}/blog/sync`, { method: 'POST' }),
   )
+}
+
+// --- Fluent Community ---
+// O que vai pro feed é uma chamada curta em markdown COM link pro artigo, não
+// o post do blog republicado: o feed não renderiza HTML e tem teto de 15k.
+
+export async function loadCommunityStatus(slug: string): Promise<ActionResult<CommunityStatus>> {
+  return run(() => apiFetch<CommunityStatus>(`${ws(slug)}/community/status`))
+}
+
+export async function loadCommunitySpaces(slug: string): Promise<ActionResult<CommunitySpace[]>> {
+  return run(async () =>
+    (await apiFetch<{ spaces: CommunitySpace[] }>(`${ws(slug)}/community/spaces`)).spaces,
+  )
+}
+
+// Gera o texto sem publicar — o usuário lê e ajusta antes de ir pro feed.
+export async function generateCommunityMessage(
+  slug: string,
+  postId: string,
+): Promise<ActionResult<{ message: string; cost: AiCostReport }>> {
+  return run(() =>
+    apiFetch<{ message: string; cost: AiCostReport }>(
+      `${ws(slug)}/community/posts/${encodeURIComponent(postId)}/message`,
+      { method: 'POST', body: JSON.stringify({}) },
+    ),
+  )
+}
+
+export async function publishToCommunity(
+  slug: string,
+  postId: string,
+  input: { message: string; space: string; title?: string },
+): Promise<ActionResult<CommunityPublishResult>> {
+  return run(async () =>
+    (
+      await apiFetch<{ ok: boolean; community: CommunityPublishResult }>(
+        `${ws(slug)}/community/posts/${encodeURIComponent(postId)}/publish`,
+        { method: 'POST', body: JSON.stringify({ community: input }) },
+      )
+    ).community,
+  )
+}
+
+export async function testCommunity(
+  slug: string,
+  input: CommunityCredentials,
+): Promise<ActionResult<{ ok: boolean; site?: string; spaces?: number }>> {
+  return run(() =>
+    apiFetch<{ ok: boolean; site?: string; spaces?: number }>(`${ws(slug)}/integrations/fluent_community/test`, {
+      method: 'POST',
+      body: JSON.stringify({ fluent_community: input }),
+    }),
+  )
+}
+
+export async function connectCommunity(
+  slug: string,
+  input: CommunityCredentials,
+): Promise<ActionResult<{ ok: boolean; type: string; status: string }>> {
+  const result = await run(() =>
+    apiFetch<{ ok: boolean; type: string; status: string }>(`${ws(slug)}/integrations/fluent_community`, {
+      method: 'POST',
+      body: JSON.stringify({ fluent_community: input }),
+    }),
+  )
+  if (result.ok) revalidatePath(`/${slug}/settings/integrations`)
+  return result
 }
 
 // --- Agente de blog ---

@@ -389,7 +389,26 @@
     "posts_action_view": "View on site",
     "posts_action_delete": "Remove from library",
     "posts_published": "Post published to WordPress.",
-    "posts_sent_as_draft": "Post sent to WordPress as a draft."
+    "posts_sent_as_draft": "Post sent to WordPress as a draft.",
+    "posts_action_share": "Share to community",
+    "posts_badge_community": "In community",
+    "community_title": "Share to community",
+    "community_close": "Close",
+    "community_not_connected": "No community connected to this workspace. Connect Fluent Community under Settings → Integrations.",
+    "community_space": "Where to post",
+    "community_space_hint": "Only community spaces show up — courses and groups don't take feed posts.",
+    "community_spaces_loading": "Loading spaces…",
+    "community_message": "Post message",
+    "community_message_placeholder": "Write the hook that goes to the feed…",
+    "community_generating": "AI is writing the hook…",
+    "community_regenerate": "Generate again",
+    "community_chars": "{count} of {max} characters",
+    "community_cancel": "Cancel",
+    "community_publish": "Post to community",
+    "community_publishing": "Posting…",
+    "community_published": "Shared to the community.",
+    "community_error_empty": "Write the message before posting.",
+    "community_error_space": "Pick where to post."
   },
   "products": {
     "eyebrow": "CATALOG",
@@ -636,7 +655,12 @@
     "openai_text_model_off": "Don't use — keep text on the default AI",
     "openai_text_model_hint": "Applies to title, content and the blog agent. Cost counts against the same monthly workspace limit, whichever provider runs. Covers stay on gpt-image-2.",
     "openai_model_saved": "Model saved. Text now runs on OpenAI.",
-    "openai_model_off_saved": "Saved. Text goes back to the default AI."
+    "openai_model_off_saved": "Saved. Text goes back to the default AI.",
+    "community_description": "Announce your posts in the community feed. It usually lives on a different site than the blog — use the URL where Fluent Community is installed.",
+    "community_site_url": "Community site URL",
+    "community_site_url_placeholder": "https://community.yoursite.com",
+    "community_user_hint": "The user must be a member of the community portal, not just a WordPress admin — the plugin rejects anyone who never joined.",
+    "community_test_ok": "Connection valid. {count} space(s) available to post in."
   },
   "preferences": {
     "eyebrow": "PERSONAL",

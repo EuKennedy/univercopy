@@ -15,6 +15,8 @@ import {
 } from '@/lib/api/mutations'
 import type { BlogPostDetail, BlogPostList, BlogPostRecord } from '@/lib/api/types'
 
+import { CommunityModal } from './community-modal'
+
 type Filter = 'all' | 'draft' | 'wordpress'
 
 // Ação em andamento, amarrada ao id do post — sem isso o spinner apareceria
@@ -39,6 +41,8 @@ export function PostsClient({
   const [syncing, setSyncing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
+  // Post que está sendo anunciado na comunidade. null = modal fechado.
+  const [sharing, setSharing] = useState<BlogPostRecord | null>(null)
 
   const load = useCallback(async () => {
     const res = await listBlogPosts(slug, {
@@ -103,6 +107,19 @@ export function PostsClient({
 
   return (
     <div className="space-y-4">
+      {sharing && (
+        <CommunityModal
+          slug={slug}
+          post={sharing}
+          onClose={() => setSharing(null)}
+          onPublished={() => {
+            setSharing(null)
+            setNotice(t('community_published'))
+            void load()
+          }}
+        />
+      )}
+
       {/* Filtros + busca + sync */}
       <GlassCard className="p-4 space-y-3">
         <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -173,6 +190,7 @@ export function PostsClient({
               onOpen={() => onOpen(post)}
               onPublish={(status) => onPublish(post, status)}
               onDelete={() => onDelete(post)}
+              onShare={() => setSharing(post)}
             />
           ))}
         </div>
@@ -182,7 +200,7 @@ export function PostsClient({
 }
 
 function PostRow({
-  post, busy, anyBusy, t, onOpen, onPublish, onDelete,
+  post, busy, anyBusy, t, onOpen, onPublish, onDelete, onShare,
 }: {
   post: BlogPostRecord
   busy: 'publish' | 'draft' | 'delete' | 'open' | null
@@ -191,6 +209,7 @@ function PostRow({
   onOpen: () => void
   onPublish: (status: 'draft' | 'publish') => void
   onDelete: () => void
+  onShare: () => void
 }) {
   return (
     <GlassCard className="p-4 flex items-start gap-4">
@@ -221,6 +240,7 @@ function PostRow({
           {post.wp_status && post.wp_status !== 'publish' && (
             <Badge tone="neutral">{t('posts_badge_wp_status', { status: post.wp_status })}</Badge>
           )}
+          {post.community_url && <Badge tone="accent">{t('posts_badge_community')}</Badge>}
         </div>
 
         <p className="text-[15px] font-semibold text-[var(--uc-text)] leading-snug break-words">
@@ -252,17 +272,27 @@ function PostRow({
             </GlassButton>
           </>
         ) : (
-          post.url && (
-            <a
-              href={post.url}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-2xl px-4 h-10 text-sm font-semibold text-[var(--uc-text-soft)] hover:text-[var(--uc-text)] hover:bg-[var(--uc-surface-soft)] uc-transition"
-            >
-              {t('posts_action_view')}
-              <Icon name="chevron-right" size={14} />
-            </a>
-          )
+          <>
+            {/* Só post que já está no ar pode ser anunciado: o texto do feed
+                leva o link do artigo. */}
+            {post.shareable && (
+              <GlassButton size="sm" variant="secondary" disabled={anyBusy} onClick={onShare}>
+                <Icon name="megaphone" size={14} />
+                {t('posts_action_share')}
+              </GlassButton>
+            )}
+            {post.url && (
+              <a
+                href={post.url}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-2xl px-4 h-10 text-sm font-semibold text-[var(--uc-text-soft)] hover:text-[var(--uc-text)] hover:bg-[var(--uc-surface-soft)] uc-transition"
+              >
+                {t('posts_action_view')}
+                <Icon name="chevron-right" size={14} />
+              </a>
+            )}
+          </>
         )}
 
         <GlassButton

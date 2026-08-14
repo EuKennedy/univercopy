@@ -389,7 +389,26 @@
     "posts_action_view": "Voir sur le site",
     "posts_action_delete": "Retirer de la bibliothèque",
     "posts_published": "Article publié sur WordPress.",
-    "posts_sent_as_draft": "Article envoyé à WordPress en brouillon."
+    "posts_sent_as_draft": "Article envoyé à WordPress en brouillon.",
+    "posts_action_share": "Annoncer à la communauté",
+    "posts_badge_community": "Dans la communauté",
+    "community_title": "Annoncer à la communauté",
+    "community_close": "Fermer",
+    "community_not_connected": "Aucune communauté connectée à cet espace. Connectez Fluent Community dans Paramètres → Intégrations.",
+    "community_space": "Où publier",
+    "community_space_hint": "Seuls les spaces de communauté apparaissent — les cours et groupes n'acceptent pas de posts de fil.",
+    "community_spaces_loading": "Chargement des spaces…",
+    "community_message": "Message du post",
+    "community_message_placeholder": "Écrivez l'accroche destinée au fil…",
+    "community_generating": "L'IA rédige l'accroche…",
+    "community_regenerate": "Générer à nouveau",
+    "community_chars": "{count} sur {max} caractères",
+    "community_cancel": "Annuler",
+    "community_publish": "Publier dans la communauté",
+    "community_publishing": "Publication…",
+    "community_published": "Annoncé à la communauté.",
+    "community_error_empty": "Écrivez le message avant de publier.",
+    "community_error_space": "Choisissez où publier."
   },
   "products": {
     "eyebrow": "CATALOGUE",
@@ -636,7 +655,12 @@
     "openai_text_model_off": "Ne pas utiliser — garder le texte sur l'IA par défaut",
     "openai_text_model_hint": "S'applique au titre, au contenu et à l'agent du blog. Le coût compte dans le même plafond mensuel de l'espace de travail, quel que soit le fournisseur. La couverture reste sur gpt-image-2.",
     "openai_model_saved": "Modèle enregistré. Les textes passent par OpenAI.",
-    "openai_model_off_saved": "Enregistré. Les textes reviennent à l'IA par défaut."
+    "openai_model_off_saved": "Enregistré. Les textes reviennent à l'IA par défaut.",
+    "community_description": "Annoncez vos articles dans le fil de la communauté. Elle vit souvent sur un site différent du blog — utilisez l'URL où Fluent Community est installé.",
+    "community_site_url": "URL du site de la communauté",
+    "community_site_url_placeholder": "https://communaute.votresite.com",
+    "community_user_hint": "L'utilisateur doit être membre du portail de la communauté, pas seulement administrateur WordPress — le plugin refuse ceux qui n'y sont jamais entrés.",
+    "community_test_ok": "Connexion valide. {count} space(s) disponibles pour publier."
   },
   "preferences": {
     "eyebrow": "PERSONNEL",

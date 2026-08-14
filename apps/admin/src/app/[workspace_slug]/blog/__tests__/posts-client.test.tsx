@@ -41,6 +41,9 @@ function post(overrides: Partial<BlogPostRecord> = {}): BlogPostRecord {
     last_error: null,
     published_at: null,
     updated_at: '2026-08-14T10:00:00Z',
+    shareable: false,
+    community_url: null,
+    community_space: null,
     ...overrides,
   }
 }

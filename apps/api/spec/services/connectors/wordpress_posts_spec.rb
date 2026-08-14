@@ -10,6 +10,8 @@ RSpec.describe Connectors::Wordpress, "#each_post" do
   let(:connector) { described_class.new(config) }
   let(:posts_url) { "#{base_url}/wp-json/wp/v2/posts" }
 
+  before { allow_test_hosts! }
+
   def wp_post(id:, **overrides)
     {
       "id"             => id,

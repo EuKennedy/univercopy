@@ -17,6 +17,7 @@ export type FeatureKey =
   | 'connector_csv'
   | 'connector_wordpress'
   | 'connector_openai'
+  | 'connector_fluent_community'
   | 'ai_blog_writer'
   | 'ai_cover_image'
   | 'connector_shopify'
@@ -47,6 +48,7 @@ export const PLAN_FEATURES: Record<Plan, Record<FeatureKey, boolean>> = {
     connector_csv: true,
     connector_wordpress: true,
     connector_openai: true,
+    connector_fluent_community: true,
     ai_blog_writer: true,
     ai_cover_image: true,
     connector_shopify: false,
@@ -69,6 +71,7 @@ export const PLAN_FEATURES: Record<Plan, Record<FeatureKey, boolean>> = {
     connector_csv: true,
     connector_wordpress: true,
     connector_openai: true,
+    connector_fluent_community: true,
     ai_blog_writer: true,
     ai_cover_image: true,
     connector_shopify: true,
@@ -91,6 +94,7 @@ export const PLAN_FEATURES: Record<Plan, Record<FeatureKey, boolean>> = {
     connector_csv: true,
     connector_wordpress: true,
     connector_openai: true,
+    connector_fluent_community: true,
     ai_blog_writer: true,
     ai_cover_image: true,
     connector_shopify: true,

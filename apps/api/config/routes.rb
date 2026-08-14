@@ -78,6 +78,9 @@ Rails.application.routes.draw do
         post   "/integrations/openai/test",      to: "integrations#test_openai"
         post   "/integrations/openai",           to: "integrations#connect_openai"
         patch  "/integrations/openai",           to: "integrations#update_openai_settings"
+        post   "/integrations/fluent_community/test", to: "integrations#test_fluent_community"
+        post   "/integrations/fluent_community",      to: "integrations#connect_fluent_community"
+        patch  "/integrations/fluent_community",      to: "integrations#update_community_settings"
         post   "/integrations/:type/sync",       to: "integrations#sync"
         delete "/integrations/:type",            to: "integrations#disconnect"
 
@@ -104,6 +107,14 @@ Rails.application.routes.draw do
         patch  "/blog/posts/:id",         to: "blog_posts#update_draft"
         delete "/blog/posts/:id",         to: "blog_posts#destroy_draft"
         post   "/blog/posts/:id/publish", to: "blog_posts#publish_draft"
+
+        # Fluent Community. Vive sob /blog porque o que se publica lá é a
+        # chamada de um post do blog — mas o conector é outro, com credencial
+        # própria (a comunidade costuma morar em outro site).
+        get  "/community/status",              to: "community#status"
+        get  "/community/spaces",              to: "community#spaces"
+        post "/community/posts/:id/message",   to: "community#generate_message"
+        post "/community/posts/:id/publish",   to: "community#publish"
         # Agente: conversa até fechar o plano, executa em background com polling.
         post "/blog/agent/message",    to: "blog_posts#agent_message"
         post "/blog/agent/run",        to: "blog_posts#agent_run"
