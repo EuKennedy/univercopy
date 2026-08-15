@@ -24,10 +24,20 @@ RSpec.describe "API v1 community", type: :request do
     i
   end
 
+  # Passe `metodo: valor` para stubar retorno, ou `metodo: UmErro.new("...")`
+  # para stubar levantamento — os exemplos precisam dos dois.
   def stub_connector(**stubs)
     fake = instance_double(Connectors::FluentCommunity)
     allow(fake).to receive(:default_space).and_return("start-here")
-    stubs.each { |m, v| v.is_a?(StandardError) ? allow(fake).to receive(m).and_raise(v) : allow(fake).to receive(m).and_return(v) }
+
+    stubs.each do |method, value|
+      if value.is_a?(StandardError)
+        allow(fake).to receive(method).and_raise(value)
+      else
+        allow(fake).to receive(method).and_return(value)
+      end
+    end
+
     allow(Connectors::FluentCommunity).to receive(:new).and_return(fake)
     fake
   end
