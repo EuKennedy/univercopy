@@ -33,6 +33,33 @@ Rails.application.configure do
   # acidente um job que fala com WordPress/OpenAI.
   config.active_job.queue_adapter = :test
 
+  # ------------------------------------------------------------------
+  # O banco de teste é o que o `db:prepare` migrou — não uma reconstrução
+  # a partir do db/schema.rb.
+  #
+  # O schema.rb (formato :ruby) só sabe descrever tabela, índice e FK. Ele
+  # NÃO representa `ENABLE/FORCE ROW LEVEL SECURITY`, `CREATE POLICY` nem as
+  # funções `SECURITY DEFINER` (is_member, app_current_user_id,
+  # create_workspace) — que são justamente o isolamento entre tenants deste
+  # produto, criado por SQL cru nas migrations.
+  #
+  # Com o comportamento padrão, o `maintain_test_schema!` do rails_helper
+  # dropava o banco recém-migrado e o recarregava do schema.rb, deixando o
+  # teste rodar contra um banco SEM RLS e SEM as funções. Isso passava
+  # despercebido porque nada quebra: as policies sumiam junto com a função
+  # que elas chamam, e o escopo das associations mascarava a ausência.
+  #
+  # `maintain_test_schema = false` faz o maintain_test_schema! virar no-op —
+  # em CI o db:prepare já roda antes do RSpec, então não há schema pendente.
+  # `dump_schema_after_migration = false` evita gerar o schema.rb incompleto,
+  # que ficaria de armadilha pra quem rodasse db:test:prepare na mão.
+  #
+  # A solução definitiva é `schema_format = :sql` (o structure.sql do pg_dump
+  # carrega policy e function); fica como próximo passo por exigir cliente
+  # Postgres no runner.
+  config.active_record.maintain_test_schema        = false
+  config.active_record.dump_schema_after_migration = false
+
   # Tell Action Mailer not to deliver emails to the real world.
   # The :test delivery method accumulates sent emails in the
   # ActionMailer::Base.deliveries array.

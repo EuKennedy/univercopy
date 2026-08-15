@@ -140,29 +140,36 @@ RSpec.describe Connectors::Wordpress, "#each_post" do
       collect
 
       expect(
-        a_request(:get, posts_url).with { |req| req.uri.query.include?("_fields") }
+        a_request(:get, posts_url)
+          .with(query: hash_including({ "_fields" => described_class::POST_FIELDS.join(",") }))
       ).to have_been_made
     end
   end
 
   describe "erros" do
     it "traduz 401 em mensagem sobre credencial" do
-      stub_request(:get, posts_url).to_return(
-        status: 401, body: { "message" => "Senha incorreta" }.to_json,
-        headers: { "Content-Type" => "application/json" }
-      )
+      stub_request(:get, posts_url)
+        .with(query: hash_including({ "page" => "1" }))
+        .to_return(
+          status: 401, body: { "message" => "Senha incorreta" }.to_json,
+          headers: { "Content-Type" => "application/json" }
+        )
 
       expect { collect }.to raise_error(described_class::ConnectionError, /credenciais recusadas/i)
     end
 
     it "traduz 403 em mensagem sobre permissão de edição" do
-      stub_request(:get, posts_url).to_return(status: 403, body: "{}", headers: { "Content-Type" => "application/json" })
+      stub_request(:get, posts_url)
+        .with(query: hash_including({ "page" => "1" }))
+        .to_return(status: 403, body: "{}", headers: { "Content-Type" => "application/json" })
 
       expect { collect }.to raise_error(described_class::ConnectionError, /sem permissão/i)
     end
 
     it "explica resposta não-JSON, que é o sintoma de WAF na frente da REST" do
-      stub_request(:get, posts_url).to_return(status: 200, body: "<html>bloqueado pelo firewall</html>")
+      stub_request(:get, posts_url)
+        .with(query: hash_including({ "page" => "1" }))
+        .to_return(status: 200, body: "<html>bloqueado pelo firewall</html>")
 
       expect { collect }.to raise_error(described_class::ConnectionError, /não-JSON/i)
     end

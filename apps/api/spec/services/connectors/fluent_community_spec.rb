@@ -47,20 +47,20 @@ RSpec.describe Connectors::FluentCommunity do
     end
 
     it "aceita a resposta embrulhada em { spaces: [...] }" do
-      stub_request(:get, spaces_url).to_return(json_response(
-        "spaces" => [{ "id" => 2, "title" => "A", "slug" => "a", "type" => "community", "privacy" => "public" }]
-      ))
+      stub_request(:get, spaces_url).to_return(json_response({
+        "spaces" => [{ "id" => 2, "title" => "A", "slug" => "a", "type" => "community", "privacy" => "public" }],
+      }))
 
       expect(connector.spaces.size).to eq(1)
     end
 
     it "aceita a resposta agrupada por space_group" do
-      stub_request(:get, spaces_url).to_return(json_response(
+      stub_request(:get, spaces_url).to_return(json_response({
         "space_groups" => [
           { "id" => 1, "spaces" => [{ "id" => 2, "title" => "A", "slug" => "a", "type" => "community", "privacy" => "public" }] },
           { "id" => 4, "spaces" => [{ "id" => 5, "title" => "B", "slug" => "b", "type" => "course",    "privacy" => "public" }] },
-        ]
-      ))
+        ],
+      }))
 
       expect(connector.spaces.map { |s| s[:slug] }).to eq(["a"])
     end

@@ -131,18 +131,26 @@ module Blog
 
     # O acervo é acessório ao lote: se gravar falhar, o post ainda vai pro
     # WordPress. Devolve nil e o resto do fluxo segue sem ele.
+    #
+    # `requires_new: true` abre um SAVEPOINT, e não é detalhe: o lote inteiro
+    # roda dentro de UMA transação (with_workspace_rls). Sem savepoint, um erro
+    # de banco aqui aborta essa transação, e aí o rescue abaixo não salvaria
+    # nada — toda query seguinte do lote morreria com InFailedSqlTransaction.
+    # Com savepoint, o rollback é só deste INSERT e o lote continua.
     def archive_draft!(workspace:, user_id:, ai_job:, title:, content:, brief:, plan:)
-      workspace.blog_posts.create!(
-        origin:       "univercopy",
-        status:       "draft",
-        title:        title.to_s.strip.slice(0, 500).presence || "Sem título",
-        content:      content,
-        brief:        brief.to_s.strip.slice(0, 2_000).presence,
-        category_ids: Array(plan["category_ids"]).map(&:to_i),
-        tag_ids:      Array(plan["tag_ids"]).map(&:to_i),
-        created_by:   user_id,
-        ai_job_id:    ai_job.id
-      )
+      ApplicationRecord.transaction(requires_new: true) do
+        workspace.blog_posts.create!(
+          origin:       "univercopy",
+          status:       "draft",
+          title:        title.to_s.strip.slice(0, 500).presence || "Sem título",
+          content:      content,
+          brief:        brief.to_s.strip.slice(0, 2_000).presence,
+          category_ids: Array(plan["category_ids"]).map(&:to_i),
+          tag_ids:      Array(plan["tag_ids"]).map(&:to_i),
+          created_by:   user_id,
+          ai_job_id:    ai_job.id
+        )
+      end
     rescue StandardError => e
       Rails.logger.error("[BlogAgentRunJob] rascunho local falhou: #{e.class}: #{e.message}")
       nil

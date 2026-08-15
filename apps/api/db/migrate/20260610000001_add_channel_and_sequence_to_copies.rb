@@ -16,7 +16,7 @@ class AddChannelAndSequenceToCopies < ActiveRecord::Migration[8.1]
               name: "idx_copies_campaign_sequence", if_not_exists: true
     add_index :piece_types, :channel, if_not_exists: true
 
-    # Categorias novas (WhatsApp/SMS) — idempotente.
+    # Categorias novas (WhatsApp/SMS) — idempotente. Não depende de FK.
     execute <<~SQL
       INSERT INTO categories(workspace_id,key,name,icon,color,created_at,updated_at) VALUES
       (NULL,'whatsapp','WhatsApp','message-circle','#22c55e',now(),now()),
@@ -25,16 +25,31 @@ class AddChannelAndSequenceToCopies < ActiveRecord::Migration[8.1]
     SQL
 
     # Piece types novos (WhatsApp + SMS) — idempotente.
-    execute <<~SQL
-      INSERT INTO piece_types(key,category_key,name,description,structure,default_framework,default_style,length_hint,created_at,updated_at) VALUES
-      ('whatsapp:promo','whatsapp','Mensagem promocional','Disparo de oferta no WhatsApp.','Abertura pessoal → oferta → CTA + link','AIDA','kennedy','2-4 linhas',now(),now()),
-      ('whatsapp:sequencia','whatsapp','Sequência de mensagens (passo)','Passo de uma cadência de WhatsApp.','Continuidade do contexto → valor/lembrete → CTA','PAS (Problema-Agitação-Solução)','collier','2-4 linhas',now(),now()),
-      ('whatsapp:carrinho','whatsapp','Recuperação de carrinho','Recupera quem não finalizou no WhatsApp.','Lembrete amigável → remover atrito → CTA + link','PAS (Problema-Agitação-Solução)','collier','2-3 linhas',now(),now()),
-      ('whatsapp:boas-vindas','whatsapp','Boas-vindas','Primeiro contato após opt-in.','Acolhimento → o que esperar → CTA','BAB (Antes-Depois-Ponte)','collier','2-3 linhas',now(),now()),
-      ('sms:promo','sms','SMS promocional','Mensagem curta de oferta.','Oferta direta → CTA + link curto','AIDA','kennedy','até 160 caracteres',now(),now()),
-      ('sms:lembrete','sms','SMS de lembrete','Lembrete de prazo/evento.','Lembrete → prazo → ação','PAS (Problema-Agitação-Solução)','collier','até 160 caracteres',now(),now())
-      ON CONFLICT (key) DO NOTHING;
-    SQL
+    #
+    # SÓ roda em base que JÁ tem as bibliotecas globais. Numa base nova (CI,
+    # dev do zero) as migrations rodam ANTES do seeds, então `frameworks` e
+    # `styles` estão vazias — e inserir piece_type apontando pra 'AIDA' ou
+    # 'kennedy' viola a FK e derruba o `db:prepare` inteiro, junto com todas
+    # as migrations seguintes. Era exatamente isso que quebrava o CI.
+    #
+    # Pular não perde nada: o seeds.rb cria estes MESMOS piece_types, com as
+    # bibliotecas semeadas antes deles. O bloco existe só para a base que já
+    # está de pé em produção, onde `db:prepare` aplica migration pendente sem
+    # re-semear.
+    if libraries_seeded?
+      execute <<~SQL
+        INSERT INTO piece_types(key,category_key,name,description,structure,default_framework,default_style,length_hint,created_at,updated_at) VALUES
+        ('whatsapp:promo','whatsapp','Mensagem promocional','Disparo de oferta no WhatsApp.','Abertura pessoal → oferta → CTA + link','AIDA','kennedy','2-4 linhas',now(),now()),
+        ('whatsapp:sequencia','whatsapp','Sequência de mensagens (passo)','Passo de uma cadência de WhatsApp.','Continuidade do contexto → valor/lembrete → CTA','PAS (Problema-Agitação-Solução)','collier','2-4 linhas',now(),now()),
+        ('whatsapp:carrinho','whatsapp','Recuperação de carrinho','Recupera quem não finalizou no WhatsApp.','Lembrete amigável → remover atrito → CTA + link','PAS (Problema-Agitação-Solução)','collier','2-3 linhas',now(),now()),
+        ('whatsapp:boas-vindas','whatsapp','Boas-vindas','Primeiro contato após opt-in.','Acolhimento → o que esperar → CTA','BAB (Antes-Depois-Ponte)','collier','2-3 linhas',now(),now()),
+        ('sms:promo','sms','SMS promocional','Mensagem curta de oferta.','Oferta direta → CTA + link curto','AIDA','kennedy','até 160 caracteres',now(),now()),
+        ('sms:lembrete','sms','SMS de lembrete','Lembrete de prazo/evento.','Lembrete → prazo → ação','PAS (Problema-Agitação-Solução)','collier','até 160 caracteres',now(),now())
+        ON CONFLICT (key) DO NOTHING;
+      SQL
+    else
+      say "bibliotecas globais ainda não semeadas — piece_types de WhatsApp/SMS ficam para o db:seed"
+    end
 
     # Mapeia cada piece_type ao canal. `ads` divide em meta_ads/google_ads.
     execute <<~SQL
@@ -67,5 +82,14 @@ class AddChannelAndSequenceToCopies < ActiveRecord::Migration[8.1]
     remove_column :copies, :sequence_index, if_exists: true
     remove_column :copies, :channel, if_exists: true
     remove_column :piece_types, :channel, if_exists: true
+  end
+
+  private
+
+  # As duas tabelas que os piece_types abaixo referenciam por FK
+  # (default_framework → frameworks.key, default_style → styles.key).
+  def libraries_seeded?
+    select_value("SELECT EXISTS (SELECT 1 FROM frameworks)") &&
+      select_value("SELECT EXISTS (SELECT 1 FROM styles)")
   end
 end

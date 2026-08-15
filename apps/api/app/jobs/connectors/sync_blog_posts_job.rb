@@ -45,18 +45,26 @@ module Connectors
     #
     # `status` fica "published" em qualquer post que tenha wp_post_id: ele saiu
     # daqui. Se está no ar ou não, quem responde é `wp_status`.
+    # `requires_new: true` abre um SAVEPOINT em volta do save. O sync inteiro
+    # roda numa transação só (with_workspace_rls); sem savepoint, a violação do
+    # índice único abortaria essa transação e o rescue abaixo seria inalcançável
+    # na prática — o find_by! morreria com InFailedSqlTransaction e derrubaria
+    # o sync inteiro em vez de recuperar um único post.
     def upsert_post!(workspace_id, attrs)
-      post = BlogPost.find_or_initialize_by(workspace_id: workspace_id, wp_post_id: attrs[:wp_post_id])
-      post.origin = "wordpress" if post.new_record?
+      ApplicationRecord.transaction(requires_new: true) do
+        post = BlogPost.find_or_initialize_by(workspace_id: workspace_id, wp_post_id: attrs[:wp_post_id])
+        post.origin = "wordpress" if post.new_record?
 
-      post.assign_attributes(attrs.except(:wp_post_id))
-      post.status     = "published"
-      post.synced_at  = Time.current
-      post.last_error = nil
-      post.save!
+        post.assign_attributes(attrs.except(:wp_post_id))
+        post.status     = "published"
+        post.synced_at  = Time.current
+        post.last_error = nil
+        post.save!
+      end
     rescue ActiveRecord::RecordNotUnique
       # Corrida entre dois syncs do mesmo workspace: a outra thread criou a
-      # linha entre o find e o save. Atualiza a que ganhou.
+      # linha entre o find e o save. O savepoint já desfez o INSERT perdedor,
+      # então a transação segue utilizável e dá pra atualizar a que ganhou.
       BlogPost.find_by!(workspace_id: workspace_id, wp_post_id: attrs[:wp_post_id])
               .update!(attrs.except(:wp_post_id).merge(status: "published", synced_at: Time.current))
     end

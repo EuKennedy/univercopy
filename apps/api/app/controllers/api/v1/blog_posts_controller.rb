@@ -452,7 +452,21 @@ module Api
       # Grava no acervo o que acabou de subir pelo editor. Falha aqui não pode
       # derrubar a resposta: o post JÁ existe no WordPress e um 500 faria o
       # usuário reenviar e duplicar.
+      #
+      # SAVEPOINT (`requires_new: true`) porque o around_action de RLS envolve a
+      # action numa transação: sem ele, um erro de banco aqui a abortaria e nem
+      # o COMMIT no fim da action passaria — o rescue viraria enfeite e o
+      # usuário levaria 500 com o post já publicado.
       def archive_published!(input, result)
+        ApplicationRecord.transaction(requires_new: true) do
+          build_archived_post!(input, result)
+        end
+      rescue StandardError => e
+        Rails.logger.error("[BlogPosts] arquivar post publicado falhou: #{e.class}: #{e.message}")
+        nil
+      end
+
+      def build_archived_post!(input, result)
         current_workspace.blog_posts.create!(
           origin:             "univercopy",
           status:             "published",
@@ -468,9 +482,6 @@ module Api
           published_at:       Time.current,
           created_by:         current_app_user.id
         )
-      rescue StandardError => e
-        Rails.logger.error("[BlogPosts] arquivar post publicado falhou: #{e.class}: #{e.message}")
-        nil
       end
 
       def post_summary(record)
