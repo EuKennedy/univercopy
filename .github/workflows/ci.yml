@@ -102,7 +102,35 @@ jobs:
       - run: pnpm --filter landing build
 
   # ----------------------------------------------------------
-  # API Ruby — Brakeman + bundler-audit + RSpec + coverage gate.
+  # Segurança do Ruby — SAST + advisories de dependência.
+  #
+  # Job separado do `api` de propósito. Estava no mesmo job, ANTES do RSpec, e
+  # como `bundle-audit --update` baixa a base de advisories a cada execução,
+  # qualquer CVE publicado no mundo derrubava o job antes dos testes rodarem —
+  # a suíte inteira ficava sem resultado por um motivo que não é dela. Aqui
+  # continua reprovando o CI (segue no needs do CI Passed), mas para de
+  # esconder se os testes passam.
+  #
+  # Nenhum serviço: brakeman e bundler-audit são estáticos, não tocam banco.
+  # ----------------------------------------------------------
+  ruby-security:
+    name: security (Ruby)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          working-directory: apps/api
+          bundler-cache: true
+      - name: Brakeman
+        working-directory: apps/api
+        run: bundle exec brakeman --no-pager --exit-on-warn
+      - name: bundler-audit
+        working-directory: apps/api
+        run: bundle exec bundle-audit check --update
+
+  # ----------------------------------------------------------
+  # API Ruby — migrations + RSpec + coverage gate.
   # ----------------------------------------------------------
   api:
     name: api (Rails)
@@ -147,12 +175,6 @@ jobs:
       - name: DB setup
         working-directory: apps/api
         run: bin/rails db:prepare
-      - name: Brakeman
-        working-directory: apps/api
-        run: bundle exec brakeman --no-pager --exit-on-warn
-      - name: bundler-audit
-        working-directory: apps/api
-        run: bundle exec bundle-audit check --update
       - name: RSpec
         working-directory: apps/api
         run: bundle exec rspec --format progress
@@ -164,7 +186,7 @@ jobs:
   ci-passed:
     name: CI Passed
     if: always()
-    needs: [shared, admin, landing, api]
+    needs: [shared, admin, landing, api, ruby-security]
     runs-on: ubuntu-latest
     steps:
       - name: Fail if any required job failed
@@ -172,7 +194,8 @@ jobs:
           if [[ "${{ needs.shared.result }}" == "failure" || \
                 "${{ needs.admin.result }}" == "failure" || \
                 "${{ needs.landing.result }}" == "failure" || \
-                "${{ needs.api.result }}" == "failure" ]]; then
+                "${{ needs.api.result }}" == "failure" || \
+                "${{ needs.ruby-security.result }}" == "failure" ]]; then
             echo "One or more required jobs failed."
             exit 1
           fi
